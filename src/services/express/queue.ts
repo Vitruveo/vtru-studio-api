@@ -15,13 +15,9 @@ export const sendToExchange = async (message: string, routingKey = 'log') => {
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-            status.channel?.assertExchange(
-                RABBITMQ_EXCHANGE_EXPRESS,
-                'fanout',
-                {
-                    durable: false,
-                }
-            );
+            status.channel?.assertExchange(RABBITMQ_EXCHANGE_EXPRESS, 'topic', {
+                durable: true,
+            });
         }
         if (status.channel) {
             status.channel.publish(
@@ -31,7 +27,7 @@ export const sendToExchange = async (message: string, routingKey = 'log') => {
             );
         }
     } catch (error) {
-        captureException(error, { tags: { scope: 'sendToQueue' } });
         logger('Error sending to queue: %O', error);
+        captureException(error, { tags: { scope: 'sendToQueue' } });
     }
 };

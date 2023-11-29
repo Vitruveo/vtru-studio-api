@@ -19,7 +19,8 @@ For setup the developer environment, please use:
 
 ```sh
 npm install
-npm start
+docker network create vitruveo
+docker-compose up
 ```
 
 

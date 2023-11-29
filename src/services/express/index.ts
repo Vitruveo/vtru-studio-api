@@ -4,6 +4,7 @@ import express from 'express';
 import morgan from 'morgan';
 import dayjs from 'dayjs';
 import { nanoid } from 'nanoid';
+import cors from 'cors';
 import { EXPRESS_PORT } from '../../constants';
 import { APIResponse, APIEcho } from './types';
 import { sendToExchange } from './queue';
@@ -15,6 +16,7 @@ export const app = express();
 // trust proxy
 app.set('trust proxy', true);
 
+app.use(cors());
 app.use(
     morgan('combined', {
         stream: {
