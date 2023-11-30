@@ -3,15 +3,17 @@ import debug from 'debug';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import './services/sentry';
-import './services/express';
-import './services/mongo';
-import './services/migration';
+import * as features from './features';
+import './services';
+import { app } from './services/express';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const logger = debug('core');
-debug.enable('core:*,services:*,utils:*');
 
 logger('Starting API');
+
+// the unique point of code who knows about all features
+app.use(features.users.controller.router);
+// app.use(features.roles.controller.router);

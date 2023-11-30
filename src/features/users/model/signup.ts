@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
-import { PASSWORD_SALT } from '../../constants';
+import { customAlphabet } from 'nanoid';
+import { PASSWORD_SALT } from '../../../constants';
 
 export const encryptPassword = (password: string) => {
     const sha256 = createHash('sha256');
@@ -9,3 +10,9 @@ export const encryptPassword = (password: string) => {
         .digest('hex');
     return encryptedPassword;
 };
+
+export const generateToken = () =>
+    `${customAlphabet('1234567890abcdef', 4)}-${customAlphabet(
+        '1234567890abcdef',
+        4
+    )}`;

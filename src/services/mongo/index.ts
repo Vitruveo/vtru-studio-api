@@ -12,25 +12,23 @@ const status: {
     db: null,
 };
 
-client.on('connect', () => {
-    logger('MongoDB connected');
-    status.db = client.db(MONGO_DATABASE);
-});
+const connect = async () => {
+    try {
+        logger(`Connecting to MongoDB: ${MONGO_URL}`);
+        await client.connect();
+        status.db = client.db(MONGO_DATABASE);
+    } catch (error) {
+        logger('MongoDB connection error: %O', error);
+        captureException(error);
 
-client.on('disconnect', async () => {
-    logger('MongoDB disconnected, reconnecting...');
-    await client.connect();
-});
+        // wait for capture sending the exception to sentry and exit
+        setTimeout(() => {
+            process.exit(1);
+        }, 10_000);
+    }
+};
 
-client.on('error', (err) => {
-    logger('MongoDB connection error: %O', err);
-    captureException(err);
-
-    // wait for capture sending the exception to sentry and exit
-    setTimeout(() => {
-        process.exit(1);
-    }, 10_000);
-});
+connect();
 
 const getDb = () => {
     if (!status.db) {

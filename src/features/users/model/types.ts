@@ -8,11 +8,15 @@ export interface FindUsersParams {
     query: any;
     sort: any;
     skip: number;
-    limit: number;
+    limit?: number;
+}
+
+export interface FindUserByIdParams {
+    id: string;
 }
 
 export interface FindOneUserParams {
-    id: string;
+    query: any;
 }
 
 export interface UpdateUserParams {

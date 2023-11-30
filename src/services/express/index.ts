@@ -8,10 +8,11 @@ import cors from 'cors';
 import { EXPRESS_PORT } from '../../constants';
 import { APIResponse, APIEcho } from './types';
 import { sendToExchange } from './queue';
+import pkgJson from '../../../package.json';
 
 const logger = debug('services:express');
 
-export const app = express();
+const app = express();
 
 // trust proxy
 app.set('trust proxy', true);
@@ -32,13 +33,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (_req, res) => {
     res.status(200).json({
-        code: 1,
+        code: 'echo',
         transaction: nanoid(),
         message: 'OK',
         args: [],
         data: {
             server: os.hostname(),
             time: dayjs().toISOString(),
+            version: pkgJson.version,
         },
     } as APIResponse<APIEcho>);
 });
@@ -46,3 +48,5 @@ app.get('/', (_req, res) => {
 app.listen(EXPRESS_PORT, () => {
     logger(`Server listening on port ${EXPRESS_PORT}`);
 });
+
+export { app, APIResponse, APIEcho };

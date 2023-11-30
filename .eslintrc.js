@@ -13,6 +13,7 @@ module.exports = {
     plugins: ['@typescript-eslint', 'import'],
     rules: {
         '@typescript-eslint/no-unused-vars': 'error',
+        'no-underscore-dangle': 'off',
         'no-unused-vars': 'off',
         'no-shadow': 'off',
         'class-methods-use-this': 'off',

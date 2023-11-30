@@ -1,31 +1,25 @@
 import dayjs from 'dayjs';
-import { customAlphabet } from 'nanoid';
-import { UserSchema, COLLECTION_USERS } from './schema';
-import { encryptPassword } from './signup';
+import { UserSchema, UserDocument, COLLECTION_USERS } from './schema';
+import { encryptPassword, generateToken } from './signup';
 import {
     StartPasswordRecoveryParams,
     UpdateUserParams,
     DeleteUserParams,
     FindUsersParams,
     CreateUserParams,
+    FindUserByIdParams,
     FindOneUserParams,
     FinishPasswordRecoveryParams,
 } from './types';
-import { getDb, ObjectId } from '../../services/mongo';
+import { getDb, ObjectId } from '../../../services/mongo';
 
-const users = getDb().collection(COLLECTION_USERS);
-
-const generateToken = () =>
-    `${customAlphabet('1234567890abcdef', 4)}-${customAlphabet(
-        '1234567890abcdef',
-        4
-    )}`;
+const users = () => getDb().collection(COLLECTION_USERS);
 
 // basic actions
-
 export const createUser = async ({ user }: CreateUserParams) => {
     const parsed = UserSchema.parse(user);
-    const result = await users.insertOne(parsed);
+    parsed.login.password = encryptPassword(parsed.login.password);
+    const result = await users().insertOne(parsed);
     return result;
 };
 
@@ -36,23 +30,56 @@ export const findUsers = async ({
     skip,
     limit,
 }: FindUsersParams) => {
-    const result = users
-        .find(query)
+    let result = users()
+        .find(query, {
+            projection: {
+                'login.password': 0,
+                'login.passwordHistory': 0,
+                'login.loginHistory': 0,
+                'login.recoveringPassword': 0,
+                'login.recoveringExpire': 0,
+            },
+        })
         .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .stream();
+        .skip(skip);
+
+    if (limit) result = result.limit(limit);
+
+    return result.stream();
+};
+
+export const findUserById = async ({ id }: FindUserByIdParams) => {
+    const result = await users().findOne(
+        { _id: new ObjectId(id) },
+        {
+            projection: {
+                'login.password': 0,
+                'login.passwordHistory': 0,
+                'login.loginHistory': 0,
+                'login.recoveringPassword': 0,
+                'login.recoveringExpire': 0,
+            },
+        }
+    );
     return result;
 };
 
-export const findOneUser = async ({ id }: FindOneUserParams) => {
-    const result = await users.findOne({ _id: new ObjectId(id) });
+export const findOneUser = async ({ query }: FindOneUserParams) => {
+    const result = await users().findOne<UserDocument>(query, {
+        projection: {
+            'login.password': 0,
+            'login.passwordHistory': 0,
+            'login.loginHistory': 0,
+            'login.recoveringPassword': 0,
+            'login.recoveringExpire': 0,
+        },
+    });
     return result;
 };
 
 export const updateUser = async ({ id, user }: UpdateUserParams) => {
     const parsed = UserSchema.parse(user);
-    const result = await users.updateOne(
+    const result = await users().updateOne(
         { _id: new ObjectId(id) },
         { $set: parsed }
     );
@@ -60,7 +87,7 @@ export const updateUser = async ({ id, user }: UpdateUserParams) => {
 };
 
 export const deleteUser = async ({ id }: DeleteUserParams) => {
-    const result = await users.deleteOne({ _id: new ObjectId(id) });
+    const result = await users().deleteOne({ _id: new ObjectId(id) });
     return result;
 };
 
@@ -71,7 +98,7 @@ export const startPasswordRecovery = async ({
 }: StartPasswordRecoveryParams) => {
     const recoveringPassword = generateToken();
     const recoveringExpire = dayjs().add(1, 'hour').toDate();
-    const result = await users.updateOne(
+    const result = await users().updateOne(
         { 'login.email': email },
         {
             $set: {
@@ -92,7 +119,7 @@ export const finishPasswordRecovery = async ({
     newPassword,
 }: FinishPasswordRecoveryParams) => {
     const encryptedPassword = encryptPassword(newPassword);
-    const result = await users.updateOne(
+    const result = await users().updateOne(
         {
             'login.recoveringPassword': token,
             'login.recoveringExpire': { $gt: new Date() },

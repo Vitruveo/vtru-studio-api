@@ -1,12 +1,13 @@
 export interface APIEcho {
     server: string;
     time: string;
+    version: string;
 }
 
-export interface APIResponse<T> {
-    code: number;
+export interface APIResponse<T = unknown, E = any> {
+    code: string;
     transaction: string;
     message: string;
-    args: string[];
+    args?: E;
     data?: T;
 }
