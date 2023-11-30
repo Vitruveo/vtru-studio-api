@@ -9,8 +9,6 @@ services:
   api:
     environment:
       - NODE_ENV=dev
-      - PORT=3000
-      - RABBITMQ_URL=amqp://admin:password@rabbitmq:5672
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - MONGO_HOST=mongo
