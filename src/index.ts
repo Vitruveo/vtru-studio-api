@@ -17,4 +17,4 @@ logger('Starting API');
 // the unique point of code who knows about all features
 app.use(features.users.controller.router);
 app.use(features.roles.controller.router);
-// app.use(features.roles.controller.router);
+app.use(features.permissions.controller.router);
