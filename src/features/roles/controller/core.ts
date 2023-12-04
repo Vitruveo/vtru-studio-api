@@ -18,12 +18,20 @@ route.get('/', async (req, res) => {
             skip: 0,
         });
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.roles.reader.all.success',
-            message: 'Reader all success',
-            transaction: nanoid(),
-            data: roles,
-        });
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        roles
+            .on('data', (doc) => {
+                res.write('event: role_list\n');
+                res.write(`id: ${doc._id}\n`);
+                res.write(`data: ${JSON.stringify(doc)}\n\n`);
+            })
+            .on('end', () => {
+                res.end();
+            });
     } catch (error) {
         logger('Reader all role failed: %O', error);
         res.status(500).json({
