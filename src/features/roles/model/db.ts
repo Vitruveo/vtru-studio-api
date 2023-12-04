@@ -14,21 +14,10 @@ const roles = () => getDb().collection(COLLECTION_ROLES);
 
 // basic actions
 export const createRole = async ({ role }: CreateRoleParams) => {
-    try {
-        const parsed = RoleSchema.parse(role);
+    const parsed = RoleSchema.parse(role);
 
-        try {
-            const result = await roles().insertOne(parsed);
-
-            return result;
-        } catch (mongodbError) {
-            // return mongodb error
-            return mongodbError;
-        }
-    } catch (zodError) {
-        // return zod error
-        return zodError;
-    }
+    const result = await roles().insertOne(parsed);
+    return result;
 };
 
 // return a stream of roles from database
