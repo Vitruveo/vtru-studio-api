@@ -30,6 +30,9 @@ export const UserSchema = z.object({
     profile: z
         .object({
             avatar: z.string().nullable().default(null),
+            phone: z.string().nullable().default(null),
+            language: z.string().nullable().default(null),
+            location: z.string().nullable().default(null),
         })
         .default({}),
     roles: z.array(z.string()).default([]),
