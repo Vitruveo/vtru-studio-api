@@ -1,6 +1,9 @@
+import debug from 'debug';
+import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
 
+const logger = debug('features:permissions:controller');
 const route = Router();
 
 // TODO: needs to check if user is authenticated
@@ -8,17 +11,32 @@ const route = Router();
 
 route.get('/', async (req, res) => {
     // TODO: needs to acquire query, sort, skip and limit from req.query
-    const permissions = await model.findPermissions({
-        query: {},
-        sort: { name: 1 },
-        skip: 0,
-    });
-    res.json(permissions);
+    try {
+        const permissions = await model.findPermissions({
+            query: {},
+            sort: { name: 1 },
+            skip: 0,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.permissions.reader.all.success',
+            message: 'Reader all success',
+            transaction: nanoid(),
+            data: permissions,
+        });
+    } catch (error) {
+        logger('Reader all permissions failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.permissions.reader.all.failed',
+            message: `Reader all failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        });
+    }
 });
 
 // route.get('/:id', async (req, res) => {
 //     // TODO: needs to check if id is valid ObjectId
-
 //     const permission = await model.findPermissionById({ id: req.params.id });
 //     res.json(permission);
 // });
