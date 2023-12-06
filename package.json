@@ -1,11 +1,11 @@
 {
     "name": "vtru-studio-api",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "description": "",
     "main": "index.js",
     "scripts": {
         "test": "jest --detectOpenHandles --coverage",
-        "start": "node index.js",
+        "start": "node src/index.js",
         "dev": "nodemon src/index.ts",
         "lint": "eslint --fix src/**/*.ts",
         "prepare": "husky install",
