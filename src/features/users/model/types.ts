@@ -1,7 +1,18 @@
 import { User } from './schema';
 
+export interface LoginHistory {
+    id: string;
+    createdAt: Date;
+}
+export interface Login {
+    email: string;
+    codeHash: string;
+    loginHistory: LoginHistory[];
+}
 export interface CreateUserParams {
-    user: User;
+    user: Omit<Partial<User>, 'login'> & {
+        login?: Omit<Partial<Login>, 'loginHistory'>;
+    };
 }
 
 export interface FindUsersParams {
@@ -21,18 +32,11 @@ export interface FindOneUserParams {
 
 export interface UpdateUserParams {
     id: string;
-    user: User;
+    user: Omit<Partial<User>, 'login'> & {
+        login?: Omit<Partial<Login>, 'loginHistory'>;
+    };
 }
 
 export interface DeleteUserParams {
     id: string;
-}
-
-export interface StartPasswordRecoveryParams {
-    email: string;
-}
-
-export interface FinishPasswordRecoveryParams {
-    token: string;
-    newPassword: string;
 }

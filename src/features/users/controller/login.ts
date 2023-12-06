@@ -2,24 +2,27 @@ import debug from 'debug';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import * as jwt from 'jsonwebtoken';
-import * as model from '../model';
-import type { JwtPayload } from '../types';
 import type { APIResponse } from '../../../services/express';
-import { JWT_SECRETKEY } from '../../../constants';
+
+import {
+    createUser,
+    encryptCode,
+    findOneUser,
+    generateCode,
+    updateUser,
+} from '../model';
+import {
+    LOGIN_TEMPLATE_EMAIL_SIGNIN,
+    LOGIN_TEMPLATE_EMAIL_SIGNUP,
+} from '../../../constants/login';
+import { sendToExchangeMail } from '../../../services/mail';
 
 const logger = debug('features:users:controller');
 const route = Router();
 
 const loginSchema = z.object({
     email: z.string().email().min(1).max(64),
-    password: z.string().min(3).max(64),
 });
-
-export interface LoginAnswer {
-    token: string;
-    user: Partial<model.UserDocument>;
-}
 
 route.get('/', async (req, res) => {
     res.status(500).json({ message: 'Not implemented' });
@@ -27,40 +30,41 @@ route.get('/', async (req, res) => {
 
 route.post('/', async (req, res) => {
     try {
-        const { email, password } = loginSchema.parse(req.body);
-        const encryptedPassword = model.encryptPassword(password);
+        const { email } = loginSchema.parse(req.body);
+        const user = await findOneUser({ query: { 'login.email': email } });
 
-        const user = await model.findOneUser({
-            query: {
-                'login.email': email,
-                'login.password': encryptedPassword,
-            },
-        });
+        const code = generateCode();
+        const codeHash = encryptCode(code);
+
+        let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
 
         if (!user) {
-            logger('Invalid credential: %O', req.body);
-            res.status(401).json({
-                code: 'vitruveo.studio.api.admin.users.login.invalid',
-                message: 'Invalid credential',
-                args: req.body,
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
+            await createUser({
+                user: {
+                    login: {
+                        email,
+                        codeHash,
+                    },
+                },
+            });
+
+            template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
+        } else {
+            await updateUser({
+                id: user._id,
+                user: { login: { email, codeHash } },
+            });
         }
 
-        const token = jwt.sign({ id: user._id } as JwtPayload, JWT_SECRETKEY, {
-            expiresIn: '14d',
-        });
+        const payload = JSON.stringify({ template, code, email });
+        await sendToExchangeMail(payload);
 
         res.json({
             code: 'vitruveo.studio.api.admin.users.login.success',
             message: 'Login success',
             transaction: nanoid(),
-            data: {
-                token,
-                user,
-            },
-        } as APIResponse<LoginAnswer>);
+            data: 'A code has been sent to your email',
+        } as APIResponse<string>);
     } catch (error) {
         // situations: body parsing error, mongo error.
         logger('Login failed: %O', error);

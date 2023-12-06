@@ -1,0 +1,5 @@
+export const LOGIN_TEMPLATE_EMAIL_SIGNIN =
+    process.env.LOGIN_TEMPLATE_EMAIL_SIGNIN || '';
+
+export const LOGIN_TEMPLATE_EMAIL_SIGNUP =
+    process.env.LOGIN_TEMPLATE_EMAIL_SIGNUP || '';

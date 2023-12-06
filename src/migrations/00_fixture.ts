@@ -1,22 +1,16 @@
 import { MigrationParameters } from '@nsfilho/migration';
 import { COLLECTION_USERS, UserSchema } from '../features/users/model/schema';
-import { encryptPassword } from '../features/users/model/signup';
 
 /** Used to show during logs and inform what about this migration is. */
 export const description = 'Initial migration';
 
 export const up = async ({ db }: MigrationParameters): Promise<void> => {
-    const encryptedPassword = encryptPassword('12345678');
     const admin = UserSchema.parse({
         name: 'JBtec Admin',
         login: {
             email: 'tecnologia@jbtec.com.br',
-            password: encryptedPassword,
-            passwordHistory: [],
+            codeHash: null,
             loginHistory: [],
-            recoveringPassword: null,
-            recoveringExpire: null,
-            forceChangePassword: false,
         },
         roles: ['admin'],
         framework: {

@@ -3,18 +3,10 @@ import { z } from 'zod';
 export const COLLECTION_USERS = 'users';
 
 export const UserSchema = z.object({
-    name: z.string().min(3),
+    name: z.string().default(''),
     login: z.object({
         email: z.string().email(),
-        password: z.string().min(8),
-        passwordHistory: z
-            .array(
-                z.object({
-                    password: z.string(),
-                    createdAt: z.date(),
-                })
-            )
-            .default([]),
+        codeHash: z.string().nullable().default(null),
         loginHistory: z
             .array(
                 z.object({
@@ -23,9 +15,6 @@ export const UserSchema = z.object({
                 })
             )
             .default([]),
-        recoveringPassword: z.string().nullable().default(null),
-        recoveringExpire: z.date().nullable().default(null),
-        forceChangePassword: z.boolean().default(false),
     }),
     profile: z
         .object({
