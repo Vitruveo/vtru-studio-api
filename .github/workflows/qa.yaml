@@ -42,8 +42,8 @@ jobs:
       - name: Build, tag, and push docker image to Amazon ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: vitruveo.studio.api
           IMAGE_TAG: ${{ steps.project-info.outputs.version }}
+          REPOSITORY: vitruveo.studio.api
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -f Dockerfile.production --network host .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
