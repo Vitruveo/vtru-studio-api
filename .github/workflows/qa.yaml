@@ -15,6 +15,7 @@ jobs:
   build:
     name: Building a new docker image
     runs-on: ubuntu-latest
+    environment: qa
     permissions:
       id-token: write
       contents: read
