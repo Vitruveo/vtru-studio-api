@@ -45,5 +45,5 @@ jobs:
           IMAGE_TAG: ${{ steps.project-info.outputs.version }}
           REPOSITORY: vitruveo.studio.api
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -f Dockerfile.production --network host .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG.qa -f Dockerfile.production --network host .
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG.qa
