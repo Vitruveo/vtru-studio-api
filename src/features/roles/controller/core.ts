@@ -30,9 +30,10 @@ route.get('/', async (req, res) => {
                 res.write(`data: ${JSON.stringify(doc)}\n\n`);
             })
             .on('end', () => {
-                res.write('event: role_list\n');
+                res.write('event: close\n');
                 res.write(`id: ${nanoid()}\n`);
-                res.write(`data: exit\n\n`);
+                res.write(`data: {}\n\n`);
+
                 res.end();
             });
     } catch (error) {
