@@ -4,7 +4,10 @@ const pjson = require('../package.json');
 const run = async () => {
     const lines = [];
     lines.push(`version=${pjson.version.trim()}`);
-    fs.writeFile(process.env.GITHUB_OUTPUT || 'output.txt', lines.join('\n'));
+    await fs.writeFile(
+        process.env.GITHUB_OUTPUT || 'output.txt',
+        lines.join('\n')
+    );
 };
 
 run().catch((err) => {
