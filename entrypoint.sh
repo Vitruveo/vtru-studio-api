@@ -1,31 +1,23 @@
-#!/bin/sh
+#!/bin/bash
+
+function checkEnv() {
+    envName=$1
+    envValue=$2
+    if [ "x$1" = "x" ] ; then
+        export $envName=$envValue
+    fi
+}
 
 if [ "x$@" = "xwait" ] ; then
-    if [ "x$MONGO_PORT" = "x" ] ; then
-        export MONGO_PORT=27017
-    fi
-    if [ "x$REDIS_PORT" = "x" ] ; then
-        export REDIS_PORT=6379
-    fi
-    if [ "x$RABBITMQ_PORT" = "x" ] ; then
-        export RABBITMQ_PORT=5672
-    fi
-
-    if [ "x$MONGO_HOST" = "x" ] ; then
-        echo MONGO_HOST não definido
-    else
-        node tools/wait.js $MONGO_HOST $MONGO_PORT
-    fi
-    if [ "x$REDIS_HOST" = "x" ] ; then
-        echo REDIS_HOST não definido
-    else
-        node tools/wait.js $REDIS_HOST $REDIS_PORT
-    fi
-    if [ "x$RABBITMQ_HOST" = "x" ] ; then
-        echo RABBITMQ_HOST não definido
-    else
-        node tools/wait.js $RABBITMQ_HOST $RABBITMQ_PORT
-    fi
+    checkEnv MONGO_HOST mongo
+    checkEnv MONGO_PORT 27017
+    checkEnv REDIS_HOST redis
+    checkEnv REDIS_PORT 6379
+    checkEnv RABBITMQ_HOST rabbitmq
+    checkEnv RABBITMQ_PORT 5672
+    node tools/wait.js $MONGO_HOST $MONGO_PORT
+    node tools/wait.js $REDIS_HOST $REDIS_PORT
+    node tools/wait.js $RABBITMQ_HOST $RABBITMQ_PORT
 
     if [ "x$NODE_ENV" = "xproduction" ] ; then
         while true ; do
