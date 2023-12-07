@@ -14,7 +14,7 @@ export const encryptCode = (code: string) => {
 export const generateCode = () => {
     const nanoid = customAlphabet('0123456789', 6);
     const randomNumbers = nanoid();
-    const formattedNumber = `${randomNumbers.slice(0, 3)}-${randomNumbers.slice(
+    const formattedNumber = `${randomNumbers.slice(0, 3)}${randomNumbers.slice(
         3
     )}`;
     return formattedNumber;

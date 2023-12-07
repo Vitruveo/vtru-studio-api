@@ -20,6 +20,7 @@ import {
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
+import { LoginOtpConfirmRes } from './types';
 
 export interface LoginAnswer {
     token: string;
@@ -29,8 +30,15 @@ export interface LoginAnswer {
 const logger = debug('features:users:controller');
 const route = Router();
 
+const emailValidation = z.string().email().min(1).max(64);
+
 const loginSchema = z.object({
-    email: z.string().email().min(1).max(64),
+    email: emailValidation,
+});
+
+const otpConfirmSchema = z.object({
+    email: emailValidation,
+    code: z.string().length(6),
 });
 const confirmationSchema = z.object({
     code: z.string(),
@@ -38,6 +46,52 @@ const confirmationSchema = z.object({
 
 route.get('/', async (req, res) => {
     res.status(500).json({ message: 'Not implemented' });
+});
+
+route.post('/otpConfirm', async (req, res) => {
+    try {
+        const { email, code } = otpConfirmSchema.parse(req.body);
+
+        const user = await findOneUser({
+            query: {
+                'login.email': email,
+                'login.codeHash': encryptCode(code),
+            },
+        });
+
+        if (!user) {
+            res.status(401).json({
+                code: 'vitruveo.studio.api.admin.users.login.otpConfirm.failed',
+                message: 'Login failed: invalid code',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        await updateUser({
+            id: user._id,
+            user: { login: { email, codeHash: '' } },
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.users.login.otpConfirm.success',
+            message: 'Login success',
+            transaction: nanoid(),
+            data: {
+                name: user.name,
+                email: user.login.email,
+            },
+        } as APIResponse<LoginOtpConfirmRes>);
+    } catch (error) {
+        // situations: body parsing error, mongo error.
+        logger('Login failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.users.login.otpConfirm.failed',
+            message: `Login failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
 });
 
 route.post('/', async (req, res) => {
