@@ -1,6 +1,7 @@
 import { UserSchema, UserDocument, COLLECTION_USERS } from './schema';
 import {
     UpdateUserParams,
+    PushLoginHistoryParams,
     DeleteUserParams,
     FindUsersParams,
     CreateUserParams,
@@ -29,11 +30,7 @@ export const findUsers = async ({
     let result = users()
         .find(query, {
             projection: {
-                'login.password': 0,
-                'login.passwordHistory': 0,
-                'login.loginHistory': 0,
-                'login.recoveringPassword': 0,
-                'login.recoveringExpire': 0,
+                'login.codeHash': 0,
             },
         })
         .sort(sort)
@@ -49,11 +46,7 @@ export const findUserById = async ({ id }: FindUserByIdParams) => {
         { _id: new ObjectId(id) },
         {
             projection: {
-                'login.password': 0,
-                'login.passwordHistory': 0,
-                'login.loginHistory': 0,
-                'login.recoveringPassword': 0,
-                'login.recoveringExpire': 0,
+                'login.codeHash': 0,
             },
         }
     );
@@ -63,11 +56,7 @@ export const findUserById = async ({ id }: FindUserByIdParams) => {
 export const findOneUser = async ({ query }: FindOneUserParams) => {
     const result = await users().findOne<UserDocument>(query, {
         projection: {
-            'login.password': 0,
-            'login.passwordHistory': 0,
-            'login.loginHistory': 0,
-            'login.recoveringPassword': 0,
-            'login.recoveringExpire': 0,
+            'login.codeHash': 0,
         },
     });
     return result;
@@ -78,6 +67,17 @@ export const updateUser = async ({ id, user }: UpdateUserParams) => {
     const result = await users().updateOne(
         { _id: new ObjectId(id) },
         { $set: parsed }
+    );
+    return result;
+};
+
+export const pushLoginHistory = async ({
+    id,
+    data,
+}: PushLoginHistoryParams) => {
+    const result = await users().updateOne(
+        { _id: new ObjectId(id) },
+        { $push: { 'login.loginHistory': data } }
     );
     return result;
 };

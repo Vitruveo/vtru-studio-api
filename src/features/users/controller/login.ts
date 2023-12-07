@@ -2,8 +2,10 @@ import debug from 'debug';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import type { APIResponse } from '../../../services/express';
+import * as jwt from 'jsonwebtoken';
 
+import { model } from '..';
+import { JwtPayload } from '../types';
 import {
     createUser,
     encryptCode,
@@ -14,14 +16,24 @@ import {
 import {
     LOGIN_TEMPLATE_EMAIL_SIGNIN,
     LOGIN_TEMPLATE_EMAIL_SIGNUP,
-} from '../../../constants/login';
+    JWT_SECRETKEY,
+} from '../../../constants';
+import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
+
+export interface LoginAnswer {
+    token: string;
+    user: Partial<model.UserDocument>;
+}
 
 const logger = debug('features:users:controller');
 const route = Router();
 
 const loginSchema = z.object({
     email: z.string().email().min(1).max(64),
+});
+const confirmationSchema = z.object({
+    code: z.string(),
 });
 
 route.get('/', async (req, res) => {
@@ -56,6 +68,8 @@ route.post('/', async (req, res) => {
             });
         }
 
+        console.log({ template, code, email });
+
         const payload = JSON.stringify({ template, code, email });
         await sendToExchangeMail(payload);
 
@@ -71,6 +85,56 @@ route.post('/', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.admin.users.login.failed',
             message: `Login failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/confirmation/code', async (req, res) => {
+    try {
+        const { code } = confirmationSchema.parse(req.body);
+
+        const codeHash = encryptCode(code);
+        const user = await findOneUser({
+            query: { 'login.codeHash': codeHash },
+        });
+
+        if (!user) {
+            logger('Invalid code: %O', req.body);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.users.login.confirmation.code.failed',
+                message: 'Invalid code',
+                args: '',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const token = jwt.sign({ id: user._id } as JwtPayload, JWT_SECRETKEY, {
+            expiresIn: '14d',
+        });
+
+        const loginHistory = {
+            ip: nanoid(),
+            createdAt: new Date(),
+        };
+        await model.pushLoginHistory({
+            id: user._id,
+            data: loginHistory,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.users.confirmation.code.success',
+            message: 'Confirmation code success',
+            transaction: nanoid(),
+            data: { user, token },
+        } as APIResponse<LoginAnswer>);
+    } catch (error) {
+        logger('Confirmation code failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.users.login.confirmation.code.failed',
+            message: `Confirmation code failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

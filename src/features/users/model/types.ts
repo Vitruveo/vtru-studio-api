@@ -1,7 +1,7 @@
 import { User } from './schema';
 
 export interface LoginHistory {
-    id: string;
+    ip: string;
     createdAt: Date;
 }
 export interface Login {
@@ -11,7 +11,7 @@ export interface Login {
 }
 export interface CreateUserParams {
     user: Omit<Partial<User>, 'login'> & {
-        login?: Omit<Partial<Login>, 'loginHistory'>;
+        login: Omit<Login, 'loginHistory'>;
     };
 }
 
@@ -33,8 +33,13 @@ export interface FindOneUserParams {
 export interface UpdateUserParams {
     id: string;
     user: Omit<Partial<User>, 'login'> & {
-        login?: Omit<Partial<Login>, 'loginHistory'>;
+        login: Partial<Login>;
     };
+}
+
+export interface PushLoginHistoryParams {
+    id: string;
+    data: LoginHistory;
 }
 
 export interface DeleteUserParams {
