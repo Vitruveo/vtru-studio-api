@@ -71,7 +71,7 @@ export const updateUser = async ({ id, user }: UpdateUserParams) => {
     return result;
 };
 
-export const pushLoginHistory = async ({
+export const pushUserLoginHistory = async ({
     id,
     data,
 }: PushLoginHistoryParams) => {
