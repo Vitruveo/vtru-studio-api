@@ -7,11 +7,11 @@ import * as jwt from 'jsonwebtoken';
 import { model } from '..';
 import { JwtPayload } from '../../common/types';
 import {
-    createUser,
+    createCreator,
     encryptCode,
-    findOneUser,
+    findOneCreator,
     generateCode,
-    updateUser,
+    updateCreator,
 } from '../model';
 import {
     LOGIN_TEMPLATE_EMAIL_SIGNIN,
@@ -23,10 +23,10 @@ import { sendToExchangeMail } from '../../../services/mail';
 
 export interface LoginAnswer {
     token: string;
-    user: Partial<model.UserDocument>;
+    creator: Partial<model.CreatorDocument>;
 }
 
-const logger = debug('features:users:controller');
+const logger = debug('features:creators:controller');
 const route = Router();
 
 const emailValidation = z.string().email().min(1).max(64);
@@ -48,46 +48,50 @@ route.post('/otpConfirm', async (req, res) => {
     try {
         const { email, code } = otpConfirmSchema.parse(req.body);
 
-        const user = await findOneUser({
+        const creator = await findOneCreator({
             query: {
                 'login.email': email,
                 'login.codeHash': encryptCode(code),
             },
         });
 
-        if (!user) {
+        if (!creator) {
             res.status(401).json({
-                code: 'vitruveo.studio.api.admin.users.login.otpConfirm.failed',
+                code: 'vitruveo.studio.api.admin.creators.login.otpConfirm.failed',
                 message: 'Login failed: invalid code',
                 transaction: nanoid(),
             } as APIResponse);
             return;
         }
 
-        await updateUser({
-            id: user._id,
-            user: { login: { email, codeHash: '' } },
+        await updateCreator({
+            id: creator._id,
+            creator: { login: { email, codeHash: '' } },
         });
 
         const loginHistory = {
             ip: nanoid(),
             createdAt: new Date(),
         };
-        await model.pushUserLoginHistory({
-            id: user._id,
+        await model.pushCreatorLoginHistory({
+            id: creator._id,
             data: loginHistory,
         });
 
-        const token = jwt.sign({ id: user._id } as JwtPayload, JWT_SECRETKEY, {
-            expiresIn: '14d',
-        });
+        const token = jwt.sign(
+            { id: creator._id } as JwtPayload,
+            JWT_SECRETKEY,
+            {
+                expiresIn: '14d',
+            }
+        );
 
         res.json({
-            code: 'vitruveo.studio.api.admin.users.login.otpConfirm.success',
+            code: 'vitruveo.studio.api.admin.creators.login.otpConfirm.success',
             message: 'Login success',
             transaction: nanoid(),
             data: {
-                user,
+                creator,
                 token,
             },
         } as APIResponse<LoginAnswer>);
@@ -95,7 +99,7 @@ route.post('/otpConfirm', async (req, res) => {
         // situations: body parsing error, mongo error.
         logger('Login failed: %O', error);
         res.status(500).json({
-            code: 'vitruveo.studio.api.admin.users.login.otpConfirm.failed',
+            code: 'vitruveo.studio.api.admin.creators.login.otpConfirm.failed',
             message: `Login failed: ${error}`,
             args: error,
             transaction: nanoid(),
@@ -106,16 +110,18 @@ route.post('/otpConfirm', async (req, res) => {
 route.post('/', async (req, res) => {
     try {
         const { email } = loginSchema.parse(req.body);
-        const user = await findOneUser({ query: { 'login.email': email } });
+        const creator = await findOneCreator({
+            query: { 'login.email': email },
+        });
 
         const code = generateCode();
         const codeHash = encryptCode(code);
 
         let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
 
-        if (!user) {
-            await createUser({
-                user: {
+        if (!creator) {
+            await createCreator({
+                creator: {
                     login: {
                         email,
                         codeHash,
@@ -125,9 +131,9 @@ route.post('/', async (req, res) => {
 
             template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
         } else {
-            await updateUser({
-                id: user._id,
-                user: { login: { email, codeHash } },
+            await updateCreator({
+                id: creator._id,
+                creator: { login: { email, codeHash } },
             });
         }
 
@@ -137,7 +143,7 @@ route.post('/', async (req, res) => {
         await sendToExchangeMail(payload);
 
         res.json({
-            code: 'vitruveo.studio.api.admin.users.login.success',
+            code: 'vitruveo.studio.api.admin.creators.login.success',
             message: 'Login success',
             transaction: nanoid(),
             data: 'A code has been sent to your email',
@@ -146,7 +152,7 @@ route.post('/', async (req, res) => {
         // situations: body parsing error, mongo error.
         logger('Login failed: %O', error);
         res.status(500).json({
-            code: 'vitruveo.studio.api.admin.users.login.failed',
+            code: 'vitruveo.studio.api.admin.creators.login.failed',
             message: `Login failed: ${error}`,
             args: error,
             transaction: nanoid(),
