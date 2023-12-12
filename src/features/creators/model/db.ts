@@ -7,6 +7,10 @@ import {
     CreateCreatorParams,
     FindCreatorByIdParams,
     FindOneCreatorParams,
+    CheckUsernameExistParams,
+    AddEmailParams,
+    UpdateCodeHashEmailCreatorParams,
+    AddEmailCreatorParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -71,6 +75,32 @@ export const updateCreator = async ({ id, creator }: UpdateCreatorParams) => {
     return result;
 };
 
+export const updateCodeHashEmailCreator = async ({
+    id,
+    email,
+    codeHash,
+    checkedAt,
+}: UpdateCodeHashEmailCreatorParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(id), 'emails.email': email },
+        {
+            $set: {
+                'emails.$.codeHash': codeHash,
+                'emails.$.checkedAt': checkedAt,
+            },
+        }
+    );
+    return result;
+};
+
+export const addEmailCreator = async ({ id, email }: AddEmailCreatorParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(id) },
+        { $push: { emails: { email, codeHash: null, checkedAt: null } } }
+    );
+    return result;
+};
+
 export const pushCreatorLoginHistory = async ({
     id,
     data,
@@ -88,3 +118,16 @@ export const deleteCreator = async ({ id }: DeleteCreatorParams) => {
 };
 
 // Other actions
+export const checkUsernameExist = async ({
+    username,
+}: CheckUsernameExistParams) => {
+    const result = await creators().countDocuments({ username });
+    return result;
+};
+
+export const checkEmailExist = async ({ email }: AddEmailParams) => {
+    const result = await creators().countDocuments({
+        emails: { $elemMatch: { email } },
+    });
+    return result;
+};

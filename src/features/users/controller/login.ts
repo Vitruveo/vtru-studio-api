@@ -66,7 +66,10 @@ route.post('/otpConfirm', async (req, res) => {
 
         await updateUser({
             id: user._id,
-            user: { login: { email, codeHash: '' } },
+            user: {
+                ...user,
+                login: { email, codeHash: '' },
+            },
         });
 
         const loginHistory = {
@@ -127,7 +130,10 @@ route.post('/', async (req, res) => {
         } else {
             await updateUser({
                 id: user._id,
-                user: { login: { email, codeHash } },
+                user: {
+                    ...user,
+                    login: { email, codeHash },
+                },
             });
         }
 

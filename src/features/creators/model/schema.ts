@@ -4,18 +4,35 @@ export const COLLECTION_CREATORS = 'creators';
 
 export const CreatorSchema = z.object({
     name: z.string().default(''),
-    login: z.object({
-        email: z.string().email(),
-        codeHash: z.string().nullable().default(null),
-        loginHistory: z
-            .array(
-                z.object({
-                    ip: z.string(),
-                    createdAt: z.date(),
-                })
-            )
-            .default([]),
-    }),
+    username: z.string().or(z.undefined()),
+    login: z
+        .object({
+            loginHistory: z
+                .array(
+                    z.object({
+                        ip: z.string(),
+                        createdAt: z.date(),
+                    })
+                )
+                .default([]),
+        })
+        .default({ loginHistory: [] }),
+    emails: z
+        .array(
+            z.object({
+                email: z.string().email(),
+                codeHash: z.string().nullable().default(null),
+                checkedAt: z.date().nullable().default(null),
+            })
+        )
+        .default([]),
+    wallets: z
+        .array(
+            z.object({
+                publicId: z.string(),
+            })
+        )
+        .default([]),
     profile: z
         .object({
             avatar: z.string().nullable().default(null),

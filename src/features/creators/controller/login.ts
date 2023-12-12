@@ -11,7 +11,7 @@ import {
     encryptCode,
     findOneCreator,
     generateCode,
-    updateCreator,
+    updateCodeHashEmailCreator,
 } from '../model';
 import {
     LOGIN_TEMPLATE_EMAIL_SIGNIN,
@@ -50,8 +50,7 @@ route.post('/otpConfirm', async (req, res) => {
 
         const creator = await findOneCreator({
             query: {
-                'login.email': email,
-                'login.codeHash': encryptCode(code),
+                emails: { $elemMatch: { email, codeHash: encryptCode(code) } },
             },
         });
 
@@ -64,9 +63,11 @@ route.post('/otpConfirm', async (req, res) => {
             return;
         }
 
-        await updateCreator({
+        await updateCodeHashEmailCreator({
             id: creator._id,
-            creator: { login: { email, codeHash: '' } },
+            email,
+            codeHash: null,
+            checkedAt: new Date(),
         });
 
         const loginHistory = {
@@ -85,13 +86,18 @@ route.post('/otpConfirm', async (req, res) => {
                 expiresIn: '14d',
             }
         );
+        const creatorUpdated = await findOneCreator({
+            query: {
+                emails: { $elemMatch: { email } },
+            },
+        });
 
         res.json({
             code: 'vitruveo.studio.api.admin.creators.login.otpConfirm.success',
             message: 'Login success',
             transaction: nanoid(),
             data: {
-                creator,
+                creator: creatorUpdated,
                 token,
             },
         } as APIResponse<LoginAnswer>);
@@ -111,7 +117,7 @@ route.post('/', async (req, res) => {
     try {
         const { email } = loginSchema.parse(req.body);
         const creator = await findOneCreator({
-            query: { 'login.email': email },
+            query: { emails: { $elemMatch: { email } } },
         });
 
         const code = generateCode();
@@ -122,18 +128,23 @@ route.post('/', async (req, res) => {
         if (!creator) {
             await createCreator({
                 creator: {
-                    login: {
-                        email,
-                        codeHash,
-                    },
+                    emails: [
+                        {
+                            email,
+                            codeHash,
+                            checkedAt: null,
+                        },
+                    ],
                 },
             });
 
             template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
         } else {
-            await updateCreator({
+            await updateCodeHashEmailCreator({
                 id: creator._id,
-                creator: { login: { email, codeHash } },
+                email,
+                codeHash,
+                checkedAt: null,
             });
         }
 

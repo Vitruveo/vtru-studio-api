@@ -5,14 +5,11 @@ export interface LoginHistory {
     createdAt: Date;
 }
 export interface Login {
-    email: string;
     codeHash: string;
     loginHistory: LoginHistory[];
 }
 export interface CreateCreatorParams {
-    creator: Omit<Partial<Creator>, 'login'> & {
-        login: Omit<Login, 'loginHistory'>;
-    };
+    creator: Partial<Creator>;
 }
 
 export interface FindCreatorsParams {
@@ -37,6 +34,18 @@ export interface UpdateCreatorParams {
     };
 }
 
+export interface UpdateCodeHashEmailCreatorParams {
+    id: string;
+    email: string;
+    codeHash: string | null;
+    checkedAt: Date | null;
+}
+
+export interface AddEmailCreatorParams {
+    id: string;
+    email: string;
+}
+
 export interface PushLoginHistoryParams {
     id: string;
     data: LoginHistory;
@@ -44,4 +53,12 @@ export interface PushLoginHistoryParams {
 
 export interface DeleteCreatorParams {
     id: string;
+}
+
+export interface CheckUsernameExistParams {
+    username: string;
+}
+
+export interface AddEmailParams {
+    email: string;
 }

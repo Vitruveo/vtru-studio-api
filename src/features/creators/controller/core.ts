@@ -2,6 +2,9 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
+import { sendToExchangeMail } from '../../../services/mail';
+import { LOGIN_TEMPLATE_EMAIL_SIGNIN } from '../../../constants';
+import { encryptCode, generateCode } from '../../users/model';
 
 const logger = debug('features:creators:controller');
 const route = Router();
@@ -135,4 +138,189 @@ route.delete('/:id', async (req, res) => {
     }
 });
 
+route.get('/:username/username/exist', async (req, res) => {
+    try {
+        const creator = await model.checkUsernameExist({
+            username: req.params.username,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.username.exist.success',
+            message: 'Exist username success',
+            transaction: nanoid(),
+            data: creator > 0,
+        });
+    } catch (error) {
+        logger('Exist username creators failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.username.exist.failed',
+            message: `Exist username failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        });
+    }
+});
+
+route.get('/:email/email/exist', async (req, res) => {
+    try {
+        const creator = await model.checkEmailExist({
+            email: req.params.email,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.email.exist.success',
+            message: 'Exist email success',
+            transaction: nanoid(),
+            data: creator > 0,
+        });
+    } catch (error) {
+        logger('Exist email creators failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.email.exist.failed',
+            message: `Exist email failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        });
+    }
+});
+
+route.post('/:id/email/add', async (req, res) => {
+    try {
+        const creatorExist = await model.checkEmailExist({
+            email: req.body.email,
+        });
+
+        if (creatorExist > 0) {
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.creators.add.email.failed',
+                message: `Creator add email failed: email already exist`,
+                args: [],
+                transaction: nanoid(),
+            });
+
+            return;
+        }
+
+        const creator = await model.addEmailCreator({
+            id: req.params.id,
+            email: req.body.email,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.add.email.success',
+            message: 'Creator add email success',
+            transaction: nanoid(),
+            data: creator,
+        });
+    } catch (error) {
+        logger('Creator add email failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.add.email.failed',
+            message: `Creator add email failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        });
+    }
+});
+
+route.post('/email/send/code', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const creator = await model.findOneCreator({
+            query: { emails: { $elemMatch: { email } } },
+        });
+        if (!creator) {
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.creators.send.code.email.failed',
+                message: `Creator send code email failed: email not found`,
+                args: [],
+                transaction: nanoid(),
+            });
+
+            return;
+        }
+
+        const code = generateCode();
+        const codeHash = encryptCode(code);
+        const template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
+
+        await model.updateCodeHashEmailCreator({
+            id: creator._id,
+            email,
+            codeHash,
+            checkedAt: null,
+        });
+
+        console.log({ template, code, email });
+
+        const payload = JSON.stringify({ template, code, email });
+        await sendToExchangeMail(payload);
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.send.code.email.success',
+            message: 'Creator send code email success',
+            transaction: nanoid(),
+            data: 'A code has been sent to your email',
+        });
+    } catch (error) {
+        logger('Creator send code email failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.send.code.email.failed',
+            message: `Creator send code email failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        });
+    }
+});
+
+route.post('/email/verification/code', async (req, res) => {
+    try {
+        const { email, code } = req.body;
+
+        const creator = await model.findOneCreator({
+            query: {
+                emails: { $elemMatch: { email, codeHash: encryptCode(code) } },
+            },
+        });
+        if (!creator) {
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.creators.verification.code.email.failed',
+                message: `Creator verification code email failed: email not found`,
+                args: [],
+                transaction: nanoid(),
+            });
+
+            return;
+        }
+
+        await model.updateCodeHashEmailCreator({
+            id: creator._id,
+            email,
+            codeHash: null,
+            checkedAt: new Date(),
+        });
+
+        const creatorUpdated = await model.findOneCreator({
+            query: {
+                emails: { $elemMatch: { email } },
+            },
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.verification.code.email.success',
+            message: 'Creator verification code email success',
+            transaction: nanoid(),
+            data: creatorUpdated,
+        });
+    } catch (error) {
+        logger('Creator verification code email failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.verification.code.email.failed',
+            message: `Creator verification code email failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        });
+    }
+});
 export { route };
