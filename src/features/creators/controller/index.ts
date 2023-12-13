@@ -4,7 +4,7 @@ import { route as loginRouter } from './login';
 
 const router = Router();
 
-router.use('/creators', coreRouter);
 router.use('/creators/login', loginRouter);
+router.use('/creators', coreRouter);
 
 export { router };
