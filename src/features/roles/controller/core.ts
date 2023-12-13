@@ -8,12 +8,13 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
+import { middleware } from '../../users';
 
 const logger = debug('features:roles:controller');
 const route = Router();
 
 // TODO: needs to check if user is authenticated
-// route.use(middleware.checkAuth);
+route.use(middleware.checkAuth);
 
 route.get('/', async (req, res) => {
     // TODO: needs to acquire query, sort, skip and limit from req.query
@@ -36,10 +37,6 @@ route.get('/', async (req, res) => {
                 res.write(`data: ${JSON.stringify(doc)}\n\n`);
             })
             .on('end', () => {
-                res.write('event: close\n');
-                res.write(`id: ${nanoid()}\n`);
-                res.write(`data: {}\n\n`);
-
                 res.end();
             });
     } catch (error) {

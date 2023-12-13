@@ -41,10 +41,6 @@ route.get('/', async (req, res) => {
                 res.write(`data: ${JSON.stringify(doc)}\n\n`);
             })
             .on('end', () => {
-                res.write('event: close\n');
-                res.write(`id: ${nanoid()}\n`);
-                res.write(`data: {}\n\n`);
-
                 res.end();
             });
     } catch (error) {
@@ -294,8 +290,8 @@ route.post('/:email/email/verifyCode', async (req, res) => {
         });
         if (!creator) {
             res.status(404).json({
-                code: 'vitruveo.studio.api.admin.creators.verification.code.email.failed',
-                message: `Creator verification code email failed: email not found`,
+                code: 'vitruveo.studio.api.admin.creators.verify.code.email.failed',
+                message: `Creator verify code email failed: invalid credentials`,
                 args: [],
                 transaction: nanoid(),
             } as APIResponse);
@@ -317,16 +313,16 @@ route.post('/:email/email/verifyCode', async (req, res) => {
         });
 
         res.json({
-            code: 'vitruveo.studio.api.admin.creators.verification.code.email.success',
-            message: 'Creator verification code email success',
+            code: 'vitruveo.studio.api.admin.creators.verify.code.email.success',
+            message: 'Creator verify code email success',
             transaction: nanoid(),
             data: creatorUpdated,
         } as APIResponse<model.CreatorDocument>);
     } catch (error) {
-        logger('Creator verification code email failed: %O', error);
+        logger('Creator verify code email failed: %O', error);
         res.status(500).json({
-            code: 'vitruveo.studio.api.admin.creators.verification.code.email.failed',
-            message: `Creator verification code email failed: ${error}`,
+            code: 'vitruveo.studio.api.admin.creators.verify.code.email.failed',
+            message: `Creator verify code email failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
