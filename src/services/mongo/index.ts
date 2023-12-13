@@ -1,5 +1,12 @@
 import debug from 'debug';
-import { MongoClient, Db, ObjectId } from 'mongodb';
+import {
+    MongoClient,
+    Db,
+    ObjectId,
+    InsertOneResult,
+    UpdateResult,
+    DeleteResult,
+} from 'mongodb';
 import { MONGO_DATABASE, MONGO_URL } from '../../constants';
 import { captureException } from '../sentry';
 
@@ -37,4 +44,4 @@ const getDb = () => {
     return status.db;
 };
 
-export { client, getDb, ObjectId };
+export { client, getDb, ObjectId, InsertOneResult, UpdateResult, DeleteResult };

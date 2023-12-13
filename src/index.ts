@@ -19,3 +19,4 @@ app.use(features.users.controller.router);
 app.use(features.roles.controller.router);
 app.use(features.permissions.controller.router);
 app.use(features.creators.controller.router);
+app.use(features.assets.controller.router);
