@@ -2,6 +2,12 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
+import {
+    APIResponse,
+    DeleteResult,
+    InsertOneResult,
+    UpdateResult,
+} from '../../../services';
 
 const logger = debug('features:roles:controller');
 const route = Router();
@@ -57,7 +63,7 @@ route.get('/:id', async (req, res) => {
             message: 'Reader one success',
             transaction: nanoid(),
             data: role,
-        });
+        } as APIResponse<model.RoleDocument | null>);
     } catch (error) {
         logger('Reader one role failed: %O', error);
         res.status(500).json({
@@ -65,7 +71,7 @@ route.get('/:id', async (req, res) => {
             message: `Reader one failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
@@ -78,7 +84,7 @@ route.post('/', async (req, res) => {
             message: 'Create success',
             transaction: nanoid(),
             data: result,
-        });
+        } as APIResponse<InsertOneResult<model.RoleDocument>>);
     } catch (error) {
         logger('create role failed: %O', error);
         res.status(500).json({
@@ -86,7 +92,7 @@ route.post('/', async (req, res) => {
             message: `Create failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
@@ -102,7 +108,7 @@ route.put('/:id', async (req, res) => {
             message: 'Update success',
             transaction: nanoid(),
             data: result,
-        });
+        } as APIResponse<UpdateResult<model.RoleDocument>>);
     } catch (error) {
         logger('Update role failed: %O', error);
         res.status(500).json({
@@ -110,7 +116,7 @@ route.put('/:id', async (req, res) => {
             message: `Update failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
@@ -123,7 +129,7 @@ route.delete('/:id', async (req, res) => {
             message: 'Delete success',
             transaction: nanoid(),
             data: result,
-        });
+        } as APIResponse<DeleteResult>);
     } catch (error) {
         logger('Delete role failed: %O', error);
         res.status(500).json({
@@ -131,7 +137,7 @@ route.delete('/:id', async (req, res) => {
             message: `Delete failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 

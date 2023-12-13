@@ -7,7 +7,12 @@ import { middleware } from '../../users';
 import { encryptCode, generateCode } from '../../users/model';
 import { LOGIN_TEMPLATE_EMAIL_SIGNIN } from '../../../constants';
 import { sendToExchangeMail } from '../../../services/mail';
-import { APIResponse } from '../../../services';
+import {
+    APIResponse,
+    DeleteResult,
+    InsertOneResult,
+    UpdateResult,
+} from '../../../services';
 
 const logger = debug('features:creators:controller');
 const route = Router();
@@ -49,7 +54,7 @@ route.get('/', async (req, res) => {
             message: `Reader all failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
@@ -63,7 +68,7 @@ route.get('/:id', async (req, res) => {
             message: 'Reader one success',
             transaction: nanoid(),
             data: creator,
-        });
+        } as APIResponse<model.CreatorDocument | null>);
     } catch (error) {
         logger('Reader one creators failed: %O', error);
         res.status(500).json({
@@ -71,7 +76,7 @@ route.get('/:id', async (req, res) => {
             message: `Reader one failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
@@ -84,7 +89,7 @@ route.post('/', async (req, res) => {
             message: 'Create success',
             transaction: nanoid(),
             data: result,
-        });
+        } as APIResponse<InsertOneResult<model.CreatorDocument>>);
     } catch (error) {
         logger('Create creator failed: %O', error);
         res.status(500).json({
@@ -92,7 +97,7 @@ route.post('/', async (req, res) => {
             message: `Create failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
@@ -108,7 +113,7 @@ route.put('/:id', async (req, res) => {
             message: 'Update success',
             transaction: nanoid(),
             data: result,
-        });
+        } as APIResponse<UpdateResult<model.CreatorDocument>>);
     } catch (error) {
         logger('Update creator failed: %O', error);
         res.status(500).json({
@@ -116,7 +121,7 @@ route.put('/:id', async (req, res) => {
             message: `Update failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
@@ -129,7 +134,7 @@ route.delete('/:id', async (req, res) => {
             message: 'Delete success',
             transaction: nanoid(),
             data: result,
-        });
+        } as APIResponse<DeleteResult>);
     } catch (error) {
         logger('Delete creator failed: %O', error);
         res.status(500).json({
@@ -137,11 +142,11 @@ route.delete('/:id', async (req, res) => {
             message: `Delete failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
-route.get('/:username/username/exist', async (req, res) => {
+route.get('/:username/username', async (req, res) => {
     try {
         const creator = await model.checkUsernameExist({
             username: req.params.username,
@@ -152,7 +157,7 @@ route.get('/:username/username/exist', async (req, res) => {
             message: 'Exist username success',
             transaction: nanoid(),
             data: creator > 0,
-        });
+        } as APIResponse<boolean>);
     } catch (error) {
         logger('Exist username creators failed: %O', error);
         res.status(500).json({
@@ -160,11 +165,11 @@ route.get('/:username/username/exist', async (req, res) => {
             message: `Exist username failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
-route.get('/:email/email/exist', async (req, res) => {
+route.get('/:email/email', async (req, res) => {
     try {
         const creator = await model.checkEmailExist({
             email: req.params.email,
@@ -175,7 +180,7 @@ route.get('/:email/email/exist', async (req, res) => {
             message: 'Exist email success',
             transaction: nanoid(),
             data: creator > 0,
-        });
+        } as APIResponse<boolean>);
     } catch (error) {
         logger('Exist email creators failed: %O', error);
         res.status(500).json({
@@ -183,11 +188,11 @@ route.get('/:email/email/exist', async (req, res) => {
             message: `Exist email failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
-route.post('/:id/email/add', async (req, res) => {
+route.post('/:id/email', async (req, res) => {
     try {
         const creatorExist = await model.checkEmailExist({
             email: req.body.email,
@@ -214,7 +219,7 @@ route.post('/:id/email/add', async (req, res) => {
             message: 'Creator add email success',
             transaction: nanoid(),
             data: creator,
-        });
+        } as APIResponse<UpdateResult<model.CreatorDocument>>);
     } catch (error) {
         logger('Creator add email failed: %O', error);
         res.status(500).json({
@@ -222,24 +227,24 @@ route.post('/:id/email/add', async (req, res) => {
             message: `Creator add email failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
-route.post('/email/send/code', async (req, res) => {
+route.post('/:email/email/sendCode', async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email } = req.params;
 
         const creator = await model.findOneCreator({
             query: { emails: { $elemMatch: { email } } },
         });
         if (!creator) {
-            res.status(500).json({
+            res.status(404).json({
                 code: 'vitruveo.studio.api.admin.creators.send.code.email.failed',
                 message: `Creator send code email failed: email not found`,
                 args: [],
                 transaction: nanoid(),
-            });
+            } as APIResponse);
 
             return;
         }
@@ -265,7 +270,7 @@ route.post('/email/send/code', async (req, res) => {
             message: 'Creator send code email success',
             transaction: nanoid(),
             data: 'A code has been sent to your email',
-        });
+        } as APIResponse<string>);
     } catch (error) {
         logger('Creator send code email failed: %O', error);
         res.status(500).json({
@@ -273,13 +278,14 @@ route.post('/email/send/code', async (req, res) => {
             message: `Creator send code email failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
-route.post('/email/verification/code', async (req, res) => {
+route.post('/:email/email/verifyCode', async (req, res) => {
     try {
-        const { email, code } = req.body;
+        const { code } = req.body;
+        const { email } = req.params;
 
         const creator = await model.findOneCreator({
             query: {
@@ -287,12 +293,12 @@ route.post('/email/verification/code', async (req, res) => {
             },
         });
         if (!creator) {
-            res.status(500).json({
+            res.status(404).json({
                 code: 'vitruveo.studio.api.admin.creators.verification.code.email.failed',
                 message: `Creator verification code email failed: email not found`,
                 args: [],
                 transaction: nanoid(),
-            });
+            } as APIResponse);
 
             return;
         }
@@ -315,7 +321,7 @@ route.post('/email/verification/code', async (req, res) => {
             message: 'Creator verification code email success',
             transaction: nanoid(),
             data: creatorUpdated,
-        });
+        } as APIResponse<model.CreatorDocument>);
     } catch (error) {
         logger('Creator verification code email failed: %O', error);
         res.status(500).json({
@@ -323,7 +329,7 @@ route.post('/email/verification/code', async (req, res) => {
             message: `Creator verification code email failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 

@@ -72,7 +72,7 @@ route.get('/:id', async (req, res) => {
             message: `Reader one failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        } as APIResponse<undefined>);
+        } as APIResponse);
     }
 });
 
@@ -93,7 +93,7 @@ route.post('/', async (req, res) => {
             message: `Create failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        } as APIResponse<undefined>);
+        } as APIResponse);
     }
 });
 
@@ -117,7 +117,7 @@ route.put('/:id', async (req, res) => {
             message: `Update failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        } as APIResponse<undefined>);
+        } as APIResponse);
     }
 });
 
@@ -138,7 +138,7 @@ route.delete('/:id', async (req, res) => {
             message: `Delete failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        } as APIResponse<undefined>);
+        } as APIResponse);
     }
 });
 
