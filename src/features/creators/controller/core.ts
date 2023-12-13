@@ -2,15 +2,18 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
-import { sendToExchangeMail } from '../../../services/mail';
-import { LOGIN_TEMPLATE_EMAIL_SIGNIN } from '../../../constants';
+import { sendToExchangeCreators } from '../upload';
+import { middleware } from '../../users';
 import { encryptCode, generateCode } from '../../users/model';
+import { LOGIN_TEMPLATE_EMAIL_SIGNIN } from '../../../constants';
+import { sendToExchangeMail } from '../../../services/mail';
+import { APIResponse } from '../../../services';
 
 const logger = debug('features:creators:controller');
 const route = Router();
 
 // TODO: needs to check if creator is authenticated
-// route.use(middleware.checkAuth);
+route.use(middleware.checkAuth);
 
 route.get('/', async (req, res) => {
     // TODO: needs to acquire query, sort, skip and limit from req.query
@@ -323,4 +326,32 @@ route.post('/email/verification/code', async (req, res) => {
         });
     }
 });
+
+route.post('/request/upload', async (req, res) => {
+    try {
+        const { mimetype, userId } = req.body;
+
+        const key = `${userId}/${new Date().getDate()}.${mimetype}`;
+
+        await sendToExchangeCreators(
+            JSON.stringify({ key, creatorId: userId })
+        );
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.request.upload.success',
+            message: 'Creator request upload success',
+            transaction: nanoid(),
+            data: 'request requested, wait for the URL to upload',
+        } as APIResponse<string>);
+    } catch (error) {
+        logger('Creator request upload failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.request.upload.failed',
+            message: `Creator request upload failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 export { route };
