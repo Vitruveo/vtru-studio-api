@@ -4,6 +4,7 @@ export const COLLECTION_ASSETS = 'assets';
 
 export const AssetsSchema = z.object({
     key: z.string().default(''),
+    originalName: z.string().default(''),
     mimetype: z.string().default(''),
     creators: z.array(z.string()).default([]),
     framework: z

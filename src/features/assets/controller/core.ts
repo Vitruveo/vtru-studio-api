@@ -37,10 +37,6 @@ route.get('/', async (req, res) => {
                 res.write(`data: ${JSON.stringify(doc)}\n\n`);
             })
             .on('end', () => {
-                res.write('event: close\n');
-                res.write(`id: ${nanoid()}\n`);
-                res.write(`data: {}\n\n`);
-
                 res.end();
             });
     } catch (error) {
@@ -50,7 +46,7 @@ route.get('/', async (req, res) => {
             message: `Reader all failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 
