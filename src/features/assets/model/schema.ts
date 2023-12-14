@@ -3,10 +3,26 @@ import { z } from 'zod';
 export const COLLECTION_ASSETS = 'assets';
 
 export const AssetsSchema = z.object({
-    key: z.string().default(''),
-    originalName: z.string().default(''),
-    mimetype: z.string().default(''),
-    creators: z.array(z.string()).default([]),
+    domain: z.string().default(''),
+    media: z.object({
+        path: z.string().default(''),
+        originalName: z.string().default(''),
+        mimetype: z.string().default(''),
+        size: z.number().default(0),
+    }),
+    formats: z.array(
+        z.object({
+            definition: z.string().default(''),
+            name: z.string().default(''),
+            path: z.string().default(''),
+        })
+    ),
+    license: z
+        .object({
+            type: z.string().default(''),
+            url: z.string().default(''),
+        })
+        .default({}),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),
