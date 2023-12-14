@@ -333,7 +333,8 @@ route.post('/request/upload', async (req, res) => {
     try {
         const { mimetype, userId } = req.body;
 
-        const key = `${userId}/${new Date().getDate()}.${mimetype}`;
+        const extension = mimetype.split('/')[1];
+        const key = `${userId}/${new Date().getTime()}.${extension}`;
 
         await sendToExchangeCreators(
             JSON.stringify({ key, creatorId: userId })

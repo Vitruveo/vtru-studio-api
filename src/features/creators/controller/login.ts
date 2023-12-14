@@ -20,6 +20,7 @@ import {
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
+import { LoginHistory } from '../model/types';
 
 export interface LoginAnswer {
     token: string;
@@ -47,6 +48,7 @@ route.get('/', async (req, res) => {
 route.post('/otpConfirm', async (req, res) => {
     try {
         const { email, code } = otpConfirmSchema.parse(req.body);
+        const ip = req.headers['x-forwarded-for']?.toString() || '';
 
         const creator = await findOneCreator({
             query: {
@@ -57,7 +59,7 @@ route.post('/otpConfirm', async (req, res) => {
         if (!creator) {
             res.status(401).json({
                 code: 'vitruveo.studio.api.admin.creators.login.otpConfirm.failed',
-                message: 'Login failed: invalid code',
+                message: 'Login failed: code or email invalid or was expired',
                 transaction: nanoid(),
             } as APIResponse);
             return;
@@ -70,8 +72,8 @@ route.post('/otpConfirm', async (req, res) => {
             checkedAt: new Date(),
         });
 
-        const loginHistory = {
-            ip: nanoid(),
+        const loginHistory: LoginHistory = {
+            ip,
             createdAt: new Date(),
         };
         await model.pushCreatorLoginHistory({

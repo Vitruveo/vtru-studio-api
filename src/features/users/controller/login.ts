@@ -58,7 +58,7 @@ route.post('/otpConfirm', async (req, res) => {
         if (!user) {
             res.status(401).json({
                 code: 'vitruveo.studio.api.admin.users.login.otpConfirm.failed',
-                message: 'Login failed: invalid code',
+                message: 'Login failed: code or email invalid or was expired',
                 transaction: nanoid(),
             } as APIResponse);
             return;
