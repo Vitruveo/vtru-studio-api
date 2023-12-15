@@ -1,8 +1,18 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
+import {
+    schemaBodyCode,
+    schemaBodyEmail,
+    schemaBodyRequestUpload,
+    schemaParamsEmail,
+    schemaParamsObjectId,
+    schemaQuery,
+} from './validation';
 import * as model from '../model';
 import { sendToExchangeCreators } from '../upload';
+import { Query } from '../../common/types';
+import { CREATORS, canChange } from '../../common/canChange';
 import { middleware } from '../../users';
 import { encryptCode, generateCode } from '../../users/model';
 import { LOGIN_TEMPLATE_EMAIL_SIGNIN } from '../../../constants';
@@ -13,15 +23,6 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import { Query } from '../../common/types';
-import {
-    schemaBodyCode,
-    schemaBodyEmail,
-    schemaBodyRequestUpload,
-    schemaParamsEmail,
-    schemaParamsObjectId,
-    schemaQuery,
-} from './validation';
 
 const logger = debug('features:creators:controller');
 const route = Router();
@@ -122,7 +123,7 @@ route.post('/', async (req, res) => {
     }
 });
 
-route.put('/:id', async (req, res) => {
+route.put('/:id', canChange({ entity: CREATORS }), async (req, res) => {
     try {
         schemaParamsObjectId.id.parse(req.params.id);
 
@@ -148,7 +149,7 @@ route.put('/:id', async (req, res) => {
     }
 });
 
-route.delete('/:id', async (req, res) => {
+route.delete('/:id', canChange({ entity: CREATORS }), async (req, res) => {
     try {
         schemaParamsObjectId.id.parse(req.params.id);
 
@@ -239,7 +240,7 @@ route.get('/:email/email', async (req, res) => {
     }
 });
 
-route.post('/:id/email', async (req, res) => {
+route.post('/:id/email', canChange({ entity: CREATORS }), async (req, res) => {
     try {
         schemaParamsObjectId.id.parse(req.params.id);
         schemaBodyEmail.parse(req.body);

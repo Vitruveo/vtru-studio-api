@@ -14,13 +14,15 @@ import type {
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
-const creators = () => getDb().collection(COLLECTION_CREATORS);
+const creators = () => getDb().collection<CreatorDocument>(COLLECTION_CREATORS);
 
 // basic actions
 export const createCreator = async ({ creator }: CreateCreatorParams) => {
     const parsed = CreatorSchema.parse(creator);
 
-    const result = await creators().insertOne(parsed);
+    const result = await creators().insertOne(
+        parsed as unknown as CreatorDocument
+    );
     return result;
 };
 

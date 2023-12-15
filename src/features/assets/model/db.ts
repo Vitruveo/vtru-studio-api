@@ -9,13 +9,15 @@ import type {
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
-const assets = () => getDb().collection(COLLECTION_ASSETS);
+const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
 // basic actions
 export const createAssets = async ({ asset }: CreateAssetsParams) => {
     const parsed = AssetsSchema.parse(asset);
 
-    const result = await assets().insertOne(parsed);
+    const result = await assets().insertOne(
+        parsed as unknown as AssetsDocument
+    );
     return result;
 };
 
