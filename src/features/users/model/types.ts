@@ -1,3 +1,4 @@
+import type { ObjectId } from '../../../services/mongo';
 import { User } from './schema';
 
 export interface LoginHistory {
@@ -23,7 +24,7 @@ export interface FindUsersParams {
 }
 
 export interface FindUserByIdParams {
-    id: string;
+    id: string | ObjectId;
 }
 
 export interface FindOneUserParams {
@@ -31,17 +32,17 @@ export interface FindOneUserParams {
 }
 
 export interface UpdateUserParams {
-    id: string;
+    id: string | ObjectId;
     user: Omit<Partial<User>, 'login'> & {
         login: Partial<Login>;
     };
 }
 
 export interface PushLoginHistoryParams {
-    id: string;
+    id: string | ObjectId;
     data: LoginHistory;
 }
 
 export interface DeleteUserParams {
-    id: string;
+    id: string | ObjectId;
 }

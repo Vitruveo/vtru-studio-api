@@ -2,27 +2,33 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
+import { middleware } from '../../users';
+import { Query } from '../../common/types';
 import {
     APIResponse,
     DeleteResult,
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import { middleware } from '../../users';
+import { schemaParamsObjectId, schemaQuery } from './validation';
 
 const logger = debug('features:roles:controller');
 const route = Router();
 
-// TODO: needs to check if user is authenticated
 route.use(middleware.checkAuth);
 
 route.get('/', async (req, res) => {
-    // TODO: needs to acquire query, sort, skip and limit from req.query
     try {
+        schemaQuery.parse(req.query);
+
+        const { query }: { query: Query } = req;
+
         const roles = await model.findRoles({
-            query: {},
-            sort: { name: 1 },
-            skip: 0,
+            query: { limit: query.limit },
+            sort: query.sort
+                ? { [query.sort.field]: query.sort.order }
+                : { name: 1 },
+            skip: query.skip || 0,
         });
 
         res.set('Content-Type', 'text/event-stream');
@@ -51,16 +57,26 @@ route.get('/', async (req, res) => {
 });
 
 route.get('/:id', async (req, res) => {
-    // TODO: needs to check if id is valid ObjectId
     try {
+        schemaParamsObjectId.id.parse(req.params.id);
+
         const role = await model.findRoleById({ id: req.params.id });
+
+        if (!role) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.roles.reader.one.not.found',
+                message: 'Reader one not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
 
         res.json({
             code: 'vitruveo.studio.api.admin.roles.reader.one.success',
             message: 'Reader one success',
             transaction: nanoid(),
             data: role,
-        } as APIResponse<model.RoleDocument | null>);
+        } as APIResponse<model.RoleDocument>);
     } catch (error) {
         logger('Reader one role failed: %O', error);
         res.status(500).json({
@@ -95,6 +111,8 @@ route.post('/', async (req, res) => {
 
 route.put('/:id', async (req, res) => {
     try {
+        schemaParamsObjectId.id.parse(req.params.id);
+
         const result = await model.updateRole({
             id: req.params.id,
             role: req.body,
@@ -119,6 +137,8 @@ route.put('/:id', async (req, res) => {
 
 route.delete('/:id', async (req, res) => {
     try {
+        schemaParamsObjectId.id.parse(req.params.id);
+
         const result = await model.deleteRole({ id: req.params.id });
 
         res.json({

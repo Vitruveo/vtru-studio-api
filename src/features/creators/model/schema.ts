@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ObjectId } from '../../../services';
 
 export const COLLECTION_CREATORS = 'creators';
 
@@ -53,4 +54,4 @@ export const CreatorSchema = z.object({
 });
 
 export type Creator = z.infer<typeof CreatorSchema>;
-export type CreatorDocument = Creator & { _id: string };
+export type CreatorDocument = Creator & { _id: string | ObjectId };

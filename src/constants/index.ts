@@ -6,3 +6,4 @@ export * from './sentry';
 export * from './rabbitmq';
 export * from './mongo';
 export * from './login';
+export * from './redis';

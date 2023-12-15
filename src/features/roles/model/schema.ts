@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ObjectId } from '../../../services';
 
 export const COLLECTION_ROLES = 'roles';
 
@@ -17,4 +18,4 @@ export const RoleSchema = z.object({
 });
 
 export type Role = z.infer<typeof RoleSchema>;
-export type RoleDocument = Role & { _id: string };
+export type RoleDocument = Role & { _id: string | ObjectId };

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ObjectId } from '../../../services';
 
 export const COLLECTION_ASSETS = 'assets';
 
@@ -34,4 +35,4 @@ export const AssetsSchema = z.object({
 });
 
 export type Assets = z.infer<typeof AssetsSchema>;
-export type AssetsDocument = Assets & { _id: string };
+export type AssetsDocument = Assets & { _id: string | ObjectId };

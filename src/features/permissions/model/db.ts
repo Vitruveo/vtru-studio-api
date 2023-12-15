@@ -3,8 +3,7 @@ import {
     PermissionDocument,
     COLLECTION_PERMISSIONS,
 } from './schema';
-
-import {
+import type {
     CreatePermissionParams,
     DeletePermissionParams,
     FindOnePermissionParams,

@@ -1,5 +1,5 @@
 import { UserSchema, UserDocument, COLLECTION_USERS } from './schema';
-import {
+import type {
     UpdateUserParams,
     PushLoginHistoryParams,
     DeleteUserParams,

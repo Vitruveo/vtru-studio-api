@@ -1,6 +1,5 @@
 import { AssetsSchema, AssetsDocument, COLLECTION_ASSETS } from './schema';
-
-import {
+import type {
     CreateAssetsParams,
     DeleteAssetsParams,
     FindOneAssetsParams,

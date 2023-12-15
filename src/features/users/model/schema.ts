@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ObjectId } from '../../../services';
 
 export const COLLECTION_USERS = 'users';
 
@@ -36,4 +37,4 @@ export const UserSchema = z.object({
 });
 
 export type User = z.infer<typeof UserSchema>;
-export type UserDocument = User & { _id: string };
+export type UserDocument = User & { _id: ObjectId | string };

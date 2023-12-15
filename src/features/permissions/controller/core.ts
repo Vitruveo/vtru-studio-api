@@ -3,20 +3,27 @@ import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
 import { middleware } from '../../users';
+import { APIResponse } from '../../../services';
+import { Query } from '../../common/types';
+import { schemaQuery } from './validation';
 
 const logger = debug('features:permissions:controller');
 const route = Router();
 
-// TODO: needs to check if user is authenticated
 route.use(middleware.checkAuth);
 
 route.get('/', async (req, res) => {
-    // TODO: needs to acquire query, sort, skip and limit from req.query
     try {
+        schemaQuery.parse(req.query);
+
+        const { query }: { query: Query } = req;
+
         const permissions = await model.findPermissions({
-            query: {},
-            sort: { name: 1 },
-            skip: 0,
+            query: { limit: query.limit },
+            sort: query.sort
+                ? { [query.sort.field]: query.sort.order }
+                : { name: 1 },
+            skip: query.skip || 0,
         });
 
         res.set('Content-Type', 'text/event-stream');
@@ -40,7 +47,7 @@ route.get('/', async (req, res) => {
             message: `Reader all failed: ${error}`,
             args: error,
             transaction: nanoid(),
-        });
+        } as APIResponse);
     }
 });
 

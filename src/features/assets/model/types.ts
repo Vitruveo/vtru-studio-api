@@ -1,4 +1,5 @@
 import { Assets } from './schema';
+import { ObjectId } from '../../../services';
 
 export interface CreateAssetsParams {
     asset: Assets;
@@ -12,7 +13,7 @@ export interface FindAssetsParams {
 }
 
 export interface FindAssetsByIdParams {
-    id: string;
+    id: string | ObjectId;
 }
 
 export interface FindOneAssetsParams {
@@ -20,10 +21,10 @@ export interface FindOneAssetsParams {
 }
 
 export interface UpdateAssetsParams {
-    id: string;
+    id: string | ObjectId;
     asset: Assets;
 }
 
 export interface DeleteAssetsParams {
-    id: string;
+    id: string | ObjectId;
 }

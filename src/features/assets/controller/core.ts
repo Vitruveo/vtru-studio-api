@@ -9,20 +9,25 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
+import { schemaParamsObjectId, schemaQuery } from './validation';
+import { Query } from '../../common/types';
 
 const logger = debug('features:assets:controller');
 const route = Router();
 
-// TODO: needs to check if user is authenticated
 route.use(middleware.checkAuth);
 
 route.get('/', async (req, res) => {
-    // TODO: needs to acquire query, sort, skip and limit from req.query
     try {
+        schemaQuery.parse(req.query);
+
+        const { query }: { query: Query } = req;
         const assets = await model.findAssets({
-            query: {},
-            sort: { name: 1 },
-            skip: 0,
+            query: { limit: query.limit },
+            sort: query.sort
+                ? { [query.sort.field]: query.sort.order }
+                : { name: 1 },
+            skip: query.skip || 0,
         });
 
         res.set('Content-Type', 'text/event-stream');
@@ -51,16 +56,26 @@ route.get('/', async (req, res) => {
 });
 
 route.get('/:id', async (req, res) => {
-    // TODO: needs to check if id is valid ObjectId
     try {
-        const assets = await model.findAssetsById({ id: req.params.id });
+        schemaParamsObjectId.id.parse(req.params.id);
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.reader.one.notFound',
+                message: 'Reader one not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
 
         res.json({
             code: 'vitruveo.studio.api.admin.assets.reader.one.success',
             message: 'Reader one success',
             transaction: nanoid(),
-            data: assets,
-        } as APIResponse<model.Assets | null>);
+            data: asset,
+        } as APIResponse<model.AssetsDocument>);
     } catch (error) {
         logger('Reader one assets failed: %O', error);
         res.status(500).json({

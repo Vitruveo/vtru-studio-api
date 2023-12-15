@@ -1,5 +1,5 @@
 import { CreatorSchema, CreatorDocument, COLLECTION_CREATORS } from './schema';
-import {
+import type {
     UpdateCreatorParams,
     PushLoginHistoryParams,
     DeleteCreatorParams,

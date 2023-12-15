@@ -1,4 +1,5 @@
 import { Role } from './schema';
+import { ObjectId } from '../../../services';
 
 export interface CreateRoleParams {
     role: Role;
@@ -12,7 +13,7 @@ export interface FindRolesParams {
 }
 
 export interface FindRoleByIdParams {
-    id: string;
+    id: string | ObjectId;
 }
 
 export interface FindOneRoleParams {
@@ -20,10 +21,10 @@ export interface FindOneRoleParams {
 }
 
 export interface UpdateRoleParams {
-    id: string;
+    id: string | ObjectId;
     role: Role;
 }
 
 export interface DeleteRoleParams {
-    id: string;
+    id: string | ObjectId;
 }

@@ -1,6 +1,5 @@
 import { RoleSchema, RoleDocument, COLLECTION_ROLES } from './schema';
-
-import {
+import type {
     CreateRoleParams,
     DeleteRoleParams,
     FindOneRoleParams,

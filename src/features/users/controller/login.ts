@@ -20,6 +20,7 @@ import {
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
+import { redis } from '../../../services/redis';
 
 export interface LoginAnswer {
     token: string;
@@ -81,9 +82,15 @@ route.post('/otpConfirm', async (req, res) => {
             data: loginHistory,
         });
 
-        const token = jwt.sign({ id: user._id } as JwtPayload, JWT_SECRETKEY, {
-            expiresIn: '14d',
-        });
+        const token = jwt.sign(
+            { id: user._id.toString() } as JwtPayload,
+            JWT_SECRETKEY,
+            {
+                expiresIn: '14d',
+            }
+        );
+
+        await redis.set(`user:${user._id}`, token, 'EX', 60 * 60 * 24 * 14);
 
         res.json({
             code: 'vitruveo.studio.api.admin.users.login.otpConfirm.success',
@@ -113,6 +120,8 @@ route.post('/', async (req, res) => {
 
         const code = generateCode();
         const codeHash = encryptCode(code);
+
+        console.log({ code, codeHash });
 
         let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
 
@@ -161,7 +170,22 @@ route.post('/', async (req, res) => {
 });
 
 route.get('/logout', async (req, res) => {
-    res.status(500).json({ message: 'Not implemented' });
+    try {
+        await redis.del(`user:${req.body.id}`);
+        res.json({
+            code: 'vitruveo.studio.api.admin.users.logout.success',
+            message: 'Logout success',
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('Logout failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.users.logout.failed',
+            message: `Logout failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
 });
 
 export { route };

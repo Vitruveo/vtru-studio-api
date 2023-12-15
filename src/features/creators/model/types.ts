@@ -1,4 +1,5 @@
 import { Creator } from './schema';
+import { ObjectId } from '../../../services';
 
 export interface LoginHistory {
     ip: string;
@@ -20,7 +21,7 @@ export interface FindCreatorsParams {
 }
 
 export interface FindCreatorByIdParams {
-    id: string;
+    id: string | ObjectId;
 }
 
 export interface FindOneCreatorParams {
@@ -28,31 +29,31 @@ export interface FindOneCreatorParams {
 }
 
 export interface UpdateCreatorParams {
-    id: string;
+    id: string | ObjectId;
     creator: Omit<Partial<Creator>, 'login'> & {
         login: Partial<Login>;
     };
 }
 
 export interface UpdateCodeHashEmailCreatorParams {
-    id: string;
+    id: string | ObjectId;
     email: string;
     codeHash: string | null;
     checkedAt: Date | null;
 }
 
 export interface AddEmailCreatorParams {
-    id: string;
+    id: string | ObjectId;
     email: string;
 }
 
 export interface PushLoginHistoryParams {
-    id: string;
+    id: string | ObjectId;
     data: LoginHistory;
 }
 
 export interface DeleteCreatorParams {
-    id: string;
+    id: string | ObjectId;
 }
 
 export interface CheckUsernameExistParams {
