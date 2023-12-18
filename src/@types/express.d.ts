@@ -1,4 +1,4 @@
-declare namespace Express {
+declare module Express {
     interface Request {
         auth: {
             id: string;
