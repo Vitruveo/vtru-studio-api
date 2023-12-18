@@ -94,7 +94,6 @@ route.post('/', validateBodyForCreate, async (req, res) => {
     try {
         const result = await model.createUser({
             user: req.body,
-            createdBy: req.auth.id,
         });
 
         res.json({
@@ -124,7 +123,6 @@ route.put(
             const result = await model.updateUser({
                 id: req.params.id,
                 user: req.body,
-                updatedBy: req.auth.id,
             });
 
             res.json({

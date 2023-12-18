@@ -3,13 +3,91 @@ import { NextFunction, Request, Response } from 'express';
 import { APIResponse } from '../../../services';
 import {
     createRecordFramework,
+    defaultRecordFramework,
     updateRecordFramework,
 } from '../../common/record';
 import {
+    loginSchema,
+    otpConfirmSchema,
     schemaValidationForAddEmail,
     schemaValidationForCreate,
     schemaValidationForPut,
 } from './schemas';
+import { CreatorSchema, encryptCode, generateCode } from '../model';
+
+export const validateBodyForLogin = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForLogin.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        loginSchema.parse(req.body);
+
+        const code = generateCode();
+        const codeHash = encryptCode(code);
+
+        req.body.code = code;
+        req.body.codeHash = codeHash;
+        req.body.framework = defaultRecordFramework();
+        req.body.creator = CreatorSchema.parse({
+            emails: [
+                {
+                    email: req.body.email,
+                    codeHash,
+                    checkedAt: null,
+                },
+            ],
+        });
+
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForLogin.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForOtpLogin = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForOtpLogin.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = otpConfirmSchema.parse(req.body);
+        req.body.framework = defaultRecordFramework();
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForOtpLogin.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
 
 export const validateBodyForPut = async (
     req: Request,
@@ -60,6 +138,10 @@ export const validateBodyForAddEmail = async (
 
     try {
         req.body = schemaValidationForAddEmail.parse(req.body);
+        req.body.framework = updateRecordFramework({
+            framework: req.body.framework,
+            updatedBy: req.auth.id,
+        });
         next();
     } catch (error) {
         res.status(400).json({

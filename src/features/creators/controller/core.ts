@@ -27,6 +27,7 @@ import {
     validateParamsId,
     validateQueries,
 } from '../../common/rules';
+import { updateRecordFramework } from '../../common/record';
 
 const logger = debug('features:creators:controller');
 const route = Router();
@@ -106,7 +107,6 @@ route.post('/', validateBodyForCreate, async (req, res) => {
     try {
         const result = await model.createCreator({
             creator: req.body,
-            createdBy: req.auth.id,
         });
 
         res.json({
@@ -136,7 +136,6 @@ route.put(
             const result = await model.updateCreator({
                 id: req.params.id,
                 creator: req.body,
-                updatedBy: req.auth.id,
             });
 
             res.json({
@@ -276,6 +275,7 @@ route.post(
             const creator = await model.addEmailCreator({
                 id: req.params.id,
                 email: req.body.email,
+                framework: req.body.framework,
             });
 
             res.json({
@@ -323,6 +323,10 @@ route.post('/:email/email/sendCode', validateParamsEmail, async (req, res) => {
             email,
             codeHash,
             checkedAt: null,
+            framework: updateRecordFramework({
+                framework: creator.framework,
+                updatedBy: req.auth.id,
+            }),
         });
 
         console.log({ template, code, email });
@@ -378,6 +382,10 @@ route.post(
                 email,
                 codeHash: null,
                 checkedAt: new Date(),
+                framework: updateRecordFramework({
+                    framework: creator.framework,
+                    updatedBy: req.auth.id,
+                }),
             });
 
             const creatorUpdated = await model.findOneCreator({

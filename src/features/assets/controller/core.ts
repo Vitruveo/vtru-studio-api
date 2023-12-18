@@ -92,7 +92,6 @@ route.post('/', validateBodyForCreate, async (req, res) => {
     try {
         const result = await model.createAssets({
             asset: req.body,
-            createdBy: req.auth.id,
         });
 
         res.json({
@@ -122,7 +121,6 @@ route.put(
             const result = await model.updateAssets({
                 id: req.params.id,
                 asset: req.body,
-                updatedBy: req.auth.id,
             });
 
             res.json({

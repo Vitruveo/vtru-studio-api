@@ -59,7 +59,6 @@ route.post('/otpConfirm', async (req, res) => {
                 ...user,
                 login: { email, codeHash: '' },
             },
-            updatedBy: null,
         });
 
         const loginHistory = {
@@ -120,7 +119,6 @@ route.post('/', async (req, res) => {
                         codeHash,
                     },
                 },
-                createdBy: null,
             });
 
             template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
@@ -131,7 +129,6 @@ route.post('/', async (req, res) => {
                     ...user,
                     login: { email, codeHash },
                 },
-                updatedBy: null,
             });
         }
 

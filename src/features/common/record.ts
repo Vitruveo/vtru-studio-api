@@ -16,22 +16,25 @@ export interface UpdateRecordFrameworkParams {
 export const createRecordFramework = ({
     createdBy,
 }: CreateRecordFrameworkParams) => ({
-    framework: {
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        createdBy,
-        updatedBy: null,
-    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy,
+    updatedBy: null,
 });
 
 export const updateRecordFramework = ({
     framework,
     updatedBy,
 }: UpdateRecordFrameworkParams) => ({
-    framework: {
-        createdAt: framework.createdAt,
-        createBy: framework.createdBy,
-        updatedAt: new Date(),
-        updatedBy,
-    },
+    createdAt: framework.createdAt,
+    createdBy: framework.createdBy,
+    updatedAt: new Date(),
+    updatedBy,
+});
+
+export const defaultRecordFramework = () => ({
+    createdAt: null,
+    createdBy: null,
+    updatedAt: new Date(),
+    updatedBy: new Date(),
 });

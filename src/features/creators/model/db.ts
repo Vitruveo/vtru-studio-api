@@ -1,4 +1,4 @@
-import { CreatorSchema, CreatorDocument, COLLECTION_CREATORS } from './schema';
+import { CreatorDocument, COLLECTION_CREATORS } from './schema';
 import type {
     UpdateCreatorParams,
     PushLoginHistoryParams,
@@ -13,25 +13,12 @@ import type {
     AddEmailCreatorParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
-import { createRecordFramework } from '../../common/record';
 
 const creators = () => getDb().collection<CreatorDocument>(COLLECTION_CREATORS);
 
 // basic actions
-export const createCreator = async ({
-    creator,
-    createdBy,
-}: CreateCreatorParams) => {
-    const envelope = {
-        ...creator,
-        framework: createRecordFramework({ createdBy }),
-    };
-
-    const parsed = CreatorSchema.parse(envelope);
-
-    const result = await creators().insertOne(
-        parsed as unknown as CreatorDocument
-    );
+export const createCreator = async ({ creator }: CreateCreatorParams) => {
+    const result = await creators().insertOne(creator);
     return result;
 };
 
@@ -90,6 +77,7 @@ export const updateCodeHashEmailCreator = async ({
     email,
     codeHash,
     checkedAt,
+    framework,
 }: UpdateCodeHashEmailCreatorParams) => {
     const result = await creators().updateOne(
         { _id: new ObjectId(id), 'emails.email': email },
@@ -97,16 +85,24 @@ export const updateCodeHashEmailCreator = async ({
             $set: {
                 'emails.$.codeHash': codeHash,
                 'emails.$.checkedAt': checkedAt,
+                framework,
             },
         }
     );
     return result;
 };
 
-export const addEmailCreator = async ({ id, email }: AddEmailCreatorParams) => {
+export const addEmailCreator = async ({
+    id,
+    email,
+    framework,
+}: AddEmailCreatorParams) => {
     const result = await creators().updateOne(
         { _id: new ObjectId(id) },
-        { $push: { emails: { email, codeHash: null, checkedAt: null } } }
+        {
+            $push: { emails: { email, codeHash: null, checkedAt: null } },
+            $set: { framework },
+        }
     );
     return result;
 };

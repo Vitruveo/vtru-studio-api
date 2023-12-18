@@ -9,7 +9,6 @@ import {
     createCreator,
     encryptCode,
     findOneCreator,
-    generateCode,
     updateCodeHashEmailCreator,
 } from '../model';
 import {
@@ -20,7 +19,7 @@ import {
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
 import { LoginHistory } from '../model/types';
-import { loginSchema, otpConfirmSchema } from './schemas';
+import { validateBodyForLogin, validateBodyForOtpLogin } from './rules';
 
 export interface LoginAnswer {
     token: string;
@@ -34,9 +33,9 @@ route.get('/', async (req, res) => {
     res.status(500).json({ message: 'Not implemented' });
 });
 
-route.post('/otpConfirm', async (req, res) => {
+route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
     try {
-        const { email, code } = otpConfirmSchema.parse(req.body);
+        const { email, code } = req.body;
         const ip = req.headers['x-forwarded-for']?.toString() || '';
 
         const creator = await findOneCreator({
@@ -59,6 +58,7 @@ route.post('/otpConfirm', async (req, res) => {
             email,
             codeHash: null,
             checkedAt: new Date(),
+            framework: req.body.framework,
         });
 
         const loginHistory: LoginHistory = {
@@ -104,45 +104,37 @@ route.post('/otpConfirm', async (req, res) => {
     }
 });
 
-route.post('/', async (req, res) => {
+route.post('/', validateBodyForLogin, async (req, res) => {
     try {
-        const { email } = loginSchema.parse(req.body);
+        const { email } = req.body;
+
         const creator = await findOneCreator({
             query: { emails: { $elemMatch: { email } } },
         });
 
-        const code = generateCode();
-        const codeHash = encryptCode(code);
-
         let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
 
         if (!creator) {
-            await createCreator({
-                creator: {
-                    emails: [
-                        {
-                            email,
-                            codeHash,
-                            checkedAt: null,
-                        },
-                    ],
-                },
-                createdBy: null,
-            });
+            await createCreator({ creator: req.body.creator });
 
             template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
         } else {
             await updateCodeHashEmailCreator({
                 id: creator._id,
                 email,
-                codeHash,
+                codeHash: req.body.codeHash,
+                framework: req.body.framework,
                 checkedAt: null,
             });
         }
 
-        console.log({ template, code, email });
+        console.log({ code: req.body.code, email });
 
-        const payload = JSON.stringify({ template, code, email });
+        const payload = JSON.stringify({
+            template,
+            code: req.body.code,
+            email,
+        });
         await sendToExchangeMail(payload);
 
         res.json({

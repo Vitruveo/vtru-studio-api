@@ -1,4 +1,4 @@
-import { UserSchema, UserDocument, COLLECTION_USERS } from './schema';
+import { UserDocument, COLLECTION_USERS } from './schema';
 import type {
     UpdateUserParams,
     PushLoginHistoryParams,
@@ -9,23 +9,12 @@ import type {
     FindOneUserParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
-import {
-    createRecordFramework,
-    updateRecordFramework,
-} from '../../common/record';
 
 const users = () => getDb().collection(COLLECTION_USERS);
 
 // basic actions
-export const createUser = async ({ user, createdBy }: CreateUserParams) => {
-    const envelope = {
-        ...user,
-        framework: createRecordFramework({ createdBy }),
-    };
-
-    const parsed = UserSchema.parse(envelope);
-
-    const result = await users().insertOne(parsed);
+export const createUser = async ({ user }: CreateUserParams) => {
+    const result = await users().insertOne(user);
     return result;
 };
 
@@ -71,19 +60,10 @@ export const findOneUser = async ({ query }: FindOneUserParams) => {
     return result;
 };
 
-export const updateUser = async ({ id, user, updatedBy }: UpdateUserParams) => {
-    const envelope = {
-        ...user,
-        framework: updateRecordFramework({
-            updatedBy,
-            framework: user.framework!,
-        }),
-    };
-
-    const parsed = UserSchema.parse(envelope);
+export const updateUser = async ({ id, user }: UpdateUserParams) => {
     const result = await users().updateOne(
         { _id: new ObjectId(id) },
-        { $set: parsed }
+        { $set: user }
     );
     return result;
 };

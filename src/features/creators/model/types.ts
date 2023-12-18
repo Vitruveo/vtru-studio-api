@@ -1,5 +1,6 @@
-import { Creator } from './schema';
+import { Creator, CreatorDocument } from './schema';
 import { ObjectId } from '../../../services';
+import { Framework } from '../../common/record';
 
 export interface LoginHistory {
     ip: string;
@@ -10,8 +11,7 @@ export interface Login {
     loginHistory: LoginHistory[];
 }
 export interface CreateCreatorParams {
-    creator: Partial<Creator>;
-    createdBy: string | null;
+    creator: CreatorDocument;
 }
 
 export interface FindCreatorsParams {
@@ -32,7 +32,6 @@ export interface FindOneCreatorParams {
 export interface UpdateCreatorParams {
     id: string | ObjectId;
     creator: Partial<Creator>;
-    updatedBy: string;
 }
 
 export interface UpdateCodeHashEmailCreatorParams {
@@ -40,11 +39,13 @@ export interface UpdateCodeHashEmailCreatorParams {
     email: string;
     codeHash: string | null;
     checkedAt: Date | null;
+    framework: Framework;
 }
 
 export interface AddEmailCreatorParams {
     id: string | ObjectId;
     email: string;
+    framework: Framework;
 }
 
 export interface PushLoginHistoryParams {

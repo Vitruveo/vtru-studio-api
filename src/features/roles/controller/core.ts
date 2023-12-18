@@ -93,7 +93,6 @@ route.post('/', validateBodyForCreate, async (req, res) => {
     try {
         const result = await model.createRole({
             role: req.body,
-            createdBy: req.auth.id,
         });
 
         res.json({
@@ -123,7 +122,6 @@ route.put(
             const result = await model.updateRole({
                 id: req.params.id,
                 role: req.body,
-                updatedBy: req.auth.id,
             });
 
             res.json({
