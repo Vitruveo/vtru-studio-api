@@ -13,12 +13,21 @@ import type {
     AddEmailCreatorParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
+import { createRecordFramework } from '../../common/record';
 
 const creators = () => getDb().collection<CreatorDocument>(COLLECTION_CREATORS);
 
 // basic actions
-export const createCreator = async ({ creator }: CreateCreatorParams) => {
-    const parsed = CreatorSchema.parse(creator);
+export const createCreator = async ({
+    creator,
+    createdBy,
+}: CreateCreatorParams) => {
+    const envelope = {
+        ...creator,
+        framework: createRecordFramework({ createdBy }),
+    };
+
+    const parsed = CreatorSchema.parse(envelope);
 
     const result = await creators().insertOne(
         parsed as unknown as CreatorDocument
@@ -69,10 +78,9 @@ export const findOneCreator = async ({ query }: FindOneCreatorParams) => {
 };
 
 export const updateCreator = async ({ id, creator }: UpdateCreatorParams) => {
-    const parsed = CreatorSchema.parse(creator);
     const result = await creators().updateOne(
         { _id: new ObjectId(id) },
-        { $set: parsed }
+        { $set: creator }
     );
     return result;
 };

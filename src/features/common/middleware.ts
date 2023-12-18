@@ -1,4 +1,5 @@
 import { checkAuth } from '../users/middleware';
-import { canChange } from './canChange';
+import { checkUserPermission } from './permission';
+import { nonce } from './nonce';
 
-export { checkAuth, canChange };
+export { checkAuth, checkUserPermission, nonce };

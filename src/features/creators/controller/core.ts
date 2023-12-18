@@ -1,18 +1,11 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import {
-    schemaBodyCode,
-    schemaBodyEmail,
-    schemaBodyRequestUpload,
-    schemaParamsEmail,
-    schemaParamsObjectId,
-    schemaQuery,
-} from './validation';
+import {} from './schemas';
 import * as model from '../model';
 import { sendToExchangeCreators } from '../upload';
 import { Query } from '../../common/types';
-import { CREATORS, canChange } from '../../common/canChange';
+
 import { middleware } from '../../users';
 import { encryptCode, generateCode } from '../../users/model';
 import { LOGIN_TEMPLATE_EMAIL_SIGNIN } from '../../../constants';
@@ -23,16 +16,25 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
+import {
+    validateBodyForAddEmail,
+    validateBodyForCreate,
+    validateBodyForPut,
+} from './rules';
+import {
+    needsToBeOwner,
+    validateParamsEmail,
+    validateParamsId,
+    validateQueries,
+} from '../../common/rules';
 
 const logger = debug('features:creators:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', async (req, res) => {
+route.get('/', validateQueries, async (req, res) => {
     try {
-        schemaQuery.parse(req.query);
-
         const { query }: { query: Query } = req;
 
         const creators = await model.findCreators({
@@ -68,10 +70,8 @@ route.get('/', async (req, res) => {
     }
 });
 
-route.get('/:id', async (req, res) => {
+route.get('/:id', validateParamsId, async (req, res) => {
     try {
-        schemaParamsObjectId.id.parse(req.params.id);
-
         const creator = await model.findCreatorById({ id: req.params.id });
 
         if (!creator) {
@@ -102,9 +102,12 @@ route.get('/:id', async (req, res) => {
     }
 });
 
-route.post('/', async (req, res) => {
+route.post('/', validateBodyForCreate, async (req, res) => {
     try {
-        const result = await model.createCreator({ creator: req.body });
+        const result = await model.createCreator({
+            creator: req.body,
+            createdBy: req.auth.id,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.admin.creators.create.success',
@@ -123,54 +126,62 @@ route.post('/', async (req, res) => {
     }
 });
 
-route.put('/:id', canChange({ entity: CREATORS }), async (req, res) => {
-    try {
-        schemaParamsObjectId.id.parse(req.params.id);
+route.put(
+    '/:id',
+    validateParamsId,
+    needsToBeOwner({ permissions: ['creator:admin', 'creator:editor'] }),
+    validateBodyForPut,
+    async (req, res) => {
+        try {
+            const result = await model.updateCreator({
+                id: req.params.id,
+                creator: req.body,
+                updatedBy: req.auth.id,
+            });
 
-        const result = await model.updateCreator({
-            id: req.params.id,
-            creator: req.body,
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.creators.update.success',
-            message: 'Update success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<UpdateResult<model.CreatorDocument>>);
-    } catch (error) {
-        logger('Update creator failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.creators.update.failed',
-            message: `Update failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.creators.update.success',
+                message: 'Update success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult<model.CreatorDocument>>);
+        } catch (error) {
+            logger('Update creator failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.creators.update.failed',
+                message: `Update failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
-route.delete('/:id', canChange({ entity: CREATORS }), async (req, res) => {
-    try {
-        schemaParamsObjectId.id.parse(req.params.id);
+route.delete(
+    '/:id',
+    validateParamsId,
+    needsToBeOwner({ permissions: ['creator:admin', 'creator:editor'] }),
+    async (req, res) => {
+        try {
+            const result = await model.deleteCreator({ id: req.params.id });
 
-        const result = await model.deleteCreator({ id: req.params.id });
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.creators.delete.success',
-            message: 'Delete success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<DeleteResult>);
-    } catch (error) {
-        logger('Delete creator failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.creators.delete.failed',
-            message: `Delete failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.creators.delete.success',
+                message: 'Delete success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<DeleteResult>);
+        } catch (error) {
+            logger('Delete creator failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.creators.delete.failed',
+                message: `Delete failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.get('/:username/username', async (req, res) => {
     try {
@@ -206,7 +217,7 @@ route.get('/:username/username', async (req, res) => {
     }
 });
 
-route.get('/:email/email', async (req, res) => {
+route.get('/:email/email', validateParamsEmail, async (req, res) => {
     try {
         const creator = await model.checkEmailExist({
             email: req.params.email,
@@ -240,52 +251,53 @@ route.get('/:email/email', async (req, res) => {
     }
 });
 
-route.post('/:id/email', canChange({ entity: CREATORS }), async (req, res) => {
-    try {
-        schemaParamsObjectId.id.parse(req.params.id);
-        schemaBodyEmail.parse(req.body);
+route.post(
+    '/:id/email',
+    validateParamsId,
+    needsToBeOwner({ permissions: ['creator:admin', 'creator:editor'] }),
+    validateBodyForAddEmail,
+    async (req, res) => {
+        try {
+            const creatorExist = await model.checkEmailExist({
+                email: req.body.email,
+            });
 
-        const creatorExist = await model.checkEmailExist({
-            email: req.body.email,
-        });
+            if (creatorExist > 0) {
+                res.status(500).json({
+                    code: 'vitruveo.studio.api.admin.creators.add.email.failed',
+                    message: `Creator add email failed: email already exist`,
+                    args: [],
+                    transaction: nanoid(),
+                } as APIResponse);
 
-        if (creatorExist > 0) {
+                return;
+            }
+
+            const creator = await model.addEmailCreator({
+                id: req.params.id,
+                email: req.body.email,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.creators.add.email.success',
+                message: 'Creator add email success',
+                transaction: nanoid(),
+                data: creator,
+            } as APIResponse<UpdateResult<model.CreatorDocument>>);
+        } catch (error) {
+            logger('Creator add email failed: %O', error);
             res.status(500).json({
                 code: 'vitruveo.studio.api.admin.creators.add.email.failed',
-                message: `Creator add email failed: email already exist`,
-                args: [],
+                message: `Creator add email failed: ${error}`,
+                args: error,
                 transaction: nanoid(),
             } as APIResponse);
-
-            return;
         }
-
-        const creator = await model.addEmailCreator({
-            id: req.params.id,
-            email: req.body.email,
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.creators.add.email.success',
-            message: 'Creator add email success',
-            transaction: nanoid(),
-            data: creator,
-        } as APIResponse<UpdateResult<model.CreatorDocument>>);
-    } catch (error) {
-        logger('Creator add email failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.creators.add.email.failed',
-            message: `Creator add email failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
     }
-});
+);
 
-route.post('/:email/email/sendCode', async (req, res) => {
+route.post('/:email/email/sendCode', validateParamsEmail, async (req, res) => {
     try {
-        schemaParamsEmail.email.parse(req.params.email);
-
         const { email } = req.params;
 
         const creator = await model.findOneCreator({
@@ -335,70 +347,73 @@ route.post('/:email/email/sendCode', async (req, res) => {
     }
 });
 
-route.post('/:email/email/verifyCode', async (req, res) => {
-    try {
-        schemaParamsEmail.email.parse(req.params.email);
-        schemaBodyCode.parse(req.body);
+route.post(
+    '/:email/email/verifyCode',
+    validateParamsEmail,
+    async (req, res) => {
+        try {
+            const { code } = req.body;
+            const { email } = req.params;
 
-        const { code } = req.body;
-        const { email } = req.params;
+            const creator = await model.findOneCreator({
+                query: {
+                    emails: {
+                        $elemMatch: { email, codeHash: encryptCode(code) },
+                    },
+                },
+            });
+            if (!creator) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.admin.creators.verify.code.email.failed',
+                    message: `Creator verify code email failed: code or email invalid or was expired`,
+                    args: [],
+                    transaction: nanoid(),
+                } as APIResponse);
 
-        const creator = await model.findOneCreator({
-            query: {
-                emails: { $elemMatch: { email, codeHash: encryptCode(code) } },
-            },
-        });
-        if (!creator) {
-            res.status(404).json({
+                return;
+            }
+
+            await model.updateCodeHashEmailCreator({
+                id: creator._id,
+                email,
+                codeHash: null,
+                checkedAt: new Date(),
+            });
+
+            const creatorUpdated = await model.findOneCreator({
+                query: {
+                    emails: { $elemMatch: { email } },
+                },
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.creators.verify.code.email.success',
+                message: 'Creator verify code email success',
+                transaction: nanoid(),
+                data: creatorUpdated,
+            } as APIResponse<model.CreatorDocument>);
+        } catch (error) {
+            logger('Creator verify code email failed: %O', error);
+            res.status(500).json({
                 code: 'vitruveo.studio.api.admin.creators.verify.code.email.failed',
-                message: `Creator verify code email failed: code or email invalid or was expired`,
-                args: [],
+                message: `Creator verify code email failed: ${error}`,
+                args: error,
                 transaction: nanoid(),
             } as APIResponse);
-
-            return;
         }
-
-        await model.updateCodeHashEmailCreator({
-            id: creator._id,
-            email,
-            codeHash: null,
-            checkedAt: new Date(),
-        });
-
-        const creatorUpdated = await model.findOneCreator({
-            query: {
-                emails: { $elemMatch: { email } },
-            },
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.creators.verify.code.email.success',
-            message: 'Creator verify code email success',
-            transaction: nanoid(),
-            data: creatorUpdated,
-        } as APIResponse<model.CreatorDocument>);
-    } catch (error) {
-        logger('Creator verify code email failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.creators.verify.code.email.failed',
-            message: `Creator verify code email failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
     }
-});
+);
 
 route.post('/request/upload', async (req, res) => {
     try {
-        schemaBodyRequestUpload.parse(req.body);
-        const { mimetype, userId } = req.body;
+        const { mimetype } = req.body;
+        const { id } = req.auth;
 
         const extension = mimetype.split('/')[1];
-        const key = `${userId}/${new Date().getTime()}.${extension}`;
+        const key = `${id}/${new Date().getTime()}.${extension}`;
 
         await sendToExchangeCreators(
-            JSON.stringify({ key, creatorId: userId, transactionId: nanoid() })
+            JSON.stringify({ key, creatorId: id, transactionId: nanoid() })
         );
 
         res.json({

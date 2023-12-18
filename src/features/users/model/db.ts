@@ -9,12 +9,21 @@ import type {
     FindOneUserParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
+import {
+    createRecordFramework,
+    updateRecordFramework,
+} from '../../common/record';
 
 const users = () => getDb().collection(COLLECTION_USERS);
 
 // basic actions
-export const createUser = async ({ user }: CreateUserParams) => {
-    const parsed = UserSchema.parse(user);
+export const createUser = async ({ user, createdBy }: CreateUserParams) => {
+    const envelope = {
+        ...user,
+        framework: createRecordFramework({ createdBy }),
+    };
+
+    const parsed = UserSchema.parse(envelope);
 
     const result = await users().insertOne(parsed);
     return result;
@@ -62,8 +71,16 @@ export const findOneUser = async ({ query }: FindOneUserParams) => {
     return result;
 };
 
-export const updateUser = async ({ id, user }: UpdateUserParams) => {
-    const parsed = UserSchema.parse(user);
+export const updateUser = async ({ id, user, updatedBy }: UpdateUserParams) => {
+    const envelope = {
+        ...user,
+        framework: updateRecordFramework({
+            updatedBy,
+            framework: user.framework!,
+        }),
+    };
+
+    const parsed = UserSchema.parse(envelope);
     const result = await users().updateOne(
         { _id: new ObjectId(id) },
         { $set: parsed }

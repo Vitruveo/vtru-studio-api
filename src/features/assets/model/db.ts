@@ -8,12 +8,23 @@ import type {
     UpdateAssetsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
+import {
+    createRecordFramework,
+    updateRecordFramework,
+} from '../../common/record';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
 // basic actions
-export const createAssets = async ({ asset }: CreateAssetsParams) => {
-    const parsed = AssetsSchema.parse(asset);
+export const createAssets = async ({
+    asset,
+    createdBy,
+}: CreateAssetsParams) => {
+    const envelope = {
+        ...asset,
+        framework: createRecordFramework({ createdBy }),
+    };
+    const parsed = AssetsSchema.parse(envelope);
 
     const result = await assets().insertOne(
         parsed as unknown as AssetsDocument
@@ -45,8 +56,19 @@ export const findOneAssets = async ({ query }: FindOneAssetsParams) => {
     return result;
 };
 
-export const updateAssets = async ({ id, asset }: UpdateAssetsParams) => {
-    const parsed = AssetsSchema.parse(asset);
+export const updateAssets = async ({
+    id,
+    asset,
+    updatedBy,
+}: UpdateAssetsParams) => {
+    const envelope = {
+        ...asset,
+        framework: updateRecordFramework({
+            updatedBy,
+            framework: asset.framework!,
+        }),
+    };
+    const parsed = AssetsSchema.parse(envelope);
     const result = await assets().updateOne(
         { _id: new ObjectId(id) },
         { $set: parsed }

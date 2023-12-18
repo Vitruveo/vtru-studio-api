@@ -3,6 +3,7 @@ import { ObjectId } from '../../../services';
 
 export interface CreateAssetsParams {
     asset: Assets;
+    createdBy: string;
 }
 
 export interface FindAssetsParams {
@@ -23,6 +24,7 @@ export interface FindOneAssetsParams {
 export interface UpdateAssetsParams {
     id: string | ObjectId;
     asset: Assets;
+    updatedBy: string;
 }
 
 export interface DeleteAssetsParams {

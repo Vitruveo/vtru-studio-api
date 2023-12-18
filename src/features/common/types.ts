@@ -1,5 +1,6 @@
 export interface JwtPayload {
     id: string;
+    type: 'creator' | 'user';
     iat: number;
     exp: number;
 }
@@ -15,4 +16,8 @@ export interface Query {
     };
     skip?: number;
     limit?: number;
+}
+
+export interface NeedsToBeOwnerPermissions {
+    permissions: string[];
 }

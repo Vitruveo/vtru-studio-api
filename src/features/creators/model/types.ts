@@ -11,6 +11,7 @@ export interface Login {
 }
 export interface CreateCreatorParams {
     creator: Partial<Creator>;
+    createdBy: string | null;
 }
 
 export interface FindCreatorsParams {
@@ -30,9 +31,8 @@ export interface FindOneCreatorParams {
 
 export interface UpdateCreatorParams {
     id: string | ObjectId;
-    creator: Omit<Partial<Creator>, 'login'> & {
-        login: Partial<Login>;
-    };
+    creator: Partial<Creator>;
+    updatedBy: string;
 }
 
 export interface UpdateCodeHashEmailCreatorParams {

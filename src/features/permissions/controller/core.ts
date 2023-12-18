@@ -5,17 +5,15 @@ import * as model from '../model';
 import { middleware } from '../../users';
 import { APIResponse } from '../../../services';
 import { Query } from '../../common/types';
-import { schemaQuery } from './validation';
+import { validateQueries } from '../../common/rules';
 
 const logger = debug('features:permissions:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', async (req, res) => {
+route.get('/', validateQueries, async (req, res) => {
     try {
-        schemaQuery.parse(req.query);
-
         const { query }: { query: Query } = req;
 
         const permissions = await model.findPermissions({

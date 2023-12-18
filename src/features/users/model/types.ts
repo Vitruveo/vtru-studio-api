@@ -14,6 +14,7 @@ export interface CreateUserParams {
     user: Omit<Partial<User>, 'login'> & {
         login: Omit<Login, 'loginHistory'>;
     };
+    createdBy: string | null;
 }
 
 export interface FindUsersParams {
@@ -36,6 +37,7 @@ export interface UpdateUserParams {
     user: Omit<Partial<User>, 'login'> & {
         login: Partial<Login>;
     };
+    updatedBy: string | null;
 }
 
 export interface PushLoginHistoryParams {

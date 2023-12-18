@@ -1,9 +1,7 @@
 import debug from 'debug';
-import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as jwt from 'jsonwebtoken';
-
 import { model } from '..';
 import { JwtPayload } from '../../common/types';
 import {
@@ -21,6 +19,7 @@ import {
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
 import { redis } from '../../../services/redis';
+import { loginSchema, otpConfirmSchema } from './schemas';
 
 export interface LoginAnswer {
     token: string;
@@ -29,17 +28,6 @@ export interface LoginAnswer {
 
 const logger = debug('features:users:controller');
 const route = Router();
-
-const emailValidation = z.string().email().min(1).max(64);
-
-const loginSchema = z.object({
-    email: emailValidation,
-});
-
-const otpConfirmSchema = z.object({
-    email: emailValidation,
-    code: z.string().length(6),
-});
 
 route.get('/', async (req, res) => {
     res.status(500).json({ message: 'Not implemented' });
@@ -71,6 +59,7 @@ route.post('/otpConfirm', async (req, res) => {
                 ...user,
                 login: { email, codeHash: '' },
             },
+            updatedBy: null,
         });
 
         const loginHistory = {
@@ -83,7 +72,7 @@ route.post('/otpConfirm', async (req, res) => {
         });
 
         const token = jwt.sign(
-            { id: user._id.toString() } as JwtPayload,
+            { id: user._id.toString(), type: 'user' } as JwtPayload,
             JWT_SECRETKEY,
             {
                 expiresIn: '14d',
@@ -121,8 +110,6 @@ route.post('/', async (req, res) => {
         const code = generateCode();
         const codeHash = encryptCode(code);
 
-        console.log({ code, codeHash });
-
         let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
 
         if (!user) {
@@ -133,6 +120,7 @@ route.post('/', async (req, res) => {
                         codeHash,
                     },
                 },
+                createdBy: null,
             });
 
             template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
@@ -143,6 +131,7 @@ route.post('/', async (req, res) => {
                     ...user,
                     login: { email, codeHash },
                 },
+                updatedBy: null,
             });
         }
 

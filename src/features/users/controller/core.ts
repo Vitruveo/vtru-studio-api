@@ -10,17 +10,20 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import { schemaParamsObjectId, schemaQuery } from './validation';
+import {
+    needsToBeOwner,
+    validateParamsId,
+    validateQueries,
+} from '../../common/rules';
+import { validateBodyForCreate, validateBodyForUpdate } from './rules';
 
 const logger = debug('features:users:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', async (req, res) => {
+route.get('/', validateQueries, async (req, res) => {
     try {
-        schemaQuery.parse(req.query);
-
         const { query }: { query: Query } = req;
 
         const users = await model.findUsers({
@@ -56,10 +59,8 @@ route.get('/', async (req, res) => {
     }
 });
 
-route.get('/:id', async (req, res) => {
+route.get('/:id', validateParamsId, async (req, res) => {
     try {
-        schemaParamsObjectId.id.parse(req.params.id);
-
         const user = await model.findUserById({ id: req.params.id });
 
         if (!user) {
@@ -89,9 +90,12 @@ route.get('/:id', async (req, res) => {
     }
 });
 
-route.post('/', async (req, res) => {
+route.post('/', validateBodyForCreate, async (req, res) => {
     try {
-        const result = await model.createUser({ user: req.body });
+        const result = await model.createUser({
+            user: req.body,
+            createdBy: req.auth.id,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.admin.users.create.success',
@@ -110,53 +114,61 @@ route.post('/', async (req, res) => {
     }
 });
 
-route.put('/:id', async (req, res) => {
-    try {
-        schemaParamsObjectId.id.parse(req.params.id);
+route.put(
+    '/:id',
+    validateParamsId,
+    needsToBeOwner({ permissions: ['users:admin', 'users:editor'] }),
+    validateBodyForUpdate,
+    async (req, res) => {
+        try {
+            const result = await model.updateUser({
+                id: req.params.id,
+                user: req.body,
+                updatedBy: req.auth.id,
+            });
 
-        const result = await model.updateUser({
-            id: req.params.id,
-            user: req.body,
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.users.update.success',
-            message: 'Update success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<UpdateResult<model.UserDocument>>);
-    } catch (error) {
-        logger('Update user failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.users.update.failed',
-            message: `Update failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.users.update.success',
+                message: 'Update success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult<model.UserDocument>>);
+        } catch (error) {
+            logger('Update user failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.users.update.failed',
+                message: `Update failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
-route.delete('/:id', async (req, res) => {
-    try {
-        schemaParamsObjectId.id.parse(req.params.id);
+route.delete(
+    '/:id',
+    validateParamsId,
+    needsToBeOwner({ permissions: ['users:admin', 'users:editor'] }),
+    async (req, res) => {
+        try {
+            const result = await model.deleteUser({ id: req.params.id });
 
-        const result = await model.deleteUser({ id: req.params.id });
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.users.delete.success',
-            message: 'Delete success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<DeleteResult>);
-    } catch (error) {
-        logger('Delete user failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.users.delete.failed',
-            message: `Delete failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.users.delete.success',
+                message: 'Delete success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<DeleteResult>);
+        } catch (error) {
+            logger('Delete user failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.users.delete.failed',
+                message: `Delete failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 export { route };

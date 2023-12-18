@@ -2,6 +2,7 @@ import { Permission } from './schema';
 
 export interface CreatePermissionParams {
     permission: Permission;
+    createdBy: string;
 }
 
 export interface FindPermissionsParams {
@@ -22,6 +23,7 @@ export interface FindOnePermissionParams {
 export interface UpdatePermissionParams {
     id: string;
     permission: Permission;
+    updatedBy: string;
 }
 
 export interface DeletePermissionParams {

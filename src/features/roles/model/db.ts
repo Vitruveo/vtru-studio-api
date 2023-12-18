@@ -8,12 +8,20 @@ import type {
     UpdateRoleParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
+import {
+    createRecordFramework,
+    updateRecordFramework,
+} from '../../common/record';
 
 const roles = () => getDb().collection(COLLECTION_ROLES);
 
 // basic actions
-export const createRole = async ({ role }: CreateRoleParams) => {
-    const parsed = RoleSchema.parse(role);
+export const createRole = async ({ role, createdBy }: CreateRoleParams) => {
+    const envelope = {
+        ...role,
+        framework: createRecordFramework({ createdBy }),
+    };
+    const parsed = RoleSchema.parse(envelope);
 
     const result = await roles().insertOne(parsed);
     return result;
@@ -43,8 +51,15 @@ export const findOneRole = async ({ query }: FindOneRoleParams) => {
     return result;
 };
 
-export const updateRole = async ({ id, role }: UpdateRoleParams) => {
-    const parsed = RoleSchema.parse(role);
+export const updateRole = async ({ id, role, updatedBy }: UpdateRoleParams) => {
+    const envelope = {
+        ...role,
+        framework: updateRecordFramework({
+            updatedBy,
+            framework: role.framework!,
+        }),
+    };
+    const parsed = RoleSchema.parse(envelope);
     const result = await roles().updateOne(
         { _id: new ObjectId(id) },
         { $set: parsed }

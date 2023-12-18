@@ -12,15 +12,24 @@ import type {
     UpdatePermissionParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
+import {
+    createRecordFramework,
+    updateRecordFramework,
+} from '../../common/record';
 
 const permissions = () => getDb().collection(COLLECTION_PERMISSIONS);
 
 // basic actions
 export const createPermission = async ({
     permission,
+    createdBy,
 }: CreatePermissionParams) => {
     try {
-        const parsed = PermissionSchema.parse(permission);
+        const envelope = {
+            ...permission,
+            framework: createRecordFramework({ createdBy }),
+        };
+        const parsed = PermissionSchema.parse(envelope);
 
         try {
             const result = await permissions().insertOne(parsed);
@@ -63,8 +72,16 @@ export const findOnePermission = async ({ query }: FindOnePermissionParams) => {
 export const updatePermission = async ({
     id,
     permission,
+    updatedBy,
 }: UpdatePermissionParams) => {
-    const parsed = PermissionSchema.parse(permission);
+    const envelope = {
+        ...permission,
+        framework: updateRecordFramework({
+            updatedBy,
+            framework: permission.framework!,
+        }),
+    };
+    const parsed = PermissionSchema.parse(envelope);
     const result = await permissions().updateOne(
         { _id: new ObjectId(id) },
         { $set: parsed }

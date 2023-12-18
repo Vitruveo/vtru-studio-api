@@ -9,18 +9,21 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import { schemaParamsObjectId, schemaQuery } from './validation';
 import { Query } from '../../common/types';
+import {
+    needsToBeOwner,
+    validateParamsId,
+    validateQueries,
+} from '../../common/rules';
+import { validateBodyForCreate, validateBodyForUpdate } from './rules';
 
 const logger = debug('features:assets:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', async (req, res) => {
+route.get('/', validateQueries, async (req, res) => {
     try {
-        schemaQuery.parse(req.query);
-
         const { query }: { query: Query } = req;
         const assets = await model.findAssets({
             query: { limit: query.limit },
@@ -55,10 +58,8 @@ route.get('/', async (req, res) => {
     }
 });
 
-route.get('/:id', async (req, res) => {
+route.get('/:id', validateParamsId, async (req, res) => {
     try {
-        schemaParamsObjectId.id.parse(req.params.id);
-
         const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
@@ -87,9 +88,12 @@ route.get('/:id', async (req, res) => {
     }
 });
 
-route.post('/', async (req, res) => {
+route.post('/', validateBodyForCreate, async (req, res) => {
     try {
-        const result = await model.createAssets({ asset: req.body });
+        const result = await model.createAssets({
+            asset: req.body,
+            createdBy: req.auth.id,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.admin.assets.create.success',
@@ -108,49 +112,61 @@ route.post('/', async (req, res) => {
     }
 });
 
-route.put('/:id', async (req, res) => {
-    try {
-        const result = await model.updateAssets({
-            id: req.params.id,
-            asset: req.body,
-        });
+route.put(
+    '/:id',
+    validateParamsId,
+    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    validateBodyForUpdate,
+    async (req, res) => {
+        try {
+            const result = await model.updateAssets({
+                id: req.params.id,
+                asset: req.body,
+                updatedBy: req.auth.id,
+            });
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.assets.update.success',
-            message: 'Update success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<UpdateResult<model.AssetsDocument>>);
-    } catch (error) {
-        logger('Update assets failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.update.failed',
-            message: `Update failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.assets.update.success',
+                message: 'Update success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult<model.AssetsDocument>>);
+        } catch (error) {
+            logger('Update assets failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.update.failed',
+                message: `Update failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
-route.delete('/:id', async (req, res) => {
-    try {
-        const result = await model.deleteAssets({ id: req.params.id });
+route.delete(
+    '/:id',
+    validateParamsId,
+    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    async (req, res) => {
+        try {
+            const result = await model.deleteAssets({ id: req.params.id });
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.assets.delete.success',
-            message: 'Delete success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<DeleteResult>);
-    } catch (error) {
-        logger('Delete assets failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.delete.failed',
-            message: `Delete failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.assets.delete.success',
+                message: 'Delete success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<DeleteResult>);
+        } catch (error) {
+            logger('Delete assets failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.delete.failed',
+                message: `Delete failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 export { route };
