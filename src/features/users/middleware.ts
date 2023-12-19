@@ -14,6 +14,7 @@ export function checkAuth(req: Request, res: Response, next: NextFunction) {
                 req.auth = {
                     id: (decoded as JwtPayload).id,
                     type: (decoded as JwtPayload).type,
+                    permissions: (decoded as JwtPayload).permissions || [],
                 };
 
                 next();

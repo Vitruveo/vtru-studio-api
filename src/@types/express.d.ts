@@ -3,6 +3,7 @@ declare module Express {
         auth: {
             id: string;
             type: 'user' | 'creator';
+            permissions: string[];
         };
     }
 }

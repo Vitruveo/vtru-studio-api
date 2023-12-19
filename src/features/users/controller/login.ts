@@ -8,7 +8,6 @@ import {
     createUser,
     encryptCode,
     findOneUser,
-    generateCode,
     pushUserLoginHistory,
     updateUser,
 } from '../model';
@@ -19,8 +18,11 @@ import {
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
+import { ObjectId } from '../../../services/mongo';
 import { redis } from '../../../services/redis';
-import { loginSchema, otpConfirmSchema } from './schemas';
+import { otpConfirmSchema } from './schemas';
+import { findRoleReturnPermissions } from '../../roles/model';
+import { validateBodyForLogin } from './rules';
 
 export interface LoginAnswer {
     token: string;
@@ -57,8 +59,7 @@ route.post('/otpConfirm', async (req, res) => {
         await updateUser({
             id: user._id,
             user: {
-                ...user,
-                login: { email, codeHash: '' },
+                login: { ...user.login, email, codeHash: '' },
             },
         });
 
@@ -71,13 +72,26 @@ route.post('/otpConfirm', async (req, res) => {
             data: loginHistory,
         });
 
-        const token = jwt.sign(
-            { id: user._id.toString(), type: 'user' } as JwtPayload,
-            JWT_SECRETKEY,
-            {
-                expiresIn: '14d',
-            }
+        const permissions = await findRoleReturnPermissions({
+            query: {
+                _id: { $in: user.roles.map((item) => new ObjectId(item)) },
+            },
+        });
+
+        const userPermissions = permissions.reduce(
+            (acc, item) => [...acc, ...item.permissions],
+            [] as string[]
         );
+
+        const payload = {
+            id: user._id.toString(),
+            type: 'user',
+            permissions: userPermissions,
+        } as JwtPayload;
+
+        const token = jwt.sign(payload, JWT_SECRETKEY, {
+            expiresIn: '14d',
+        });
 
         await redis.set(`user:${user._id}`, token, 'EX', 60 * 60 * 24 * 14);
 
@@ -102,24 +116,16 @@ route.post('/otpConfirm', async (req, res) => {
     }
 });
 
-route.post('/', async (req, res) => {
+route.post('/', validateBodyForLogin, async (req, res) => {
     try {
-        const { email } = loginSchema.parse(req.body);
+        const { email, code, codeHash } = req.body;
         const user = await findOneUser({ query: { 'login.email': email } });
-
-        const code = generateCode();
-        const codeHash = encryptCode(code);
 
         let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
 
         if (!user) {
             await createUser({
-                user: {
-                    login: {
-                        email,
-                        codeHash,
-                    },
-                },
+                user: req.body.user,
             });
 
             template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
@@ -127,15 +133,18 @@ route.post('/', async (req, res) => {
             await updateUser({
                 id: user._id,
                 user: {
-                    ...user,
-                    login: { email, codeHash },
+                    login: { ...user.login, email, codeHash },
                 },
             });
         }
 
         console.log({ template, code, email });
 
-        const payload = JSON.stringify({ template, code, email });
+        const payload = JSON.stringify({
+            template,
+            code,
+            email,
+        });
         await sendToExchangeMail(payload);
 
         res.json({

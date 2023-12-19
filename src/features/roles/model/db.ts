@@ -1,10 +1,11 @@
-import { RoleSchema, RoleDocument, COLLECTION_ROLES } from './schema';
+import { RoleDocument, COLLECTION_ROLES } from './schema';
 import type {
     CreateRoleParams,
     DeleteRoleParams,
     FindOneRoleParams,
     FindRoleByIdParams,
     FindRolesParams,
+    FindRolesReturnPermissionsParams,
     UpdateRoleParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
@@ -29,6 +30,18 @@ export const findRoles = async ({
     if (limit) result = result.limit(limit);
 
     return result.stream();
+};
+
+export const findRoleReturnPermissions = async ({
+    query,
+}: FindRolesReturnPermissionsParams) => {
+    const result = await roles().find(query, {
+        projection: {
+            permissions: 1,
+        },
+    });
+
+    return result.toArray();
 };
 
 export const findRoleById = async ({ id }: FindRoleByIdParams) => {

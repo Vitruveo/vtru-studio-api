@@ -12,6 +12,10 @@ export interface FindRolesParams {
     limit?: number;
 }
 
+export interface FindRolesReturnPermissionsParams {
+    query: any;
+}
+
 export interface FindRoleByIdParams {
     id: string | ObjectId;
 }

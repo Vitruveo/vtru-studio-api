@@ -4,6 +4,7 @@ import type {
     DeletePermissionParams,
     FindOnePermissionParams,
     FindPermissionByIdParams,
+    FindPermissionsByIdsParams,
     FindPermissionsParams,
     UpdatePermissionParams,
 } from './types';
@@ -42,6 +43,23 @@ export const findPermissions = async ({
     if (limit) result = result.limit(limit);
 
     return result.stream();
+};
+
+export const findPermissionsByIds = async ({
+    ids,
+}: FindPermissionsByIdsParams) => {
+    const result = await permissions().find(
+        {
+            _id: {
+                $in: ids.map((id) => new ObjectId(id)),
+            },
+        },
+        { projection: { key: 1 } }
+    );
+
+    console.log(result);
+
+    return result.toArray();
 };
 
 export const findPermissionById = async ({ id }: FindPermissionByIdParams) => {

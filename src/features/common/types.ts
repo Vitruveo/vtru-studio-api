@@ -1,6 +1,7 @@
 export interface JwtPayload {
     id: string;
     type: 'creator' | 'user';
+    permissions: string[];
     iat: number;
     exp: number;
 }

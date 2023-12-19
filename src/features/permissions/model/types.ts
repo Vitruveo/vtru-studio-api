@@ -15,6 +15,10 @@ export interface FindPermissionByIdParams {
     id: string;
 }
 
+export interface FindPermissionsByIdsParams {
+    ids: string[];
+}
+
 export interface FindOnePermissionParams {
     query: any;
 }
