@@ -2,6 +2,8 @@ import { createHash } from 'crypto';
 import { customAlphabet } from 'nanoid';
 import { LOGIN_CODE_SALT } from '../../../constants';
 
+const nanoid = customAlphabet('0123456789', 6);
+
 export const encryptCode = (code: string) => {
     const sha256 = createHash('sha256');
     const encryptedCode = sha256
@@ -12,7 +14,6 @@ export const encryptCode = (code: string) => {
 };
 
 export const generateCode = () => {
-    const nanoid = customAlphabet('0123456789', 6);
     const randomNumbers = nanoid();
     const formattedNumber = `${randomNumbers.slice(0, 3)}${randomNumbers.slice(
         3

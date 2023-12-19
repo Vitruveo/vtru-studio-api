@@ -2,13 +2,14 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as jwt from 'jsonwebtoken';
-import { model } from '..';
 import { JwtPayload } from '../../common/types';
 import {
+    UserDocument,
     createUser,
     encryptCode,
     findOneUser,
     generateCode,
+    pushUserLoginHistory,
     updateUser,
 } from '../model';
 import {
@@ -23,10 +24,10 @@ import { loginSchema, otpConfirmSchema } from './schemas';
 
 export interface LoginAnswer {
     token: string;
-    user: Partial<model.UserDocument>;
+    user: Partial<UserDocument>;
 }
 
-const logger = debug('features:users:controller');
+const logger = debug('features:users:controller:login');
 const route = Router();
 
 route.get('/', async (req, res) => {
@@ -65,7 +66,7 @@ route.post('/otpConfirm', async (req, res) => {
             ip: nanoid(),
             createdAt: new Date(),
         };
-        await model.pushUserLoginHistory({
+        await pushUserLoginHistory({
             id: user._id,
             data: loginHistory,
         });

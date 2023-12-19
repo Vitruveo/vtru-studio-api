@@ -2,13 +2,13 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as jwt from 'jsonwebtoken';
-
-import { model } from '..';
 import { JwtPayload } from '../../common/types';
 import {
+    CreatorDocument,
     createCreator,
     encryptCode,
     findOneCreator,
+    pushCreatorLoginHistory,
     updateCodeHashEmailCreator,
 } from '../model';
 import {
@@ -18,15 +18,15 @@ import {
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
-import { LoginHistory } from '../model/types';
 import { validateBodyForLogin, validateBodyForOtpLogin } from './rules';
+import type { LoginHistory } from '../model/types';
 
 export interface LoginAnswer {
     token: string;
-    creator: Partial<model.CreatorDocument>;
+    creator: Partial<CreatorDocument>;
 }
 
-const logger = debug('features:creators:controller');
+const logger = debug('features:creators:controller:login');
 const route = Router();
 
 route.get('/', async (req, res) => {
@@ -65,7 +65,7 @@ route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
             ip,
             createdAt: new Date(),
         };
-        await model.pushCreatorLoginHistory({
+        await pushCreatorLoginHistory({
             id: creator._id,
             data: loginHistory,
         });
