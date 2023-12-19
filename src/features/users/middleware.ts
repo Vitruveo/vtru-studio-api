@@ -11,8 +11,11 @@ export function checkAuth(req: Request, res: Response, next: NextFunction) {
             if (err) {
                 res.status(401).json({ message: 'Failed to authenticate' });
             } else {
-                req.auth.id = (decoded as JwtPayload).id;
-                req.auth.type = (decoded as JwtPayload).type;
+                req.auth = {
+                    id: (decoded as JwtPayload).id,
+                    type: (decoded as JwtPayload).type,
+                };
+
                 next();
             }
         });
