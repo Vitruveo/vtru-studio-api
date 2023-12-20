@@ -35,7 +35,7 @@ route.get('/', async (req, res) => {
 
 route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
     try {
-        const { email, code } = req.body;
+        const { email, code, framework } = req.body;
         const ip = req.headers['x-forwarded-for']?.toString() || '';
 
         const creator = await findOneCreator({
@@ -58,7 +58,7 @@ route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
             email,
             codeHash: null,
             checkedAt: new Date(),
-            framework: req.body.framework,
+            framework,
         });
 
         const loginHistory: LoginHistory = {
@@ -106,7 +106,13 @@ route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
 
 route.post('/', validateBodyForLogin, async (req, res) => {
     try {
-        const { email } = req.body;
+        const {
+            email,
+            code,
+            codeHash,
+            creator: creatorData,
+            framework,
+        } = req.body;
 
         const creator = await findOneCreator({
             query: { emails: { $elemMatch: { email } } },
@@ -115,25 +121,27 @@ route.post('/', validateBodyForLogin, async (req, res) => {
         let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
 
         if (!creator) {
-            await createCreator({ creator: req.body.creator });
+            await createCreator({ creator: creatorData });
 
             template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
         } else {
             await updateCodeHashEmailCreator({
                 id: creator._id,
                 email,
-                codeHash: req.body.codeHash,
-                framework: req.body.framework,
+                codeHash,
+                framework,
                 checkedAt: null,
             });
         }
 
-        console.log({ code: req.body.code, email });
+        console.log({ code, email });
 
         const payload = JSON.stringify({
+            to: email,
+            subject: 'Login code',
+            text: code,
+            html: '',
             template,
-            code: req.body.code,
-            email,
         });
         await sendToExchangeMail(payload);
 
