@@ -46,6 +46,7 @@ jobs:
           REPOSITORY: vitruveo.studio.api
           UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
           UPDATE_URL: ${{ secrets.UPDATE_URL }}
+          REPOSITORY_IMAGE: ${{ vars.REPOSITORY_IMAGE }}
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG.qa -f Dockerfile.production --network host .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG.qa
