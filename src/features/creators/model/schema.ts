@@ -30,7 +30,11 @@ export const CreatorSchema = z.object({
     wallets: z
         .array(
             z.object({
-                publicId: z.string(),
+                address: z.string(),
+                network: z.object({
+                    name: z.string(),
+                    chainId: z.number(),
+                }),
             })
         )
         .default([]),

@@ -137,9 +137,10 @@ export const validateBodyForAddEmail = async (
     }
 
     try {
-        req.body = schemaValidationForAddEmail.parse(req.body);
+        const originalBody = req.body;
+        req.body = schemaValidationForAddEmail.parse(originalBody);
         req.body.framework = updateRecordFramework({
-            framework: req.body.framework,
+            framework: originalBody.framework,
             updatedBy: req.auth.id,
         });
         next();
