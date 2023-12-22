@@ -12,8 +12,8 @@ import {
     updateCodeHashEmailCreator,
 } from '../model';
 import {
-    LOGIN_TEMPLATE_EMAIL_SIGNIN,
-    LOGIN_TEMPLATE_EMAIL_SIGNUP,
+    MAIL_SENDGRID_TEMPLATE_SIGNIN,
+    MAIL_SENDGRID_TEMPLATE_SIGNUP,
     JWT_SECRETKEY,
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
@@ -118,12 +118,12 @@ route.post('/', validateBodyForLogin, async (req, res) => {
             query: { emails: { $elemMatch: { email } } },
         });
 
-        let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
+        let template = MAIL_SENDGRID_TEMPLATE_SIGNIN;
 
         if (!creator) {
             await createCreator({ creator: creatorData });
 
-            template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
+            template = MAIL_SENDGRID_TEMPLATE_SIGNUP;
         } else {
             await updateCodeHashEmailCreator({
                 id: creator._id,
@@ -142,6 +142,7 @@ route.post('/', validateBodyForLogin, async (req, res) => {
             text: code,
             html: '',
             template,
+            link: '',
         });
         await sendToExchangeMail(payload);
 

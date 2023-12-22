@@ -8,7 +8,7 @@ import { Query } from '../../common/types';
 
 import { middleware } from '../../users';
 import { encryptCode, generateCode } from '../../users/model';
-import { LOGIN_TEMPLATE_EMAIL_SIGNIN } from '../../../constants';
+import { MAIL_SENDGRID_TEMPLATE_SIGNIN } from '../../../constants';
 import { sendToExchangeMail } from '../../../services/mail';
 import {
     APIResponse,
@@ -316,7 +316,7 @@ route.post('/:email/email/sendCode', validateParamsEmail, async (req, res) => {
 
         const code = generateCode();
         const codeHash = encryptCode(code);
-        const template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
+        const template = MAIL_SENDGRID_TEMPLATE_SIGNIN;
 
         await model.updateCodeHashEmailCreator({
             id: creator._id,
@@ -423,7 +423,12 @@ route.post('/request/upload', async (req, res) => {
         const path = `${id}/${new Date().getTime()}.${extension}`;
 
         await sendToExchangeCreators(
-            JSON.stringify({ path, creatorId: id, transactionId })
+            JSON.stringify({
+                path,
+                creatorId: id,
+                transactionId,
+                origin: 'profile',
+            })
         );
 
         res.json({

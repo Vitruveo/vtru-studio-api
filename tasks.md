@@ -1,3 +1,0 @@
--   quando uma rota nao encontrar o registro deve retornar 404.
--   criar um middleware para validar se o usuario esta removendo ou alterando dados dele mesmo, ou se ele é um user.
--   adicionar o framework em tudo

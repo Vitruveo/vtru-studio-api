@@ -16,6 +16,7 @@ import {
     validateQueries,
 } from '../../common/rules';
 import { validateBodyForCreate, validateBodyForUpdate } from './rules';
+import { sendToExchangeCreators } from '../../creators/upload';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -166,5 +167,41 @@ route.delete(
         }
     }
 );
+
+route.post('/request/upload', async (req, res) => {
+    const transactionId = nanoid();
+
+    try {
+        const { mimetype } = req.body;
+        const { id } = req.auth;
+
+        const extension = mimetype.split('/')[1];
+        const path = `${id}/${new Date().getTime()}.${extension}`;
+
+        await sendToExchangeCreators(
+            JSON.stringify({
+                path,
+                creatorId: id,
+                transactionId,
+                origin: 'asset',
+            })
+        );
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.request.upload.success',
+            message: 'Asset request upload success',
+            transaction: transactionId,
+            data: 'request requested, wait for the URL to upload',
+        } as APIResponse<string>);
+    } catch (error) {
+        logger('Asset request upload failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.request.upload.failed',
+            message: `Asset request upload failed: ${error}`,
+            args: error,
+            transaction: transactionId,
+        } as APIResponse);
+    }
+});
 
 export { route };

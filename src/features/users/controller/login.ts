@@ -12,8 +12,8 @@ import {
     updateUser,
 } from '../model';
 import {
-    LOGIN_TEMPLATE_EMAIL_SIGNIN,
-    LOGIN_TEMPLATE_EMAIL_SIGNUP,
+    MAIL_SENDGRID_TEMPLATE_SIGNIN,
+    MAIL_SENDGRID_TEMPLATE_SIGNUP,
     JWT_SECRETKEY,
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
@@ -121,14 +121,14 @@ route.post('/', validateBodyForLogin, async (req, res) => {
         const { email, code, codeHash, user: userData } = req.body;
         const user = await findOneUser({ query: { 'login.email': email } });
 
-        let template = LOGIN_TEMPLATE_EMAIL_SIGNIN;
+        let template = MAIL_SENDGRID_TEMPLATE_SIGNIN;
 
         if (!user) {
             await createUser({
                 user: userData,
             });
 
-            template = LOGIN_TEMPLATE_EMAIL_SIGNUP;
+            template = MAIL_SENDGRID_TEMPLATE_SIGNUP;
         } else {
             await updateUser({
                 id: user._id,
@@ -146,6 +146,7 @@ route.post('/', validateBodyForLogin, async (req, res) => {
             text: code,
             html: '',
             template,
+            link: '',
         });
         await sendToExchangeMail(payload);
 
