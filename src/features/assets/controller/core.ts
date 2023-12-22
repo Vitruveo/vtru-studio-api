@@ -15,7 +15,11 @@ import {
     validateParamsId,
     validateQueries,
 } from '../../common/rules';
-import { validateBodyForCreate, validateBodyForUpdate } from './rules';
+import {
+    validateBodyForCreate,
+    validateBodyForUpdate,
+    validateBodyForUpdateStep,
+} from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
 
 const logger = debug('features:assets:controller');
@@ -167,6 +171,40 @@ route.delete(
         }
     }
 );
+
+route.put('/', validateBodyForUpdateStep, async (req, res) => {
+    try {
+        const assetsByCreatorId = await model.findOneAssets({
+            query: { 'framework.createdBy': req.auth.id, status: 'draft' },
+        });
+
+        let result;
+
+        if (!assetsByCreatorId) {
+            result = await model.createAssets({ asset: req.body });
+        } else {
+            result = await model.updateAssets({
+                id: assetsByCreatorId._id,
+                asset: req.body,
+            });
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.updatStep.success',
+            message: 'Update step success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<InsertOneResult | UpdateResult>);
+    } catch (error) {
+        logger('Update step assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.updatStep.failed',
+            message: `Update step failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.post('/request/upload', async (req, res) => {
     const transactionId = nanoid();

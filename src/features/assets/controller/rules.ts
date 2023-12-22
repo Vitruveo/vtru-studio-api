@@ -8,6 +8,7 @@ import {
 import {
     schemaValidationForCreate,
     schemaValidationForUpdate,
+    schemaValidationForUpdateStep,
 } from './schemas';
 
 export const validateBodyForCreate = async (
@@ -66,6 +67,43 @@ export const validateBodyForUpdate = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForUpdate.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateStep = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'PUT') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateStep.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        const payload = {
+            ...req.body,
+            framework: createRecordFramework({
+                createdBy: req.auth.id,
+            }),
+        };
+
+        req.body = schemaValidationForUpdateStep.parse(payload);
+
+        req.body.status = 'draft';
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateStep.failed',
             message: '',
             transaction: nanoid(),
             args: error,

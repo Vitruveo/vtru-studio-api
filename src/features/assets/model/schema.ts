@@ -5,12 +5,8 @@ export const COLLECTION_ASSETS = 'assets';
 
 export const AssetsSchema = z.object({
     domain: z.string().default(''),
-    media: z.object({
-        path: z.string().default(''),
-        originalName: z.string().default(''),
-        mimetype: z.string().default(''),
-        size: z.number().default(0),
-    }),
+    status: z.enum(['draft', 'published', 'archived']),
+
     formats: z.array(
         z.object({
             definition: z.string().default(''),
