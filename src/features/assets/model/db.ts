@@ -36,6 +36,13 @@ export const findAssetsById = async ({ id }: FindAssetsByIdParams) => {
     return result;
 };
 
+export const findAssetCreatedBy = async ({ id }: FindAssetsByIdParams) => {
+    const result = await assets().findOne({
+        'framework.createdBy': id,
+    });
+    return result;
+};
+
 export const findOneAssets = async ({ query }: FindOneAssetsParams) => {
     const result = await assets().findOne<AssetsDocument>(query);
     return result;
