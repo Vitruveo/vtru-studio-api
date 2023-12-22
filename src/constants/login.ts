@@ -1,5 +1,5 @@
-export const LOGIN_TEMPLATE_EMAIL_SIGNIN =
-    process.env.LOGIN_TEMPLATE_EMAIL_SIGNIN || '';
+export const MAIL_SENDGRID_TEMPLATE_SIGNIN =
+    process.env.MAIL_SENDGRID_TEMPLATE_SIGNIN || '';
 
-export const LOGIN_TEMPLATE_EMAIL_SIGNUP =
-    process.env.LOGIN_TEMPLATE_EMAIL_SIGNUP || '';
+export const MAIL_SENDGRID_TEMPLATE_SIGNUP =
+    process.env.MAIL_SENDGRID_TEMPLATE_SIGNUP || '';
