@@ -75,16 +75,39 @@ const schemaMetadataDefinition = z.object({
         .default(null),
 });
 
-export const schemaValidationForUpdateStep = z.object({
-    formats: z
-        .array(
-            z.object({
-                definition: z.string(),
+export const schemaAssetUpload = z.object({
+    formats: z.object({
+        display: z
+            .object({
                 name: z.string(),
                 path: z.string(),
             })
-        )
-        .default([]),
+            .nullable()
+            .default(null),
+        preview: z
+            .object({
+                name: z.string(),
+                path: z.string(),
+            })
+            .nullable()
+            .default(null),
+        exhibition: z
+            .object({
+                name: z.string(),
+                path: z.string(),
+            })
+            .nullable()
+            .default(null),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaLicenses = z.object({
     licenses: z
         .array(
             z.object({
@@ -98,17 +121,44 @@ export const schemaValidationForUpdateStep = z.object({
             })
         )
         .default([]),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaAssetMetadata = z.object({
     assetMetadata: z.object({
         assetMetadataDefinitions: z.array(schemaMetadataDefinition).default([]),
         assetMetadataDomains: z
             .array(z.object({ value: z.string(), label: z.string() }))
             .default([]),
     }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaCreatorMetadata = z.object({
     creatorMetadata: z.object({
         creatorMetadataDefinitions: z
             .array(schemaMetadataDefinition)
             .default([]),
     }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaContract = z.object({
     contract: z.boolean().default(false),
     framework: z.object({
         createdAt: z.date(),

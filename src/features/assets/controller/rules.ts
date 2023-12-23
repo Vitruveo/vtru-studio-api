@@ -6,9 +6,13 @@ import {
     updateRecordFramework,
 } from '../../common/record';
 import {
+    schemaAssetMetadata,
+    schemaAssetUpload,
+    schemaContract,
+    schemaCreatorMetadata,
+    schemaLicenses,
     schemaValidationForCreate,
     schemaValidationForUpdate,
-    schemaValidationForUpdateStep,
 } from './schemas';
 
 export const validateBodyForCreate = async (
@@ -97,7 +101,31 @@ export const validateBodyForUpdateStep = async (
             }),
         };
 
-        req.body = schemaValidationForUpdateStep.parse(payload);
+        switch (req.body.stepName) {
+            case 'assetUpload':
+                req.body = schemaAssetUpload.parse(payload);
+                break;
+
+            case 'assetMetadata':
+                req.body = schemaAssetMetadata.parse(payload);
+                break;
+
+            case 'creatorMetadata':
+                req.body = schemaCreatorMetadata.parse(payload);
+                break;
+
+            case 'license':
+                req.body = schemaLicenses.parse(payload);
+                break;
+
+            case 'contract':
+                req.body = schemaContract.parse(payload);
+                break;
+            default:
+                throw new Error('Invalid step name');
+        }
+
+        // req.body = schemaValidationForUpdateStep.parse(payload);
 
         req.body.status = 'draft';
         next();

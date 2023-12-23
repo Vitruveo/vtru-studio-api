@@ -413,10 +413,10 @@ route.post(
 );
 
 route.post('/request/upload', async (req, res) => {
-    const transactionId = nanoid();
+    const transactionApiId = nanoid();
 
     try {
-        const { mimetype } = req.body;
+        const { mimetype, transactionId } = req.body;
         const { id } = req.auth;
 
         const extension = mimetype.split('/')[1];
@@ -434,7 +434,7 @@ route.post('/request/upload', async (req, res) => {
         res.json({
             code: 'vitruveo.studio.api.admin.creators.request.upload.success',
             message: 'Creator request upload success',
-            transaction: transactionId,
+            transaction: transactionApiId,
             data: 'request requested, wait for the URL to upload',
         } as APIResponse<string>);
     } catch (error) {
@@ -443,7 +443,7 @@ route.post('/request/upload', async (req, res) => {
             code: 'vitruveo.studio.api.admin.creators.request.upload.failed',
             message: `Creator request upload failed: ${error}`,
             args: error,
-            transaction: transactionId,
+            transaction: transactionApiId,
         } as APIResponse);
     }
 });

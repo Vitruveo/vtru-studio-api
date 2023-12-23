@@ -29,12 +29,11 @@ route.use(middleware.checkAuth);
 
 route.get('/creatorMy', validateQueries, async (req, res) => {
     try {
-        console.log(req.auth.id);
         const asset = await model.findAssetCreatedBy({ id: req.auth.id });
 
         if (!asset) {
             res.status(404).json({
-                code: 'vitruveo.studio.api.assets.reader.failed',
+                code: 'vitruveo.studio.api.assets.creatorMy.failed',
                 message: `Asset not found`,
                 args: [],
                 transaction: nanoid(),
@@ -44,16 +43,16 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
         }
 
         res.json({
-            code: 'vitruveo.studio.api.assets.reader.success',
+            code: 'vitruveo.studio.api.assets.creatorMy.success',
             message: 'Reader success',
             transaction: nanoid(),
             data: asset,
         } as APIResponse<model.AssetsDocument>);
     } catch (error) {
-        logger('Reader all assets failed: %O', error);
+        logger('Reader asset failed: %O', error);
         res.status(500).json({
-            code: 'vitruveo.studio.api.assets.reader.all.failed',
-            message: `Reader all failed: ${error}`,
+            code: 'vitruveo.studio.api.assets.creatorMy.failed',
+            message: `Reader failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
