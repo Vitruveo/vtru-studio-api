@@ -112,6 +112,7 @@ export const schemaLicenses = z.object({
         .array(
             z.object({
                 title: z.string().default(''),
+                added: z.boolean().default(false),
                 domain: z.string().default(''),
                 version: z.string().default(''),
                 enable: z.boolean().default(true),
