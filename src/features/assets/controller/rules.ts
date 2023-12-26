@@ -11,6 +11,7 @@ import {
     schemaContract,
     schemaCreatorMetadata,
     schemaLicenses,
+    schemaPublish,
     schemaValidationForCreate,
     schemaValidationForUpdate,
 } from './schemas';
@@ -121,13 +122,16 @@ export const validateBodyForUpdateStep = async (
             case 'contract':
                 req.body = schemaContract.parse(payload);
                 break;
+            case 'publish':
+                req.body = schemaPublish.parse(payload);
+                break;
             default:
                 throw new Error('Invalid step name');
         }
 
         // req.body = schemaValidationForUpdateStep.parse(payload);
 
-        req.body.status = 'draft';
+        // req.body.status = 'draft';
         next();
     } catch (error) {
         res.status(400).json({

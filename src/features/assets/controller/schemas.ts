@@ -168,3 +168,13 @@ export const schemaContract = z.object({
         updatedBy: z.string().nullable().default(null),
     }),
 });
+
+export const schemaPublish = z.object({
+    status: z.enum(['draft', 'published', 'archived']),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
