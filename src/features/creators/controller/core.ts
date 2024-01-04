@@ -329,9 +329,15 @@ route.post('/:email/email/sendCode', validateParamsEmail, async (req, res) => {
             }),
         });
 
-        console.log({ template, code, email });
+        const payload = JSON.stringify({
+            to: email,
+            subject: 'Login code',
+            text: code,
+            html: '',
+            template,
+            link: '',
+        });
 
-        const payload = JSON.stringify({ template, code, email });
         await sendToExchangeMail(payload);
 
         res.json({
