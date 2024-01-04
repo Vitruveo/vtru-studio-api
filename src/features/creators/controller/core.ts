@@ -303,6 +303,7 @@ route.post('/:email/email/sendCode', validateParamsEmail, async (req, res) => {
         const creator = await model.findOneCreator({
             query: { emails: { $elemMatch: { email } } },
         });
+
         if (!creator) {
             res.status(404).json({
                 code: 'vitruveo.studio.api.admin.creators.send.code.email.failed',
@@ -328,6 +329,8 @@ route.post('/:email/email/sendCode', validateParamsEmail, async (req, res) => {
                 updatedBy: req.auth.id,
             }),
         });
+
+        console.log({ email, code });
 
         const payload = JSON.stringify({
             to: email,

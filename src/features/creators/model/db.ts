@@ -11,6 +11,7 @@ import type {
     AddEmailParams,
     UpdateCodeHashEmailCreatorParams,
     AddEmailCreatorParams,
+    DeleteCreatorEmailParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 

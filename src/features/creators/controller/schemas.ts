@@ -7,12 +7,17 @@ export const schemaValidationForPut = z.object({
     wallets: z.array(
         z.object({
             address: z.string(),
-            network: z.object({
-                name: z.string(),
-                chainId: z.number(),
-            }),
         })
     ),
+    emails: z
+        .array(
+            z.object({
+                email: z.string().email(),
+                codeHash: z.string().nullable().default(null),
+                checkedAt: z.string().nullable().default(null),
+            })
+        )
+        .default([]),
     profile: z.object({
         avatar: z.string().nullable().default(null),
         phone: z.string().nullable().default(null),

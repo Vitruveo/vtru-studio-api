@@ -57,6 +57,10 @@ export interface DeleteCreatorParams {
     id: string | ObjectId;
 }
 
+export interface DeleteCreatorEmailParams {
+    email: string;
+}
+
 export interface CheckUsernameExistParams {
     username: string;
 }

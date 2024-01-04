@@ -23,7 +23,7 @@ export const CreatorSchema = z.object({
             z.object({
                 email: z.string().email(),
                 codeHash: z.string().nullable().default(null),
-                checkedAt: z.date().nullable().default(null),
+                checkedAt: z.string().nullable().default(null),
             })
         )
         .default([]),
@@ -31,10 +31,6 @@ export const CreatorSchema = z.object({
         .array(
             z.object({
                 address: z.string(),
-                network: z.object({
-                    name: z.string(),
-                    chainId: z.number(),
-                }),
             })
         )
         .default([]),
