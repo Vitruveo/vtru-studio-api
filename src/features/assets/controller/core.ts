@@ -207,7 +207,7 @@ route.delete(
 route.put('/', validateBodyForUpdateStep, async (req, res) => {
     try {
         const assetsByCreatorId = await model.findOneAssets({
-            query: { 'framework.createdBy': req.auth.id, status: 'draft' },
+            query: { 'framework.createdBy': req.auth.id },
         });
 
         let result;

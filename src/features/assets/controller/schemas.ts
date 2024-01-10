@@ -85,6 +85,13 @@ const schemaMetadataDefinition = z.object({
 
 export const schemaAssetUpload = z.object({
     formats: z.object({
+        original: z
+            .object({
+                name: z.string(),
+                path: z.string(),
+            })
+            .nullable()
+            .default(null),
         display: z
             .object({
                 name: z.string(),
@@ -100,6 +107,13 @@ export const schemaAssetUpload = z.object({
             .nullable()
             .default(null),
         exhibition: z
+            .object({
+                name: z.string(),
+                path: z.string(),
+            })
+            .nullable()
+            .default(null),
+        print: z
             .object({
                 name: z.string(),
                 path: z.string(),
