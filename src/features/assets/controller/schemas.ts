@@ -52,7 +52,15 @@ const schemaMetadataDefinition = z.object({
     value: z.unknown().default(''),
     name: z.string().default(''),
     title: z.string().default(''),
-    type: z.enum(['string', 'date', 'select', 'integer', 'cents', 'boolean']),
+    type: z.enum([
+        'string',
+        'date',
+        'select',
+        'integer',
+        'cents',
+        'boolean',
+        'tags',
+    ]),
     required: z.boolean().default(false),
     validation: z.string().default(''),
     options: z
