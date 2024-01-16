@@ -37,7 +37,11 @@ export const schemaValidationForUpdate = z.object({
             url: z.string().default(''),
         })
         .default({}),
+    isOriginal: z.boolean().default(false),
+    generatedArtworkAI: z.boolean().default(false),
+    notMintedOtherBlockchain: z.boolean().default(false),
     contract: z.boolean().default(false),
+
     framework: z.object({
         createdAt: z.date(),
         createdBy: z.string(),
@@ -182,6 +186,9 @@ export const schemaCreatorMetadata = z.object({
 });
 
 export const schemaContract = z.object({
+    isOriginal: z.boolean().default(false),
+    generatedArtworkAI: z.boolean().default(false),
+    notMintedOtherBlockchain: z.boolean().default(false),
     contract: z.boolean().default(false),
     framework: z.object({
         createdAt: z.date(),
