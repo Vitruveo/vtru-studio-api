@@ -4,6 +4,7 @@ import {
     Db,
     ObjectId,
     InsertOneResult,
+    InsertManyResult,
     UpdateResult,
     DeleteResult,
 } from 'mongodb';
@@ -44,4 +45,12 @@ const getDb = () => {
     return status.db;
 };
 
-export { client, getDb, ObjectId, InsertOneResult, UpdateResult, DeleteResult };
+export {
+    client,
+    getDb,
+    ObjectId,
+    InsertOneResult,
+    InsertManyResult,
+    UpdateResult,
+    DeleteResult,
+};

@@ -22,3 +22,5 @@ app.use(features.roles.controller.router);
 app.use(features.permissions.controller.router);
 app.use(features.creators.controller.router);
 app.use(features.assets.controller.router);
+app.use(features.allowList.controller.router);
+app.use(features.waitingList.controller.router);
