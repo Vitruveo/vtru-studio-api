@@ -118,17 +118,18 @@ route.post('/otpConfirm', async (req, res) => {
 
 route.post('/', validateBodyForLogin, async (req, res) => {
     try {
-        const { email, code, codeHash, user: userData } = req.body;
+        const { email, code, codeHash } = req.body;
         const user = await findOneUser({ query: { 'login.email': email } });
 
-        let template = MAIL_SENDGRID_TEMPLATE_SIGNIN;
+        const template = MAIL_SENDGRID_TEMPLATE_SIGNIN;
 
         if (!user) {
-            await createUser({
-                user: userData,
-            });
-
-            template = MAIL_SENDGRID_TEMPLATE_SIGNUP;
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.users.login.failed',
+                message: `Login failed: user not found`,
+                args: [],
+                transaction: nanoid(),
+            } as APIResponse);
         } else {
             await updateUser({
                 id: user._id,
@@ -136,26 +137,26 @@ route.post('/', validateBodyForLogin, async (req, res) => {
                     login: { ...user.login, email, codeHash },
                 },
             });
+
+            const payload = JSON.stringify({
+                to: email,
+                subject: 'Login code',
+                text: code,
+                html: '',
+                template,
+                link: '',
+            });
+            await sendToExchangeMail(payload);
+
+            console.log({ template, code, email });
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.users.login.success',
+                message: 'Login success',
+                transaction: nanoid(),
+                data: 'A code has been sent to your email',
+            } as APIResponse<string>);
         }
-
-        console.log({ template, code, email });
-
-        const payload = JSON.stringify({
-            to: email,
-            subject: 'Login code',
-            text: code,
-            html: '',
-            template,
-            link: '',
-        });
-        await sendToExchangeMail(payload);
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.users.login.success',
-            message: 'Login success',
-            transaction: nanoid(),
-            data: 'A code has been sent to your email',
-        } as APIResponse<string>);
     } catch (error) {
         // situations: body parsing error, mongo error.
         logger('Login failed: %O', error);
