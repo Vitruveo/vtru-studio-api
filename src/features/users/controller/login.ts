@@ -72,23 +72,27 @@ route.post('/otpConfirm', async (req, res) => {
             data: loginHistory,
         });
 
-        const permissions = await findRoleReturnPermissions({
-            query: {
-                _id: {
-                    $in: user.roles?.map((item) => new ObjectId(item)) || [],
-                },
-            },
-        });
+        const permissions = user.roles;
 
-        const userPermissions = permissions.reduce(
-            (acc, item) => [...acc, ...item.permissions],
-            [] as string[]
-        );
+        // if (permissions) {
+        //     const findPermissions = await findRoleReturnPermissions({
+        //         query: {
+        //             _id: {
+        //                 $in:
+        //                     user.roles?.map((item) => new ObjectId(item)) || [],
+        //             },
+        //         },
+        //     });
+        //     permissions = findPermissions.reduce(
+        //         (acc, item) => [...acc, ...item.permissions],
+        //         [] as string[]
+        //     );
+        // }
 
         const payload = {
             id: user._id.toString(),
             type: 'user',
-            permissions: userPermissions,
+            permissions,
         } as JwtPayload;
 
         const token = jwt.sign(payload, JWT_SECRETKEY, {
