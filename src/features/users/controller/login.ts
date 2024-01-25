@@ -74,7 +74,9 @@ route.post('/otpConfirm', async (req, res) => {
 
         const permissions = await findRoleReturnPermissions({
             query: {
-                _id: { $in: user.roles.map((item) => new ObjectId(item)) },
+                _id: {
+                    $in: user.roles?.map((item) => new ObjectId(item)) || [],
+                },
             },
         });
 
