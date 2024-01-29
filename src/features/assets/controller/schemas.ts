@@ -133,21 +133,49 @@ export const schemaAssetUpload = z.object({
     }),
 });
 
+const NFTSchema = z.object({
+    version: z.string(),
+    added: z.boolean(),
+    license: z.string(),
+    elastic: z.object({
+        editionPrice: z.number(),
+        numberOfEditions: z.number(),
+        totalPrice: z.number(),
+        editionDiscount: z.boolean(),
+    }),
+    single: z.object({
+        editionPrice: z.number(),
+    }),
+    unlimited: z.object({
+        editionPrice: z.number(),
+    }),
+    editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
+});
+
+const StreamSchema = z.object({
+    version: z.string(),
+    added: z.boolean(),
+});
+
+const PrintSchema = z.object({
+    version: z.string(),
+    added: z.boolean(),
+    unitPrice: z.number(),
+});
+
+const RemixSchema = z.object({
+    version: z.string(),
+    added: z.boolean(),
+    unitPrice: z.number(),
+});
+
 export const schemaLicenses = z.object({
-    licenses: z
-        .array(
-            z.object({
-                title: z.string().default(''),
-                added: z.boolean().default(false),
-                domain: z.string().default(''),
-                version: z.string().default(''),
-                enable: z.boolean().default(true),
-                licenseMetadataDefinitions: z
-                    .array(schemaMetadataDefinition)
-                    .default([]),
-            })
-        )
-        .default([]),
+    licenses: z.object({
+        nft: NFTSchema,
+        stream: StreamSchema,
+        print: PrintSchema,
+        remix: RemixSchema,
+    }),
     framework: z.object({
         createdAt: z.date(),
         createdBy: z.string(),
