@@ -186,10 +186,26 @@ export const schemaLicenses = z.object({
 
 export const schemaAssetMetadata = z.object({
     assetMetadata: z.object({
-        assetMetadataDefinitions: z.array(schemaMetadataDefinition).default([]),
-        assetMetadataDomains: z
-            .array(z.object({ value: z.string(), label: z.string() }))
-            .default([]),
+        section1: z.object({
+            formData: z.object({
+                artistName: z.string(),
+                description: z.string(),
+                title: z.string(),
+            }),
+        }),
+        section2: z.object({
+            formData: z.object({
+                date: z.string(),
+                objectType: z.string(),
+                place: z.string(),
+            }),
+        }),
+        section3: z.object({
+            formData: z.object({
+                category: z.string(),
+                medium: z.string(),
+            }),
+        }),
     }),
     framework: z.object({
         createdAt: z.date(),
