@@ -45,3 +45,13 @@ export const otpConfirmSchema = z.object({
     email: emailValidation,
     code: z.string().length(6),
 });
+
+export const schemaValidationForPutAvatar = z.object({
+    fileId: z.string(),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});

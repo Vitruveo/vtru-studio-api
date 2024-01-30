@@ -68,3 +68,8 @@ export interface CheckUsernameExistParams {
 export interface AddEmailParams {
     email: string;
 }
+
+export interface UpdateAvatarParams {
+    id: string | ObjectId;
+    fileId: string;
+}

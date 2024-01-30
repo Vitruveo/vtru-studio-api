@@ -11,6 +11,7 @@ import type {
     AddEmailParams,
     UpdateCodeHashEmailCreatorParams,
     AddEmailCreatorParams,
+    UpdateAvatarParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -135,5 +136,13 @@ export const checkEmailExist = async ({ email }: AddEmailParams) => {
     const result = await creators().countDocuments({
         emails: { $elemMatch: { email } },
     });
+    return result;
+};
+
+export const updateAvatar = async ({ id, fileId }: UpdateAvatarParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { 'profile.avatar': fileId } }
+    );
     return result;
 };

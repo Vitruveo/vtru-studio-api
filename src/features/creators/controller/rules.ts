@@ -12,6 +12,7 @@ import {
     schemaValidationForAddEmail,
     schemaValidationForCreate,
     schemaValidationForPut,
+    schemaValidationForPutAvatar,
 } from './schemas';
 import { CreatorSchema, encryptCode, generateCode } from '../model';
 
@@ -147,6 +148,41 @@ export const validateBodyForAddEmail = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.creator.validateBodyForAddEmail.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForPutAvatar = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'PUT') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForPutAvatar.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        const payload = {
+            ...req.body,
+            framework: createRecordFramework({
+                createdBy: req.auth.id,
+            }),
+        };
+
+        req.body = schemaValidationForPutAvatar.parse(payload);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForPutAvatar.failed',
             message: '',
             transaction: nanoid(),
             args: error,

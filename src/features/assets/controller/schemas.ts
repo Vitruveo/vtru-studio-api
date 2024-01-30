@@ -41,7 +41,6 @@ export const schemaValidationForUpdate = z.object({
     generatedArtworkAI: z.boolean().default(false),
     notMintedOtherBlockchain: z.boolean().default(false),
     contract: z.boolean().default(false),
-
     framework: z.object({
         createdAt: z.date(),
         createdBy: z.string(),

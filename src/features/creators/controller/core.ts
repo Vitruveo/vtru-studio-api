@@ -20,6 +20,7 @@ import {
     validateBodyForAddEmail,
     validateBodyForCreate,
     validateBodyForPut,
+    validateBodyForPutAvatar,
 } from './rules';
 import {
     needsToBeOwner,
@@ -453,6 +454,31 @@ route.post('/request/upload', async (req, res) => {
             message: `Creator request upload failed: ${error}`,
             args: error,
             transaction: transactionApiId,
+        } as APIResponse);
+    }
+});
+
+route.put('/profile/avatar', validateBodyForPutAvatar, async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const result = await model.updateAvatar({
+            id,
+            fileId: req.body.fileId,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.update.success',
+            message: 'Update success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult<model.CreatorDocument>>);
+    } catch (error) {
+        logger('Update creator failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.update.failed',
+            message: `Update failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
         } as APIResponse);
     }
 });
