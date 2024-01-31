@@ -132,6 +132,48 @@ export const schemaAssetUpload = z.object({
     }),
 });
 
+export const schemaAuxiliaryMedia = z.object({
+    mediaAuxiliary: z.object({
+        formats: z.object({
+            arImage: z
+                .object({
+                    name: z.string(),
+                    path: z.string(),
+                })
+                .nullable()
+                .default(null),
+            arVideo: z
+                .object({
+                    name: z.string(),
+                    path: z.string(),
+                })
+                .nullable()
+                .default(null),
+            btsImage: z
+                .object({
+                    name: z.string(),
+                    path: z.string(),
+                })
+                .nullable()
+                .default(null),
+            btsVideo: z
+                .object({
+                    name: z.string(),
+                    path: z.string(),
+                })
+                .nullable()
+                .default(null),
+            codeZip: z
+                .object({
+                    name: z.string(),
+                    path: z.string(),
+                })
+                .nullable()
+                .default(null),
+        }),
+    }),
+});
+
 const NFTSchema = z.object({
     version: z.string(),
     added: z.boolean(),
@@ -151,18 +193,18 @@ const NFTSchema = z.object({
     editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
 });
 
-const StreamSchema = z.object({
+const streamSchema = z.object({
     version: z.string(),
     added: z.boolean(),
 });
 
-const PrintSchema = z.object({
+const printSchema = z.object({
     version: z.string(),
     added: z.boolean(),
     unitPrice: z.number(),
 });
 
-const RemixSchema = z.object({
+const remixSchema = z.object({
     version: z.string(),
     added: z.boolean(),
     unitPrice: z.number(),
@@ -171,9 +213,9 @@ const RemixSchema = z.object({
 export const schemaLicenses = z.object({
     licenses: z.object({
         nft: NFTSchema,
-        stream: StreamSchema,
-        print: PrintSchema,
-        remix: RemixSchema,
+        stream: streamSchema,
+        print: printSchema,
+        remix: remixSchema,
     }),
     framework: z.object({
         createdAt: z.date(),

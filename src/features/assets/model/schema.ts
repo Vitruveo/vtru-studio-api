@@ -6,7 +6,6 @@ export const COLLECTION_ASSETS = 'assets';
 export const AssetsSchema = z.object({
     domain: z.string().default(''),
     status: z.enum(['draft', 'published', 'archived']),
-
     formats: z.array(
         z.object({
             definition: z.string().default(''),

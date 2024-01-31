@@ -8,6 +8,7 @@ import {
 import {
     schemaAssetMetadata,
     schemaAssetUpload,
+    schemaAuxiliaryMedia,
     schemaContract,
     schemaCreatorMetadata,
     schemaLicenses,
@@ -105,6 +106,10 @@ export const validateBodyForUpdateStep = async (
         switch (req.body.stepName) {
             case 'assetUpload':
                 req.body = schemaAssetUpload.parse(payload);
+                break;
+
+            case 'auxiliaryMedia':
+                req.body = schemaAuxiliaryMedia.parse(payload);
                 break;
 
             case 'assetMetadata':
