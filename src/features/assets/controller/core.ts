@@ -238,6 +238,41 @@ route.put('/', validateBodyForUpdateStep, async (req, res) => {
     }
 });
 
+route.delete('/request/deleteFile', async (req, res) => {
+    const transactionApiId = nanoid();
+
+    try {
+        const { transactionId, path } = req.body;
+
+        const { id } = req.auth;
+
+        await sendToExchangeCreators(
+            JSON.stringify({
+                path,
+                creatorId: id,
+                transactionId,
+                origin: 'asset',
+                method: 'DELETE',
+            })
+        );
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.request.deleteFile.success',
+            message: 'Asset request delete success',
+            transaction: transactionApiId,
+            data: 'request requested, wait for the URL to delete',
+        } as APIResponse<string>);
+    } catch (error) {
+        logger('Asset request delete failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.request.deleteFile.failed',
+            message: `Asset request delete failed: ${error}`,
+            args: error,
+            transaction: transactionApiId,
+        } as APIResponse);
+    }
+});
+
 route.post('/request/upload', async (req, res) => {
     const transactionApiId = nanoid();
 
@@ -254,6 +289,7 @@ route.post('/request/upload', async (req, res) => {
                 creatorId: id,
                 transactionId,
                 origin: 'asset',
+                method: 'PUT',
             })
         );
 
