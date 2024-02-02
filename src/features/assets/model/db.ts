@@ -56,6 +56,14 @@ export const updateAssets = async ({ id, asset }: UpdateAssetsParams) => {
     return result;
 };
 
+export const findAssetsCodeZipByPath = async ({ path }: { path: string }) => {
+    const result = await assets().findOne({
+        'mediaAuxiliary.formats.codeZip.path': path,
+    });
+
+    return result;
+};
+
 export const deleteAssets = async ({ id }: DeleteAssetsParams) => {
     const result = await assets().deleteOne({ _id: new ObjectId(id) });
     return result;
