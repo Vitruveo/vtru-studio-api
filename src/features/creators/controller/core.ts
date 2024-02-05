@@ -463,12 +463,12 @@ route.delete('/request/deleteFile', async (req, res) => {
     const transactionApiId = nanoid();
 
     try {
-        const { transactionId, path } = req.body;
+        const { transactionId, deleteKeys } = req.body;
         const { id } = req.auth;
 
         await sendToExchangeCreators(
             JSON.stringify({
-                path,
+                deleteKeys,
                 creatorId: id,
                 transactionId,
                 origin: 'profile',

@@ -242,22 +242,22 @@ route.delete('/request/deleteFile', async (req, res) => {
     const transactionApiId = nanoid();
 
     try {
-        const { transactionId, path } = req.body;
+        const { transactionId, deleteKeys } = req.body;
 
         const { id } = req.auth;
 
         await sendToExchangeCreators(
             JSON.stringify({
-                path,
                 creatorId: id,
                 transactionId,
                 origin: 'asset',
                 method: 'DELETE',
+                deleteKeys,
             })
         );
 
         res.json({
-            code: 'vitruveo.studio.api.admin.assets.request.deleteFile.success',
+            code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.success',
             message: 'Asset request delete success',
             transaction: transactionApiId,
             data: 'request requested, wait for the URL to delete',
@@ -265,7 +265,7 @@ route.delete('/request/deleteFile', async (req, res) => {
     } catch (error) {
         logger('Asset request delete failed: %O', error);
         res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.request.deleteFile.failed',
+            code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.failed',
             message: `Asset request delete failed: ${error}`,
             args: error,
             transaction: transactionApiId,
