@@ -284,7 +284,7 @@ export const schemaContract = z.object({
 });
 
 export const schemaPublish = z.object({
-    status: z.enum(['draft', 'published', 'archived']),
+    status: z.enum(['draft', 'published', 'archived', 'preview']),
     framework: z.object({
         createdAt: z.date(),
         createdBy: z.string(),
