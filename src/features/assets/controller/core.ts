@@ -256,7 +256,7 @@ route.delete(
                 const deleteKeys = req.body.deleteKeys as string[];
                 const checkDeleteKeys = deleteKeys.filter(
                     (v) =>
-                        assetsByCreatorId.uploadedMediaKeys.includes(v) ||
+                        assetsByCreatorId.uploadedMediaKeys?.includes(v) ||
                         Object.values(assetsByCreatorId?.formats || {}).some(
                             (f) => f?.path === v
                         ) ||
