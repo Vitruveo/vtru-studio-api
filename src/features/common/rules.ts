@@ -20,14 +20,6 @@ export const needsToBeOwner =
             return;
         }
 
-        if (!req.params.id) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.common.needsToBeOwner.failed',
-                message: 'You are not allowed to change this',
-                transaction: nanoid(),
-            } as APIResponse);
-        }
-
         // TODO: check permissions
         if (authType === 'user') {
             checkUserPermission({
@@ -43,6 +35,14 @@ export const needsToBeOwner =
         if (req.params.id === id.toString()) {
             next();
             return;
+        }
+
+        if (!req.params.id) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.common.needsToBeOwner.failed',
+                message: 'You are not allowed to change this',
+                transaction: nanoid(),
+            } as APIResponse);
         }
 
         res.status(401).json({

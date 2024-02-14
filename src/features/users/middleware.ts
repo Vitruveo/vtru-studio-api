@@ -11,12 +11,17 @@ export function checkAuth(req: Request, res: Response, next: NextFunction) {
             if (err) {
                 res.status(401).json({ message: 'Failed to authenticate' });
             } else {
+                const permissions = (decoded as JwtPayload).permissions || [];
+
+                if ((decoded as JwtPayload).type === 'user') {
+                    permissions.push('admin');
+                }
+
                 req.auth = {
                     id: (decoded as JwtPayload).id,
                     type: (decoded as JwtPayload).type,
-                    permissions: (decoded as JwtPayload).permissions || [],
+                    permissions,
                 };
-
                 next();
             }
         });

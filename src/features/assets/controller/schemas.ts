@@ -16,6 +16,7 @@ export const schemaValidationForCreate = z.object({
         })
     ),
 });
+
 export const schemaValidationForUpdate = z.object({
     domain: z.string(),
     media: z.object({
@@ -47,43 +48,6 @@ export const schemaValidationForUpdate = z.object({
         updatedAt: z.date().default(new Date()),
         updatedBy: z.string().nullable().default(null),
     }),
-});
-
-const schemaMetadataDefinition = z.object({
-    domain: z.string().default(''),
-    order: z.number().default(0),
-    value: z.unknown().default(''),
-    name: z.string().default(''),
-    title: z.string().default(''),
-    type: z.enum([
-        'string',
-        'date',
-        'select',
-        'integer',
-        'cents',
-        'boolean',
-        'tags',
-    ]),
-    required: z.boolean().default(false),
-    validation: z.string().default(''),
-    options: z
-        .array(
-            z.object({
-                value: z.string().default(''),
-                label: z.string().default(''),
-            })
-        )
-        .default([]),
-    auto: z
-        .object({
-            nameTargetFieldValue: z.string().default(''),
-            selectOptions: z.object({
-                labelOptionField: z.array(z.string()).default([]),
-                valueOptionField: z.array(z.string()).default([]),
-            }),
-        })
-        .nullable()
-        .default(null),
 });
 
 export const schemaAssetUpload = z.object({
@@ -174,48 +138,40 @@ export const schemaAuxiliaryMedia = z.object({
     }),
 });
 
-const NFTSchema = z.object({
-    version: z.string(),
-    added: z.boolean(),
-    license: z.string(),
-    elastic: z.object({
-        editionPrice: z.number(),
-        numberOfEditions: z.number(),
-        totalPrice: z.number(),
-        editionDiscount: z.boolean(),
-    }),
-    single: z.object({
-        editionPrice: z.number(),
-    }),
-    unlimited: z.object({
-        editionPrice: z.number(),
-    }),
-    editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
-});
-
-const streamSchema = z.object({
-    version: z.string(),
-    added: z.boolean(),
-});
-
-const printSchema = z.object({
-    version: z.string(),
-    added: z.boolean(),
-    unitPrice: z.number(),
-});
-
-const remixSchema = z.object({
-    version: z.string(),
-    added: z.boolean(),
-    unitPrice: z.number(),
-});
-
 export const schemaLicenses = z.object({
     licenses: z.object({
-        nft: NFTSchema,
-        stream: streamSchema,
-        print: printSchema,
-        remix: remixSchema,
+        nft: z.object({
+            version: z.string(),
+            added: z.boolean(),
+            license: z.string(),
+            elastic: z.object({
+                editionPrice: z.number(),
+                numberOfEditions: z.number(),
+                totalPrice: z.number(),
+                editionDiscount: z.boolean(),
+            }),
+            single: z.object({
+                editionPrice: z.number(),
+            }),
+            unlimited: z.object({
+                editionPrice: z.number(),
+            }),
+            editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
+        }),
+        stream: z.object({
+            version: z.string(),
+            added: z.boolean(),
+        }),
+        print: z.object({
+            version: z.string(),
+            added: z.boolean(),
+            unitPrice: z.number(),
+        }),
+        remix: z.object({
+            version: z.string(),
+            added: z.boolean(),
+            unitPrice: z.number(),
+        }),
     }),
     framework: z.object({
         createdAt: z.date(),
@@ -244,20 +200,6 @@ export const schemaAssetMetadata = z.object({
     }),
 });
 
-export const schemaCreatorMetadata = z.object({
-    creatorMetadata: z.object({
-        creatorMetadataDefinitions: z
-            .array(schemaMetadataDefinition)
-            .default([]),
-    }),
-    framework: z.object({
-        createdAt: z.date(),
-        createdBy: z.string(),
-        updatedAt: z.date().default(new Date()),
-        updatedBy: z.string().nullable().default(null),
-    }),
-});
-
 export const schemaContract = z.object({
     isOriginal: z.boolean().default(false),
     generatedArtworkAI: z.boolean().default(false),
@@ -273,6 +215,16 @@ export const schemaContract = z.object({
 
 export const schemaPublish = z.object({
     status: z.enum(['draft', 'published', 'archived', 'preview']),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaValidationForDeleteFile = z.object({
+    deleteKeys: z.array(z.string()),
     framework: z.object({
         createdAt: z.date(),
         createdBy: z.string(),

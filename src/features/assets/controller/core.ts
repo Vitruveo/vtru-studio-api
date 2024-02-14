@@ -17,6 +17,7 @@ import {
 } from '../../common/rules';
 import {
     validateBodyForCreate,
+    validateBodyForDeleteFile,
     validateBodyForUpdate,
     validateBodyForUpdateStep,
 } from './rules';
@@ -238,46 +239,79 @@ route.put('/', validateBodyForUpdateStep, async (req, res) => {
     }
 });
 
-route.delete('/request/deleteFile', async (req, res) => {
-    const transactionApiId = nanoid();
+route.delete(
+    '/request/deleteFile',
+    validateBodyForDeleteFile,
+    async (req, res) => {
+        const transactionApiId = nanoid();
 
-    try {
-        const { transactionId, deleteKeys } = req.body;
+        try {
+            const { id } = req.auth;
 
-        const { id } = req.auth;
+            const assetsByCreatorId = await model.findOneAssets({
+                query: { 'framework.createdBy': id },
+            });
 
-        await sendToExchangeCreators(
-            JSON.stringify({
-                creatorId: id,
-                transactionId,
-                origin: 'asset',
-                method: 'DELETE',
-                deleteKeys,
-            })
-        );
+            if (assetsByCreatorId) {
+                const deleteKeys = req.body.deleteKeys as string[];
+                const checkDeleteKeys = deleteKeys.filter((v) =>
+                    assetsByCreatorId.uploadedMediaKeys.includes(v)
+                );
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.success',
-            message: 'Asset request delete success',
-            transaction: transactionApiId,
-            data: 'request requested, wait for the URL to delete',
-        } as APIResponse<string>);
-    } catch (error) {
-        logger('Asset request delete failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.failed',
-            message: `Asset request delete failed: ${error}`,
-            args: error,
-            transaction: transactionApiId,
-        } as APIResponse);
+                if (checkDeleteKeys.length === 0) {
+                    res.status(404).json({
+                        code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.notFound',
+                        message: 'Asset not found',
+                        transaction: transactionApiId,
+                    } as APIResponse);
+                    return;
+                }
+
+                await sendToExchangeCreators(
+                    JSON.stringify({
+                        creatorId: id,
+                        origin: 'asset',
+                        method: 'DELETE',
+                        deleteKeys: checkDeleteKeys,
+                    })
+                );
+
+                await model.removeUploadedMediaKeys({
+                    id: assetsByCreatorId._id,
+                    mediaKeys: checkDeleteKeys,
+                });
+
+                res.json({
+                    code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.success',
+                    message: 'Asset request delete success',
+                    transaction: transactionApiId,
+                    data: 'request requested, wait for the URL to delete',
+                } as APIResponse<string>);
+            } else {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.notFound',
+                    message: 'Asset not found',
+                    transaction: transactionApiId,
+                } as APIResponse);
+            }
+        } catch (error) {
+            logger('Asset request delete failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.failed',
+                message: `Asset request delete failed: ${error}`,
+                args: error,
+                transaction: transactionApiId,
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.post('/request/upload', async (req, res) => {
     const transactionApiId = nanoid();
 
     try {
         const { mimetype, transactionId } = req.body;
+
         const { id } = req.auth;
 
         const extension = mimetype.split('/')[1];
@@ -292,6 +326,17 @@ route.post('/request/upload', async (req, res) => {
                 method: 'PUT',
             })
         );
+
+        const assetsByCreatorId = await model.findOneAssets({
+            query: { 'framework.createdBy': req.auth.id },
+        });
+
+        if (assetsByCreatorId) {
+            await model.updateUploadedMediaKeys({
+                id: assetsByCreatorId._id,
+                mediaKey: path,
+            });
+        }
 
         res.json({
             code: 'vitruveo.studio.api.assets.request.upload.success',

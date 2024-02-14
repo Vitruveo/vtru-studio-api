@@ -10,10 +10,10 @@ import {
     schemaAssetUpload,
     schemaAuxiliaryMedia,
     schemaContract,
-    schemaCreatorMetadata,
     schemaLicenses,
     schemaPublish,
     schemaValidationForCreate,
+    schemaValidationForDeleteFile,
     schemaValidationForUpdate,
 } from './schemas';
 
@@ -116,10 +116,6 @@ export const validateBodyForUpdateStep = async (
                 req.body = schemaAssetMetadata.parse(payload);
                 break;
 
-            case 'creatorMetadata':
-                req.body = schemaCreatorMetadata.parse(payload);
-                break;
-
             case 'license':
                 req.body = schemaLicenses.parse(payload);
                 break;
@@ -134,13 +130,46 @@ export const validateBodyForUpdateStep = async (
                 throw new Error('Invalid step name');
         }
 
-        // req.body = schemaValidationForUpdateStep.parse(payload);
-
-        // req.body.status = 'draft';
         next();
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForUpdateStep.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForDeleteFile = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'DELETE') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForDeleteFile.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        const payload = {
+            ...req.body,
+            framework: createRecordFramework({
+                createdBy: req.auth.id,
+            }),
+        };
+
+        req.body = schemaValidationForDeleteFile.parse(payload);
+
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForDeleteFile.failed',
             message: '',
             transaction: nanoid(),
             args: error,

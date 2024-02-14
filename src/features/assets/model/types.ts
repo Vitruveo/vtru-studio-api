@@ -28,3 +28,13 @@ export interface UpdateAssetsParams {
 export interface DeleteAssetsParams {
     id: string | ObjectId;
 }
+
+export interface UpdateUploadedMediaKeysParams {
+    id: string | ObjectId;
+    mediaKey: string;
+}
+
+export interface RemoveUploadedMediaKeysParams {
+    id: string | ObjectId;
+    mediaKeys: string[];
+}

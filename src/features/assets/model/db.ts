@@ -6,6 +6,8 @@ import type {
     FindAssetsByIdParams,
     FindAssetsParams,
     UpdateAssetsParams,
+    UpdateUploadedMediaKeysParams,
+    RemoveUploadedMediaKeysParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -66,5 +68,27 @@ export const findAssetsCodeZipByPath = async ({ path }: { path: string }) => {
 
 export const deleteAssets = async ({ id }: DeleteAssetsParams) => {
     const result = await assets().deleteOne({ _id: new ObjectId(id) });
+    return result;
+};
+
+export const updateUploadedMediaKeys = async ({
+    id,
+    mediaKey,
+}: UpdateUploadedMediaKeysParams) => {
+    const result = await assets().updateOne(
+        { _id: new ObjectId(id) },
+        { $push: { uploadedMediaKeys: mediaKey } }
+    );
+    return result;
+};
+
+export const removeUploadedMediaKeys = async ({
+    id,
+    mediaKeys,
+}: RemoveUploadedMediaKeysParams) => {
+    const result = await assets().updateOne(
+        { _id: new ObjectId(id) },
+        { $pullAll: { uploadedMediaKeys: mediaKeys } }
+    );
     return result;
 };
