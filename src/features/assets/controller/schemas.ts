@@ -56,6 +56,12 @@ export const schemaAssetUpload = z.object({
             .object({
                 name: z.string(),
                 path: z.string(),
+                width: z.number().nullable().default(null),
+                height: z.number().nullable().default(null),
+                definition: z
+                    .enum(['landscape', 'portrait', 'square'])
+                    .nullable()
+                    .default(null),
             })
             .nullable()
             .default(null),
