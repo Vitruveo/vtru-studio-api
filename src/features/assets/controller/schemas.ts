@@ -56,6 +56,7 @@ export const schemaAssetUpload = z.object({
             .object({
                 name: z.string(),
                 path: z.string(),
+                size: z.number().nullable().default(null),
                 width: z.number().nullable().default(null),
                 height: z.number().nullable().default(null),
                 definition: z
