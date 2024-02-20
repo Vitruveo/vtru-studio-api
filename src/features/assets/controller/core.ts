@@ -317,7 +317,7 @@ route.post('/request/upload', async (req, res) => {
     const transactionApiId = nanoid();
 
     try {
-        const { mimetype, transactionId } = req.body;
+        const { mimetype, transactionId, metadata } = req.body;
 
         const { id } = req.auth;
 
@@ -329,6 +329,7 @@ route.post('/request/upload', async (req, res) => {
                 path,
                 creatorId: id,
                 transactionId,
+                metadata,
                 origin: 'asset',
                 method: 'PUT',
             })
