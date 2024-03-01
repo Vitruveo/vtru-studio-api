@@ -16,8 +16,14 @@ export const sendToExchangeCreators = async (
     routingKey = 'assets'
 ) => {
     try {
+        console.log('check channel', status.channel);
         if (!status.channel) {
             status.channel = await getChannel();
+            console.log('status.channel', status.channel);
+            console.log(
+                'RABBITMQ_EXCHANGE_CREATORS',
+                RABBITMQ_EXCHANGE_CREATORS
+            );
             status.channel?.assertExchange(
                 RABBITMQ_EXCHANGE_CREATORS,
                 'topic',
@@ -26,10 +32,15 @@ export const sendToExchangeCreators = async (
                 }
             );
             status.channel?.on('close', () => {
+                console.log('status.channel.on.close');
                 status.channel = null;
             });
         }
         if (status.channel) {
+            console.log(
+                'RABBITMQ_EXCHANGE_CREATORS',
+                RABBITMQ_EXCHANGE_CREATORS
+            );
             status.channel.publish(
                 RABBITMQ_EXCHANGE_CREATORS,
                 routingKey,
