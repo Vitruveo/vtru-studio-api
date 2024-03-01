@@ -15,6 +15,9 @@ export const getConnection = async () => {
     try {
         if (!status.connection) {
             status.connection = await rabbitmq.connect(RABBITMQ_URL);
+            status.connection.on('close', () => {
+                status.connection = null;
+            });
         }
     } catch (err) {
         logger('Error connecting to rabbitmq: %O', err);
@@ -28,7 +31,12 @@ export const disconnect = async () => {
     if (status.connection) {
         const oldConnection = status.connection;
         status.connection = null;
-        await oldConnection.close();
+
+        try {
+            await oldConnection.close();
+        } catch (error) {
+            // ignore
+        }
     }
 };
 

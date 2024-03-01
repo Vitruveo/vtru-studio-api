@@ -18,6 +18,9 @@ export const sendToExchange = async (message: string, routingKey = 'log') => {
             status.channel?.assertExchange(RABBITMQ_EXCHANGE_EXPRESS, 'topic', {
                 durable: true,
             });
+            status.channel?.on('close', () => {
+                status.channel = null;
+            });
         }
         if (status.channel) {
             status.channel.publish(

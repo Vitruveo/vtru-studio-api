@@ -25,6 +25,9 @@ export const sendToExchangeCreators = async (
                     durable: true,
                 }
             );
+            status.channel?.on('close', () => {
+                status.channel = null;
+            });
         }
         if (status.channel) {
             status.channel.publish(
