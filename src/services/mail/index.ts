@@ -21,6 +21,9 @@ export const sendToExchangeMail = async (
             status.channel?.assertExchange(RABBITMQ_EXCHANGE_MAIL, 'topic', {
                 durable: true,
             });
+            status.channel?.on('close', () => {
+                status.channel = null;
+            });
         }
         if (status.channel) {
             status.channel.publish(
