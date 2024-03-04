@@ -194,9 +194,44 @@ export const schemaAssetMetadata = z.object({
             formData: z.object({
                 title: z.string(),
                 description: z.string(),
-                moods: z.array(z.string()),
-                tags: z.array(z.string()),
+                culture: z.string(),
+                mood: z.array(z.string()),
+                colors: z.array(z.string()),
+                copyright: z.string().optional().nullable(),
+                orientation: z.string(),
             }),
+        }),
+        taxonomy: z.object({
+            formData: z.object({
+                category: z.string(),
+                tags: z.array(z.string()).optional().nullable(),
+                collections: z.array(z.string()),
+                medium: z.array(z.string()),
+                style: z.array(z.string()),
+                subject: z.array(z.string()).optional().nullable(),
+                genre: z.string().optional().nullable(),
+                material: z.array(z.string()),
+                aiGeneration: z.string(),
+                arEnabled: z.string().optional().nullable(),
+                nudity: z.string(),
+                department: z.string().optional().nullable(),
+            }),
+        }),
+        creators: z.object({
+            formData: z.array(
+                z.object({
+                    name: z.string(),
+                    role: z.string(),
+                    bio: z.string(),
+                    birthDate: z.string().optional().nullable(),
+                    birthLocation: z.string().optional().nullable(),
+                    nationality: z.string().optional().nullable(),
+                    residence: z.string().optional().nullable(),
+                    ethnicity: z.string().optional().nullable(),
+                    gender: z.string().optional().nullable(),
+                    profileUrl: z.string(),
+                })
+            ),
         }),
     }),
     framework: z.object({
