@@ -16,7 +16,6 @@ export const sendToExchangeCreators = async (
     routingKey = 'assets'
 ) => {
     try {
-        console.log('check channel', status.channel);
         if (!status.channel) {
             status.channel = await getChannel();
             console.log('status.channel', status.channel);
