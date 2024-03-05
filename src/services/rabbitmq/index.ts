@@ -13,6 +13,7 @@ const status: {
 
 export const getConnection = async () => {
     try {
+        console.log('RABBITMQ_URL', RABBITMQ_URL);
         if (!status.connection) {
             status.connection = await rabbitmq.connect(RABBITMQ_URL);
             status.connection.on('close', () => {

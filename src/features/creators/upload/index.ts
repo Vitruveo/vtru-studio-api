@@ -18,7 +18,6 @@ export const sendToExchangeCreators = async (
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-            console.log('status.channel', status.channel);
             console.log(
                 'RABBITMQ_EXCHANGE_CREATORS',
                 RABBITMQ_EXCHANGE_CREATORS
