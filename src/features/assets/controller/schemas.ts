@@ -212,7 +212,7 @@ export const schemaAssetMetadata = z.object({
                 subject: z.array(z.string()).optional().nullable(),
                 genre: z.string().optional().nullable(),
                 aiGeneration: z.string(),
-                arEnabled: z.string().optional().nullable(),
+                arenabled: z.string(),
                 nudity: z.string(),
                 department: z.string().optional().nullable(),
             }),
