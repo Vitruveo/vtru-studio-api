@@ -190,67 +190,76 @@ export const schemaLicenses = z.object({
 
 export const schemaAssetMetadata = z.object({
     assetMetadata: z.object({
+        isCompleted: z.boolean(),
         context: z.object({
-            formData: z.object({
-                title: z.string(),
-                description: z.string(),
-                culture: z.string(),
-                mood: z.array(z.string()),
-                colors: z.array(z.string()),
-                copyright: z.string().optional().nullable(),
-                orientation: z.string(),
-            }),
+            formData: z
+                .object({
+                    title: z.string(),
+                    description: z.string(),
+                    culture: z.string(),
+                    mood: z.array(z.string()),
+                    colors: z.array(z.string()),
+                    copyright: z.string(),
+                    orientation: z.string(),
+                })
+                .partial(),
         }),
         taxonomy: z.object({
-            formData: z.object({
-                objectType: z.string(),
-                category: z.string(),
-                tags: z.array(z.string()).optional().nullable(),
-                collections: z.array(z.string()),
-                medium: z.array(z.string()),
-                style: z.array(z.string()),
-                subject: z.array(z.string()).optional().nullable(),
-                genre: z.string().optional().nullable(),
-                aiGeneration: z.string(),
-                arenabled: z.string(),
-                nudity: z.string(),
-                department: z.string().optional().nullable(),
-            }),
+            formData: z
+                .object({
+                    objectType: z.string(),
+                    category: z.string(),
+                    tags: z.array(z.string()),
+                    collections: z.array(z.string()),
+                    medium: z.array(z.string()),
+                    style: z.array(z.string()),
+                    subject: z.array(z.string()),
+                    genre: z.string(),
+                    aiGeneration: z.string(),
+                    arenabled: z.string(),
+                    nudity: z.string(),
+                    department: z.string(),
+                })
+                .partial(),
         }),
         creators: z.object({
             formData: z.array(
-                z.object({
-                    name: z.string(),
-                    roles: z.array(z.string()),
-                    bio: z.string(),
-                    birthDate: z.string().optional().nullable(),
-                    birthLocation: z.string().optional().nullable(),
-                    nationality: z.string().optional().nullable(),
-                    residence: z.string().optional().nullable(),
-                    ethnicity: z.string().optional().nullable(),
-                    gender: z.string().optional().nullable(),
-                    profileUrl: z.string(),
-                })
+                z
+                    .object({
+                        name: z.string(),
+                        roles: z.array(z.string()),
+                        bio: z.string(),
+                        birthDate: z.string(),
+                        birthLocation: z.string(),
+                        nationality: z.string(),
+                        residence: z.string(),
+                        ethnicity: z.string(),
+                        gender: z.string(),
+                        profileUrl: z.string(),
+                    })
+                    .partial()
             ),
         }),
         provenance: z.object({
-            formData: z.object({
-                country: z.string(),
-                blockchain: z.string(),
-                plusCode: z.string().optional().nullable(),
-                exhibitions: z.array(
-                    z.object({
-                        exhibitionName: z.string(),
-                        exhibitionUrl: z.string().optional().nullable(),
-                    })
-                ),
-                awards: z.array(
-                    z.object({
-                        awardName: z.string(),
-                        awardUrl: z.string(),
-                    })
-                ),
-            }),
+            formData: z
+                .object({
+                    country: z.string(),
+                    blockchain: z.string(),
+                    plusCode: z.string(),
+                    exhibitions: z.array(
+                        z.object({
+                            exhibitionName: z.string(),
+                            exhibitionUrl: z.string(),
+                        })
+                    ),
+                    awards: z.array(
+                        z.object({
+                            awardName: z.string(),
+                            awardUrl: z.string(),
+                        })
+                    ),
+                })
+                .partial(),
         }),
     }),
     framework: z.object({
