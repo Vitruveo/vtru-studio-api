@@ -203,6 +203,7 @@ export const schemaAssetMetadata = z.object({
         }),
         taxonomy: z.object({
             formData: z.object({
+                objectType: z.string(),
                 category: z.string(),
                 tags: z.array(z.string()).optional().nullable(),
                 collections: z.array(z.string()),
@@ -210,7 +211,6 @@ export const schemaAssetMetadata = z.object({
                 style: z.array(z.string()),
                 subject: z.array(z.string()).optional().nullable(),
                 genre: z.string().optional().nullable(),
-                material: z.array(z.string()),
                 aiGeneration: z.string(),
                 arEnabled: z.string().optional().nullable(),
                 nudity: z.string(),
@@ -221,7 +221,7 @@ export const schemaAssetMetadata = z.object({
             formData: z.array(
                 z.object({
                     name: z.string(),
-                    role: z.string(),
+                    roles: z.array(z.string()),
                     bio: z.string(),
                     birthDate: z.string().optional().nullable(),
                     birthLocation: z.string().optional().nullable(),
@@ -232,6 +232,25 @@ export const schemaAssetMetadata = z.object({
                     profileUrl: z.string(),
                 })
             ),
+        }),
+        provenance: z.object({
+            formData: z.object({
+                country: z.string(),
+                blockchain: z.string(),
+                plusCode: z.string().optional().nullable(),
+                exhibitions: z.array(
+                    z.object({
+                        exhibitionName: z.string(),
+                        exhibitionUrl: z.string().optional().nullable(),
+                    })
+                ),
+                awards: z.array(
+                    z.object({
+                        awardName: z.string(),
+                        awardUrl: z.string(),
+                    })
+                ),
+            }),
         }),
     }),
     framework: z.object({
