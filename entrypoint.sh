@@ -9,7 +9,8 @@ function checkEnv() {
 	fi
 }
 
-if [ "x$@" = "xwait" ]; then
+params="$@"
+if [ "x$params" = "xwait" ]; then
 	checkEnv MONGO_HOST mongo
 	checkEnv MONGO_PORT 27017
 	checkEnv REDIS_HOST redis
