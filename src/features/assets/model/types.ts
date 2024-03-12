@@ -22,7 +22,7 @@ export interface FindOneAssetsParams {
 
 export interface UpdateAssetsParams {
     id: string | ObjectId;
-    asset: Assets;
+    asset: Assets | { [key: string]: unknown };
 }
 
 export interface DeleteAssetsParams {

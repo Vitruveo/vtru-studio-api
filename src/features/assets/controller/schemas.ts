@@ -70,6 +70,7 @@ export const schemaAssetUpload = z.object({
             .object({
                 name: z.string(),
                 path: z.string(),
+                size: z.number().nullable().default(null),
             })
             .nullable()
             .default(null),
@@ -77,6 +78,7 @@ export const schemaAssetUpload = z.object({
             .object({
                 name: z.string(),
                 path: z.string(),
+                size: z.number().nullable().default(null),
             })
             .nullable()
             .default(null),
@@ -84,6 +86,7 @@ export const schemaAssetUpload = z.object({
             .object({
                 name: z.string(),
                 path: z.string(),
+                size: z.number().nullable().default(null),
             })
             .nullable()
             .default(null),
@@ -91,6 +94,7 @@ export const schemaAssetUpload = z.object({
             .object({
                 name: z.string(),
                 path: z.string(),
+                size: z.number().nullable().default(null),
             })
             .nullable()
             .default(null),
@@ -110,6 +114,7 @@ export const schemaAuxiliaryMedia = z.object({
                 .object({
                     name: z.string(),
                     path: z.string(),
+                    size: z.number().nullable().default(null),
                 })
                 .nullable()
                 .default(null),
@@ -117,6 +122,7 @@ export const schemaAuxiliaryMedia = z.object({
                 .object({
                     name: z.string(),
                     path: z.string(),
+                    size: z.number().nullable().default(null),
                 })
                 .nullable()
                 .default(null),
@@ -124,6 +130,7 @@ export const schemaAuxiliaryMedia = z.object({
                 .object({
                     name: z.string(),
                     path: z.string(),
+                    size: z.number().nullable().default(null),
                 })
                 .nullable()
                 .default(null),
@@ -131,6 +138,7 @@ export const schemaAuxiliaryMedia = z.object({
                 .object({
                     name: z.string(),
                     path: z.string(),
+                    size: z.number().nullable().default(null),
                 })
                 .nullable()
                 .default(null),
@@ -138,6 +146,7 @@ export const schemaAuxiliaryMedia = z.object({
                 .object({
                     name: z.string(),
                     path: z.string(),
+                    size: z.number().nullable().default(null),
                 })
                 .nullable()
                 .default(null),
