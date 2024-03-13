@@ -22,7 +22,7 @@ export interface FindOneAssetsParams {
 
 export interface UpdateAssetsParams {
     id: string | ObjectId;
-    asset: Assets;
+    asset: Assets | { [key: string]: unknown };
 }
 
 export interface DeleteAssetsParams {
@@ -32,6 +32,12 @@ export interface DeleteAssetsParams {
 export interface UpdateUploadedMediaKeysParams {
     id: string | ObjectId;
     mediaKey: string;
+}
+
+export interface ReplaceUploadedMediaKeyParams {
+    id: string | ObjectId;
+    oldMediaKey: string;
+    newMediaKey: string;
 }
 
 export interface RemoveUploadedMediaKeysParams {

@@ -8,6 +8,7 @@ import type {
     UpdateAssetsParams,
     UpdateUploadedMediaKeysParams,
     RemoveUploadedMediaKeysParams,
+    ReplaceUploadedMediaKeyParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -78,6 +79,23 @@ export const updateUploadedMediaKeys = async ({
     const result = await assets().updateOne(
         { _id: new ObjectId(id) },
         { $push: { uploadedMediaKeys: mediaKey } }
+    );
+    return result;
+};
+
+export const replaceUploadedMediaKey = async ({
+    id,
+    oldMediaKey,
+    newMediaKey,
+}: ReplaceUploadedMediaKeyParams) => {
+    await assets().updateOne(
+        { _id: new ObjectId(id) },
+        { $pull: { uploadedMediaKeys: oldMediaKey } }
+    );
+
+    const result = await assets().updateOne(
+        { _id: new ObjectId(id) },
+        { $push: { uploadedMediaKeys: newMediaKey } }
     );
     return result;
 };
