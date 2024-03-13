@@ -34,6 +34,12 @@ export interface UpdateUploadedMediaKeysParams {
     mediaKey: string;
 }
 
+export interface ReplaceUploadedMediaKeyParams {
+    id: string | ObjectId;
+    oldMediaKey: string;
+    newMediaKey: string;
+}
+
 export interface RemoveUploadedMediaKeysParams {
     id: string | ObjectId;
     mediaKeys: string[];

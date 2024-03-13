@@ -74,6 +74,8 @@ route.put('/file', async (req, res) => {
             },
         });
 
+        console.log(req.body);
+
         if (asset) {
             const formatFound = formatNames.find(
                 (formatName) =>
@@ -87,6 +89,11 @@ route.put('/file', async (req, res) => {
                 if (req.body.newFilename) {
                     newValues[`formats.${formatFound}.path`] =
                         req.body.newFilename;
+                    await model.replaceUploadedMediaKey({
+                        id: asset._id.toString(),
+                        oldMediaKey: req.body.filename,
+                        newMediaKey: req.body.newFilename,
+                    });
                 }
 
                 if (req.body.size) {
