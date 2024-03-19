@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const schemaValidationForCreate = z.object({});
 export const schemaValidationForPut = z.object({
     name: z.string(),
+    walletDefault: z.string(),
+    emailDefault: z.string().email(),
     username: z.string(),
     wallets: z.array(
         z.object({
