@@ -42,7 +42,6 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
         {
             $set: {
                 'licenses.nft': licensesData.nft,
-                'licenses.stream': licensesData.stream,
             },
         }
     );
