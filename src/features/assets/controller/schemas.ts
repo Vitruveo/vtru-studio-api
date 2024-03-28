@@ -309,7 +309,11 @@ export const schemaPublish = z.object({
 
 export const schemaConsignArtwork = z.object({
     consignArtwork: z.object({
-        artworkListing: z.date().nullable().default(null),
+        artworkListing: z
+            .string()
+            .nullable()
+            .default(null)
+            .transform((value) => (value ? new Date(value) : null)),
         creatorWallet: z.string().nullable().default(null),
         creatorCredits: z.number().nullable().default(null),
         creatorContract: z.date().nullable().default(null),
