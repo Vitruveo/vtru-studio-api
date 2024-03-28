@@ -9,6 +9,7 @@ import type {
     UpdateUploadedMediaKeysParams,
     RemoveUploadedMediaKeysParams,
     ReplaceUploadedMediaKeyParams,
+    FindAssetsPaginatedParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -19,6 +20,16 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
     const result = await assets().insertOne(asset);
     return result;
 };
+
+export const findAssetsPaginated = async ({
+    query,
+    sort,
+    skip,
+    limit,
+}: FindAssetsPaginatedParams) =>
+    assets().find(query, {}).sort(sort).skip(skip).limit(limit).toArray();
+
+export const countAssets = async () => assets().countDocuments();
 
 // return a stream of assets from database
 export const findAssets = async ({
