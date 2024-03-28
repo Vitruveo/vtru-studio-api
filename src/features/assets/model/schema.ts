@@ -133,6 +133,19 @@ export const AssetsSchema = z.object({
     generatedArtworkAI: z.boolean().default(false),
     notMintedOtherBlockchain: z.boolean().default(false),
     contract: z.boolean().default(false),
+    consignArtwork: z
+        .object({
+            artworkListing: z.date().nullable().default(null),
+            creatorWallet: z.string().nullable().default(null),
+            creatorCredits: z.number().nullable().default(null),
+            creatorContract: z.date().nullable().default(null),
+        })
+        .default({
+            artworkListing: null,
+            creatorWallet: null,
+            creatorCredits: null,
+            creatorContract: null,
+        }),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),

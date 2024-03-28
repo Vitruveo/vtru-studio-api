@@ -307,6 +307,21 @@ export const schemaPublish = z.object({
     }),
 });
 
+export const schemaConsignArtwork = z.object({
+    consignArtwork: z.object({
+        artworkListing: z.date().nullable().default(null),
+        creatorWallet: z.string().nullable().default(null),
+        creatorCredits: z.number().nullable().default(null),
+        creatorContract: z.date().nullable().default(null),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
 export const schemaValidationForDeleteFile = z.object({
     deleteKeys: z.array(z.string()),
     framework: z.object({
