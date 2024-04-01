@@ -34,7 +34,7 @@ route.get('/search', async (req, res) => {
         const assets = await model.findAssetsPaginated({
             query: {
                 ...query,
-                // 'consignArtwork.status': 'active',
+                'consignArtwork.status': 'active',
             },
             sort,
             skip: (pageNumber - 1) * limitNumber,
