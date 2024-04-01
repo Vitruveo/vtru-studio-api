@@ -89,7 +89,7 @@ route.get('/search', async (req, res) => {
             };
         }, {});
 
-        const total = await model.countAssets();
+        const total = await model.countAssets({ query: buildQuery });
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
             query: buildQuery,

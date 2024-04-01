@@ -18,6 +18,9 @@ export interface FindAssetsPaginatedParams {
     skip: number;
     limit: number;
 }
+export interface CountAssetsParams {
+    query: Record<string, unknown>;
+}
 
 export interface FindAssetsByIdParams {
     id: string | ObjectId;
