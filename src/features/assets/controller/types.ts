@@ -1,7 +1,7 @@
 import { model } from '..';
 
 export interface QueryPaginatedParams {
-    query: Record<string, unknown>;
+    query: Record<string, unknown>[];
     page: number;
     limit: number;
     sort: any;

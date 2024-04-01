@@ -78,10 +78,21 @@ route.get('/search', async (req, res) => {
             return;
         }
 
+        const buildQuery = query.reduce((acc, cur) => {
+            const [[key, value]] = Object.entries(cur);
+
+            if (!value) return acc;
+
+            return {
+                ...acc,
+                [key]: value,
+            };
+        }, {});
+
         const total = await model.countAssets();
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
-            query,
+            query: buildQuery,
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
