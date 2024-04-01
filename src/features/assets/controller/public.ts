@@ -29,13 +29,12 @@ route.get('/search', async (req, res) => {
             return;
         }
 
+        query['consignArtwork.status'] = 'active';
+
         const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
-            query: {
-                ...query,
-                'consignArtwork.status': 'active',
-            },
+            query,
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
