@@ -11,6 +11,7 @@ import type {
     ReplaceUploadedMediaKeyParams,
     FindAssetsPaginatedParams,
     CountAssetsParams,
+    FindAssetsTagsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -33,33 +34,26 @@ export const findAssetsPaginated = async ({
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
 
-export const findAssetsTags = async () =>
+export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
     assets()
         .aggregate([
-            {
-                $match: {
-                    'assetMetadata.taxonomy.formData.tags': {
-                        $exists: true,
-                        $ne: [],
-                    },
-                },
-            },
+            { $match: query },
             { $unwind: '$assetMetadata.taxonomy.formData.tags' },
             {
                 $group: {
-                    _id: null,
-                    tags: { $push: '$assetMetadata.taxonomy.formData.tags' },
+                    _id: '$assetMetadata.taxonomy.formData.tags',
+                    count: { $sum: 1 },
                 },
             },
             {
                 $project: {
                     _id: 0,
-                    tags: 1,
+                    tag: '$_id',
+                    count: 1,
                 },
             },
         ])
-        .toArray()
-        .then(([{ tags }]) => tags);
+        .toArray();
 
 // return a stream of assets from database
 export const findAssets = async ({

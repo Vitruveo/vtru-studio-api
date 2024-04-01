@@ -18,6 +18,10 @@ export interface FindAssetsPaginatedParams {
     skip: number;
     limit: number;
 }
+
+export interface FindAssetsTagsParams {
+    query: Record<string, unknown>;
+}
 export interface CountAssetsParams {
     query: Record<string, unknown>;
 }

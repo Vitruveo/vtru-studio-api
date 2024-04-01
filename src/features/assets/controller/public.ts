@@ -32,11 +32,15 @@ route.get('/search', async (req, res) => {
         const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
-            query,
+            query: {
+                ...query,
+                // 'consignArtwork.status': 'active',
+            },
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
         });
+        const tags = await model.findAssetsTags({ query });
 
         res.json({
             code: 'vitruveo.studio.api.assets.search.success',
@@ -44,6 +48,7 @@ route.get('/search', async (req, res) => {
             transaction: nanoid(),
             data: {
                 data: assets,
+                tags,
                 page: pageNumber,
                 totalPage,
                 total,
@@ -55,27 +60,6 @@ route.get('/search', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.search.failed',
             message: `Reader search failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
-route.get('/tags', async (req, res) => {
-    try {
-        const tags = await model.findAssetsTags();
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.tags.success',
-            message: 'Reader tags success',
-            transaction: nanoid(),
-            data: tags,
-        } as APIResponse);
-    } catch (error) {
-        logger('Reader tags asset failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.tags.failed',
-            message: `Reader tags failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

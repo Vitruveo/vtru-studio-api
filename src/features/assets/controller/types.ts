@@ -7,8 +7,14 @@ export interface QueryPaginatedParams {
     sort: any;
 }
 
+interface Tags {
+    tag: string;
+    count: number;
+}
+
 export interface ResponseAssetsPaginated {
     data: model.AssetsDocument[];
+    tags: Tags[];
     page: number;
     totalPage: number;
     total: number;

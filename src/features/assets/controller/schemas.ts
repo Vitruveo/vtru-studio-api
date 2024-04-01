@@ -309,6 +309,7 @@ export const schemaPublish = z.object({
 
 export const schemaConsignArtwork = z.object({
     consignArtwork: z.object({
+        status: z.enum(['draft', 'preview', 'active', 'hidden']),
         artworkListing: z
             .string()
             .nullable()
