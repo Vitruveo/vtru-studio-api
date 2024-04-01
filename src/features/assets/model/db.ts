@@ -33,6 +33,34 @@ export const findAssetsPaginated = async ({
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
 
+export const findAssetsTags = async () =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'assetMetadata.taxonomy.formData.tags': {
+                        $exists: true,
+                        $ne: [],
+                    },
+                },
+            },
+            { $unwind: '$assetMetadata.taxonomy.formData.tags' },
+            {
+                $group: {
+                    _id: null,
+                    tags: { $push: '$assetMetadata.taxonomy.formData.tags' },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    tags: 1,
+                },
+            },
+        ])
+        .toArray()
+        .then(([{ tags }]) => tags);
+
 // return a stream of assets from database
 export const findAssets = async ({
     query,
