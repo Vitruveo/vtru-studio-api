@@ -60,7 +60,7 @@ route.get('/show/:id', async (req, res) => {
 route.get('/search', async (req, res) => {
     try {
         const {
-            query,
+            query = {},
             sort,
             page = 1,
             limit = 10,
@@ -78,21 +78,10 @@ route.get('/search', async (req, res) => {
             return;
         }
 
-        const buildQuery = query.reduce((acc, cur) => {
-            const [[key, value]] = Object.entries(cur);
-
-            if (!value) return acc;
-
-            return {
-                ...acc,
-                [key]: value,
-            };
-        }, {});
-
-        const total = await model.countAssets({ query: buildQuery });
+        const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
-            query: buildQuery,
+            query,
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
