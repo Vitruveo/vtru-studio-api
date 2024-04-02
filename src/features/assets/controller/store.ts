@@ -43,7 +43,7 @@ route.get('/:creator/:id', async (req, res) => {
             return;
         }
 
-        if (creator._id !== asset.framework.createdBy) {
+        if (creator._id.toString() !== asset.framework.createdBy?.toString()) {
             res.status(401).json({
                 code: 'vitruveo.studio.api.admin.assets.store.unauthorized',
                 message: 'This asset is not created by this creator',
