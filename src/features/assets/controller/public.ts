@@ -65,37 +65,4 @@ route.get('/search', async (req, res) => {
     }
 });
 
-/**
- * This route will be used to search for an asset from the panel project
- */
-route.get('/:id', async (req, res) => {
-    try {
-        const asset = await model.findAssetsById({ id: req.params.id });
-
-        if (!asset) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.admin.assets.reader.one.notFound',
-                message: 'Asset not found',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.show.success',
-            message: 'Show asset success',
-            transaction: nanoid(),
-            data: asset,
-        } as APIResponse<model.AssetsDocument>);
-    } catch (error) {
-        logger('Show asset failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.show.failed',
-            message: `Show asset failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
 export { route };
