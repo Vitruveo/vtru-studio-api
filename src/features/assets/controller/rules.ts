@@ -9,7 +9,8 @@ import {
     schemaAssetMetadata,
     schemaAssetUpload,
     schemaAuxiliaryMedia,
-    schemaConsignArtwork,
+    schemaConsignArtworkListing,
+    schemaConsignArtworkStatus,
     schemaContract,
     schemaLicenses,
     schemaPublish,
@@ -127,8 +128,19 @@ export const validateBodyForUpdateStep = async (
             case 'publish':
                 req.body = schemaPublish.parse(payload);
                 break;
-            case 'consignArtwork':
-                req.body = schemaConsignArtwork.parse(payload);
+            case 'consignArtworkStatus':
+                schemaConsignArtworkStatus.parse(payload);
+                req.body = {
+                    'consignArtwork.status': payload.consignArtwork.status,
+                    framework: payload.framework,
+                };
+                break;
+            case 'consignArtworkListing':
+                schemaConsignArtworkListing.parse(payload);
+                req.body = {
+                    'consignArtwork.listing': payload.consignArtwork.listing,
+                    framework: payload.framework,
+                };
                 break;
             default:
                 throw new Error('Invalid step name');

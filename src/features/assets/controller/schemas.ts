@@ -307,6 +307,36 @@ export const schemaPublish = z.object({
     }),
 });
 
+export const schemaConsignArtworkStatus = z.object({
+    consignArtwork: z.object({
+        status: z
+            .enum(['draft', 'preview', 'active', 'hidden'])
+            .default('draft'),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaConsignArtworkListing = z.object({
+    consignArtwork: z.object({
+        artworkListing: z
+            .string()
+            .nullable()
+            .default(null)
+            .transform((value) => (value ? new Date(value) : null)),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
 export const schemaConsignArtwork = z.object({
     consignArtwork: z.object({
         status: z
