@@ -31,6 +31,10 @@ route.get('/search', async (req, res) => {
         }
 
         query['consignArtwork.status'] = 'active';
+        query['formats.preview.path'] = {
+            $exists: true,
+            $ne: null,
+        };
 
         const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
