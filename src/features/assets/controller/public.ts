@@ -2,6 +2,7 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
+import * as modelCreator from '../../creators/model';
 import { APIResponse } from '../../../services';
 import { QueryPaginatedParams, ResponseAssetsPaginated } from './types';
 
@@ -59,6 +60,61 @@ route.get('/search', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.search.failed',
             message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const asset = await model.findAssetsById({ id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.get.notFound',
+                message: 'Reader get asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const creatorId = await asset.framework.createdBy;
+
+        if (!creatorId) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.get.creatorNotFound',
+                message: 'Reader get asset creator not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const creator = await modelCreator.findCreatorById({ id: creatorId });
+
+        if (!creator) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.get.creatorNotFound',
+                message: 'Reader get asset creator not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.get.success',
+            message: 'Reader get asset success',
+            transaction: nanoid(),
+            data: {
+                username: creator.username,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader get asset failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.get.failed',
+            message: `Reader get asset failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
