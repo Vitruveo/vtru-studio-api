@@ -9,7 +9,6 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import { Query } from '../../common/types';
 import {
     needsToBeOwner,
     validateParamsId,
@@ -22,6 +21,7 @@ import {
     validateBodyForUpdateStep,
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
+import { QueryParams } from './types';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -62,13 +62,10 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
 
 route.get('/', validateQueries, async (req, res) => {
     try {
-        const { query }: { query: Query } = req;
+        const { query, sort } = req.query as unknown as QueryParams;
         const assets = await model.findAssets({
-            query: { limit: query.limit },
-            sort: query.sort
-                ? { [query.sort.field]: query.sort.order }
-                : { name: 1 },
-            skip: query.skip || 0,
+            query: query || {},
+            sort: sort ? { [sort.field]: sort.order } : { status: 1 },
         });
 
         res.set('Content-Type', 'text/event-stream');
