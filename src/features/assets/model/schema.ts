@@ -135,7 +135,7 @@ export const AssetsSchema = z.object({
     contract: z.boolean().default(false),
     consignArtwork: z
         .object({
-            status: z.enum(['draft', 'preview', 'active', 'hidden']),
+            status: z.enum(['draft', 'preview', 'active', 'hidden', 'locked']),
             artworkListing: z.date().nullable().default(null),
             creatorWallet: z.string().nullable().default(null),
             creatorCredits: z.number().nullable().default(null),

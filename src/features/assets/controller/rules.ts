@@ -7,6 +7,7 @@ import {
 } from '../../common/record';
 import {
     schemaAssetMetadata,
+    schemaAssetUpdateStatus,
     schemaAssetUpload,
     schemaAuxiliaryMedia,
     schemaConsignArtworkListing,
@@ -75,6 +76,24 @@ export const validateBodyForUpdate = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForUpdate.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.body = schemaAssetUpdateStatus.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateStatus.failed',
             message: '',
             transaction: nanoid(),
             args: error,

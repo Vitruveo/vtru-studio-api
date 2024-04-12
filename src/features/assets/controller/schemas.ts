@@ -50,6 +50,10 @@ export const schemaValidationForUpdate = z.object({
     }),
 });
 
+export const schemaAssetUpdateStatus = z.object({
+    status: z.enum(['active', 'locked']),
+});
+
 export const schemaAssetUpload = z.object({
     formats: z.object({
         original: z
