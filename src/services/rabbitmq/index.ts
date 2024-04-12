@@ -18,7 +18,8 @@ export const getConnection = async () => {
             status.connection = await rabbitmq.connect(RABBITMQ_URL);
             status.connection.on('close', () => {
                 console.log('RabbitMQ connection closed');
-                status.connection = null;
+                // status.connection = null;
+                process.exit(1);
             });
             status.connection.on('error', (error) => {
                 console.error('Error occurred in RabbitMQ connection:', error);
@@ -27,7 +28,8 @@ export const getConnection = async () => {
     } catch (err) {
         logger('Error connecting to rabbitmq: %O', err);
         captureException(err, { tags: { scope: 'rabbitmq' } });
-        status.connection = null;
+        process.exit(1);
+        // status.connection = null;
     }
     return status.connection;
 };
