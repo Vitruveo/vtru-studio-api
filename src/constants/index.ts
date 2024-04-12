@@ -7,3 +7,4 @@ export * from './rabbitmq';
 export * from './mongo';
 export * from './login';
 export * from './redis';
+export * from './shortstack';

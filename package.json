@@ -1,6 +1,6 @@
 {
     "name": "vtru-studio-api",
-    "version": "1.0.156",
+    "version": "1.0.157",
     "description": "",
     "main": "index.js",
     "scripts": {
@@ -66,6 +66,7 @@
         "mongodb": "^6.3.0",
         "morgan": "^1.10.0",
         "nanoid": "^3.3.4",
+        "shotstack-sdk": "^0.2.2",
         "zod": "^3.22.4"
     },
     "nodemonConfig": {

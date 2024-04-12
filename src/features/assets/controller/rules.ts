@@ -17,6 +17,7 @@ import {
     schemaPublish,
     schemaValidationForCreate,
     schemaValidationForDeleteFile,
+    schemaValidationForMakeVideo,
     schemaValidationForUpdate,
 } from './schemas';
 
@@ -76,6 +77,34 @@ export const validateBodyForUpdate = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForUpdate.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForMakeVideo = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForMakeVideo.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForMakeVideo.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForMakeVideo.failed',
             message: '',
             transaction: nanoid(),
             args: error,
