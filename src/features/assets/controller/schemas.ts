@@ -318,7 +318,7 @@ export const schemaPublish = z.object({
 export const schemaConsignArtworkStatus = z.object({
     consignArtwork: z.object({
         status: z
-            .enum(['draft', 'preview', 'active', 'hidden'])
+            .enum(['draft', 'preview', 'active', 'hidden', 'blocked'])
             .default('draft'),
     }),
     framework: z.object({
