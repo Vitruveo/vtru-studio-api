@@ -51,7 +51,7 @@ export const schemaValidationForUpdate = z.object({
 });
 
 export const schemaAssetUpdateStatus = z.object({
-    status: z.enum(['active', 'locked']),
+    status: z.enum(['active', 'blocked']),
 });
 
 export const schemaValidationForMakeVideo = z.object({
@@ -318,7 +318,7 @@ export const schemaPublish = z.object({
 export const schemaConsignArtworkStatus = z.object({
     consignArtwork: z.object({
         status: z
-            .enum(['draft', 'preview', 'active', 'hidden', 'blocked'])
+            .enum(['draft', 'preview', 'active', 'hidden'])
             .default('draft'),
     }),
     framework: z.object({

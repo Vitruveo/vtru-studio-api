@@ -151,6 +151,48 @@ route.post('/', validateBodyForCreate, async (req, res) => {
 });
 
 route.put(
+    '/:id/status',
+    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    validateBodyForUpdateStatus,
+    async (req, res) => {
+        try {
+            const asset = await model.findAssetsById({
+                id: req.params.id,
+            });
+
+            if (!asset) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.admin.assets.updateStatus.notFound',
+                    message: 'Asset not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            const result = await model.updateAssets({
+                id: asset._id,
+                asset: { 'consignArtwork.status': req.body.status },
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.assets.updateStatus.success',
+                message: 'Update status success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult>);
+        } catch (error) {
+            logger('Update status assets failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.updateStatus.failed',
+                message: `Update status failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.put(
     '/:id',
     validateParamsId,
     needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
@@ -199,79 +241,6 @@ route.delete(
             res.status(500).json({
                 code: 'vitruveo.studio.api.admin.assets.delete.failed',
                 message: `Delete failed: ${error}`,
-                args: error,
-                transaction: nanoid(),
-            } as APIResponse);
-        }
-    }
-);
-
-route.get('/:creatorId/status', async (req, res) => {
-    try {
-        const asset = await model.findAssetCreatedBy({
-            id: req.params.creatorId,
-        });
-
-        if (!asset) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.admin.assets.reader.status.notFound',
-                message: 'Asset not found',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.assets.reader.status.success',
-            message: 'Reader status success',
-            transaction: nanoid(),
-            data: asset.consignArtwork.status,
-        } as APIResponse<string>);
-    } catch (error) {
-        logger('Reader status assets failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.reader.status.failed',
-            message: `Reader status failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
-route.put(
-    '/:creatorId/status',
-    validateBodyForUpdateStatus,
-    async (req, res) => {
-        try {
-            const asset = await model.findAssetCreatedBy({
-                id: req.params.creatorId,
-            });
-
-            if (!asset) {
-                res.status(404).json({
-                    code: 'vitruveo.studio.api.admin.assets.updateStatus.notFound',
-                    message: 'Asset not found',
-                    transaction: nanoid(),
-                } as APIResponse);
-                return;
-            }
-
-            const result = await model.updateAssets({
-                id: asset._id,
-                asset: { 'consignArtwork.status': req.body.status },
-            });
-
-            res.json({
-                code: 'vitruveo.studio.api.admin.assets.updateStatus.success',
-                message: 'Update status success',
-                transaction: nanoid(),
-                data: result,
-            } as APIResponse<UpdateResult>);
-        } catch (error) {
-            logger('Update status assets failed: %O', error);
-            res.status(500).json({
-                code: 'vitruveo.studio.api.admin.assets.updateStatus.failed',
-                message: `Update status failed: ${error}`,
                 args: error,
                 transaction: nanoid(),
             } as APIResponse);
