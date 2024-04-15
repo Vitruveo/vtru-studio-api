@@ -23,6 +23,7 @@ export const getConnection = async () => {
             });
             status.connection.on('error', (error) => {
                 console.error('Error occurred in RabbitMQ connection:', error);
+                process.exit(1);
             });
         }
     } catch (err) {
@@ -59,6 +60,8 @@ export const getChannel = async () => {
     } catch (error) {
         logger('Error creating channel: %O', error);
         captureException(error, { tags: { scope: 'rabbitmq' } });
+
+        process.exit(1);
     }
     return null;
 };
