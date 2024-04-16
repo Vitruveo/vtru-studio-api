@@ -214,6 +214,7 @@ export const schemaAssetMetadata = z.object({
                 .object({
                     title: z.string().or(z.null()),
                     description: z.string().or(z.null()),
+                    longDescription: z.string().or(z.null()),
                     culture: z.string().or(z.null()),
                     mood: z.array(z.string().or(z.null())),
                     colors: z.array(z.string()).or(z.null()),

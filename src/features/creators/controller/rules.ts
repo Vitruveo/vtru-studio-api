@@ -13,6 +13,7 @@ import {
     schemaValidationForCreate,
     schemaValidationForPut,
     schemaValidationForPutAvatar,
+    schemaValidationForRequestConnect,
 } from './schemas';
 import { CreatorSchema, encryptCode, generateCode } from '../model';
 
@@ -54,6 +55,34 @@ export const validateBodyForLogin = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.creator.validateBodyForLogin.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+export const validateBodyForRequestConnect = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'airdrop.api.profile.validateBodyForAuth.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForRequestConnect.parse(req.body);
+
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'airdrop.api.profile.validateBodyForAuth.failed',
             message: '',
             transaction: nanoid(),
             args: error,
