@@ -12,7 +12,7 @@ import type {
     UpdateCodeHashEmailCreatorParams,
     AddEmailCreatorParams,
     UpdateAvatarParams,
-    GetCreatorWalletsParams,
+    FindWalletByAddressParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -148,7 +148,13 @@ export const updateAvatar = async ({ id, fileId }: UpdateAvatarParams) => {
     return result;
 };
 
-export const getCreatorWallets = async ({ id }: GetCreatorWalletsParams) => {
-    const result = await creators().findOne({ _id: new ObjectId(id) });
-    return result?.wallets ?? [];
+export const findWalletByAddress = async ({
+    address,
+}: FindWalletByAddressParams) => {
+    const result = await creators().findOne({
+        $where() {
+            return this.wallets.some((wallet) => wallet.address === address);
+        },
+    });
+    return result;
 };

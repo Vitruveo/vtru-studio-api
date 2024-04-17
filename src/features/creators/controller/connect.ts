@@ -6,11 +6,10 @@ import { Router } from 'express';
 
 import type { APIResponse } from '../../../services/express';
 import type { AuthResponse } from './types';
-import { CreatorDocument, getCreatorWallets } from '../model';
+import { CreatorDocument, findWalletByAddress } from '../model';
 import { validateBodyForRequestConnect } from './rules';
 import { keyRedisRequest } from '../utils/keyRedisRequest';
 import { authenticateSignature } from '../middleware/authenticateSignature';
-import { checkAuth } from '../../common/middleware';
 
 export interface LoginAnswer {
     token: string;
@@ -46,12 +45,10 @@ ${uuidv4()}`;
     }
 });
 
-route.post('/verify', checkAuth, authenticateSignature, async (req, res) => {
+route.post('/verify', authenticateSignature, async (req, res) => {
     try {
-        const creatorWallets = await getCreatorWallets({ id: req.auth.id });
-        const walletExists = creatorWallets.find(
-            (wallet) => wallet.address === req.body?.wallet
-        );
+        const { wallet } = req.body;
+        const walletExists = await findWalletByAddress(wallet);
 
         if (walletExists) {
             res.status(400).json({
