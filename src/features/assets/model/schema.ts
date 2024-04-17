@@ -148,6 +148,20 @@ export const AssetsSchema = z.object({
             creatorCredits: null,
             creatorContract: null,
         }),
+    ipfs: z.object({
+        // Main
+        original: z.string(),
+        display: z.string(),
+        exhibition: z.string(),
+        preview: z.string(),
+        print: z.string(),
+        // Auxiliary
+        arImage: z.string(),
+        arVideo: z.string(),
+        btsImage: z.string(),
+        btsVideo: z.string(),
+        codeZip: z.string(),
+    }),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),

@@ -24,3 +24,9 @@ export interface ResponseAssetsPaginated {
 export interface DataIPFS {
     [key: string]: string;
 }
+
+export interface ResponseCreateContract {
+    explorer: string;
+    tx: string;
+    assetId: number;
+}
