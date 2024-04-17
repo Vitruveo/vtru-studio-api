@@ -6,7 +6,7 @@ import { Router } from 'express';
 
 import type { APIResponse } from '../../../services/express';
 import type { AuthResponse } from './types';
-import { CreatorDocument, findWalletByAddress } from '../model';
+import { CreatorDocument, checkWalletExists } from '../model';
 import { validateBodyForRequestConnect } from './rules';
 import { keyRedisRequest } from '../utils/keyRedisRequest';
 import { authenticateSignature } from '../middleware/authenticateSignature';
@@ -48,7 +48,7 @@ ${uuidv4()}`;
 route.post('/verify', authenticateSignature, async (req, res) => {
     try {
         const { wallet } = req.body;
-        const walletExists = await findWalletByAddress(wallet);
+        const walletExists = await checkWalletExists({ address: wallet });
 
         if (walletExists) {
             res.status(400).json({

@@ -74,6 +74,6 @@ export interface UpdateAvatarParams {
     fileId: string;
 }
 
-export interface FindWalletByAddressParams {
+export interface CheckWalletExistsParams {
     address: string;
 }
