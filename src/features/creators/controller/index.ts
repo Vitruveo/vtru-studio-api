@@ -2,9 +2,11 @@ import { Router } from 'express';
 import { route as coreRouter } from './core';
 import { route as loginRouter } from './login';
 import { route as connectRouter } from './connect';
+import { route as avatarRouter } from './avatar';
 
 const router = Router();
 
+router.use('/creators/avatar', avatarRouter);
 router.use('/creators/login', loginRouter);
 router.use('/creators/connect', connectRouter);
 router.use('/creators', coreRouter);

@@ -2,35 +2,31 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 
-import { APIResponse } from '../../../services';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
-import { ResponseCreateContract } from './types';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
 
 route.post('/:id', async (req, res) => {
     try {
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
         const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.assets.contract.not_found',
-                message: 'Asset not found',
-                transaction: nanoid(),
-            } as APIResponse);
+            res.write('event: asset_not_found\n');
+            res.write(`id: ${nanoid()}\n`);
             return;
         }
 
         if (!asset.framework.createdBy) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.assets.contract.creator_not_found',
-                message: 'CreatedBy not found',
-                transaction: nanoid(),
-            } as APIResponse);
-
+            res.write('event: created_by_found\n');
+            res.write(`id: ${nanoid()}\n`);
             return;
         }
 
@@ -39,17 +35,21 @@ route.post('/:id', async (req, res) => {
         });
 
         if (!creator) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.assets.contract.creator_not_found',
-                message: 'Creator not found',
-                transaction: nanoid(),
-            } as APIResponse);
+            res.write('event: creator_not_found\n');
+            res.write(`id: ${nanoid()}\n`);
 
             return;
         }
 
-        const assetRefId = Date.now() + 1;
-        const creatorRefId = Date.now() + 2;
+        let { assetRefId } = asset;
+        let { creatorRefId } = creator;
+
+        if (!assetRefId) {
+            assetRefId = Date.now();
+        }
+        if (!creatorRefId) {
+            creatorRefId = Date.now();
+        }
 
         const licenses = [];
 
@@ -102,7 +102,8 @@ route.post('/:id', async (req, res) => {
                 refId: assetRefId,
                 agreeDateTime: Date.now(),
                 title: asset.assetMetadata.context.formData.title,
-                description: asset.assetMetadata.context.formData.description,
+                description:
+                    asset.assetMetadata.context.formData.longDescription,
                 metadataRefId: Date.now(), // TODO: Implement metadata
             },
             creator: {
@@ -132,28 +133,31 @@ route.post('/:id', async (req, res) => {
         await model.updateAssets({
             id: req.params.id,
             asset: {
+                assetRefId,
                 contractExplorer: {
                     explorer: response.explorer,
                     tx: response.tx,
                     assetId: response.assetId,
+                    assetRefId,
+                    creatorRefId,
                 },
             },
         });
 
-        res.json({
-            code: 'vitruveo.studio.api.assets.contract.success',
-            message: 'Contract success',
-            transaction: nanoid(),
-            data: response,
-        } as APIResponse<ResponseCreateContract>);
+        await modelCreator.updateCreator({
+            id: creator._id.toString(),
+            creator: { creatorRefId },
+        });
+
+        res.write(`event: contract_success\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${JSON.stringify(response)}\n\n`);
     } catch (error) {
         logger('Contract  failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.contract.failed',
-            message: `Contract failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+        res.write('event: assets_contract_error\n');
+        res.write(`id: ${nanoid()}\n`);
+    } finally {
+        res.end();
     }
 });
 

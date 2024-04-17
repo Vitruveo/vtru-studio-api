@@ -5,7 +5,6 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 
-import { APIResponse } from '../../../services';
 import { ASSET_STORAGE_URL } from '../../../constants';
 import * as model from '../model';
 import type { DataIPFS } from './types';
@@ -16,27 +15,29 @@ const route = Router();
 
 route.post('/:id', async (req, res) => {
     try {
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
         const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.assets.ipfs.assetNotFound',
-                message: 'Asset not found',
-                transaction: nanoid(),
-            } as APIResponse);
+            res.write('event: asset_not_found\n');
+            res.write(`id: ${nanoid()}\n`);
             return;
         }
 
         // update last . to _signed.
-        // const originalSigned = asset.formats?.original?.path.replace(
-        //     /\.(?=[^.]*$)/,
-        //     '_signed.'
-        // );
+        const originalSigned = asset.formats?.original?.path.replace(
+            /\.(?=[^.]*$)/,
+            '_signed.'
+        );
 
         const filesRaw = {
             // Main
+            original: originalSigned,
             preview: asset.formats?.preview?.path,
-            original: asset.formats?.original?.path,
             exhibition: asset.formats?.exhibition?.path,
             display: asset.formats?.display?.path,
             print: asset.formats?.print?.path,
@@ -74,20 +75,14 @@ route.post('/:id', async (req, res) => {
             asset: { ipfs: data },
         });
 
-        res.json({
-            code: 'vitruveo.studio.api.assets.ipfs.success',
-            message: 'IPFS success',
-            transaction: nanoid(),
-            data,
-        } as APIResponse<DataIPFS>);
+        res.write(`event: pifs_success\n`);
+        res.write(`id: ${nanoid()}\n`);
     } catch (error) {
         logger('IPFS  failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.ipfs.failed',
-            message: `IPFS failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+        res.write('event: ipfs_contract_error\n');
+        res.write(`id: ${nanoid()}\n`);
+    } finally {
+        res.end();
     }
 });
 
