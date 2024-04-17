@@ -10,3 +10,4 @@ export * from './redis';
 export * from './shortstack';
 export * from './assets';
 export * from './ipfs';
+export * from './contract';

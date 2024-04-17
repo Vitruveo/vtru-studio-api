@@ -9,7 +9,7 @@ import {
     STUDIO_PRIVATE_KEY,
     TESTNET,
     TESTNET_RPC,
-} from '../../constants/contract';
+} from '../../constants';
 
 const isTestNet = TESTNET === 'true';
 const rpc = isTestNet ? TESTNET_RPC : MAINNET_RPC;
