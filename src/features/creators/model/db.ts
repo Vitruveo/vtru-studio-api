@@ -151,6 +151,6 @@ export const updateAvatar = async ({ id, fileId }: UpdateAvatarParams) => {
 export const checkWalletExists = async ({
     address,
 }: CheckWalletExistsParams) => {
-    const result = await creators().findOne({ wallets: { address } });
+    const result = await creators().countDocuments({ wallets: { address } });
     return !!result;
 };
