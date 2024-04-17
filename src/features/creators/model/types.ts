@@ -73,3 +73,7 @@ export interface UpdateAvatarParams {
     id: string | ObjectId;
     fileId: string;
 }
+
+export interface GetCreatorWalletsParams {
+    id: string | ObjectId;
+}

@@ -6,26 +6,6 @@ version: '3.6'
 # redis: 5379
 
 services:
-  api:
-    environment:
-      - NODE_ENV=dev
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - MONGO_HOST=mongo
-      - MONGO_PORT=27017
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    build: 
-      context: .
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./:/app
-    ports:
-      - 5001:3000
-    networks:
-      - vitruveo
-    restart: always
-
   rabbitmq:
     image: rabbitmq:3.12.9-management
     environment:
