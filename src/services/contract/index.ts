@@ -63,7 +63,10 @@ export const createContract = async ({
         if (assetLog) {
             const events = await contract.queryFilter(assetLog);
             const latest = events[events.length - 1];
-            assetId = Number(latest.topics[1]);
+
+            if (Array.isArray(latest.topics) && latest.topics.length >= 1) {
+                assetId = Number(latest.topics[1]);
+            }
 
             const report = {
                 explorer: `${explorer}tx/${latest.transactionHash}`,

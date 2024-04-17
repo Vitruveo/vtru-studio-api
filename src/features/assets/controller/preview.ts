@@ -29,6 +29,7 @@ route.get('/:id', async (req, res) => {
                 message: 'Unauthorized access',
                 transaction: nanoid(),
             } as APIResponse);
+            return;
         }
 
         res.json({
