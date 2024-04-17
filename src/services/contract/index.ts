@@ -11,17 +11,6 @@ import {
     TESTNET_RPC,
 } from '../../constants';
 
-const isTestNet = TESTNET === 'true';
-const rpc = isTestNet ? TESTNET_RPC : MAINNET_RPC;
-const config = isTestNet ? testConfig : prodConfig;
-const explorer = isTestNet
-    ? 'https://test-explorer.vitruveo.xyz/'
-    : 'https://explorer.vitruveo.xyz/';
-
-const provider = new JsonRpcProvider(rpc);
-const signer = new Wallet(STUDIO_PRIVATE_KEY, provider);
-const contract = new Contract(config.contractAddress, config.abi, signer);
-
 export const delay = async ({ time }: { time: number }) =>
     new Promise((resolve) => {
         setTimeout(() => {
@@ -37,6 +26,21 @@ export const createContract = async ({
     auxiliaryMedia,
 }: CreateContractParams) => {
     try {
+        const isTestNet = TESTNET === 'true';
+        const rpc = isTestNet ? TESTNET_RPC : MAINNET_RPC;
+        const config = isTestNet ? testConfig : prodConfig;
+        const explorer = isTestNet
+            ? 'https://test-explorer.vitruveo.xyz/'
+            : 'https://explorer.vitruveo.xyz/';
+
+        const provider = new JsonRpcProvider(rpc);
+        const signer = new Wallet(STUDIO_PRIVATE_KEY, provider);
+        const contract = new Contract(
+            config.contractAddress,
+            config.abi,
+            signer
+        );
+
         // Consign artwork
         await contract.consign(
             header,
