@@ -4,6 +4,7 @@ import { ObjectId } from '../../../services';
 export const COLLECTION_ASSETS = 'assets';
 
 export const AssetsSchema = z.object({
+    assetRefId: z.number().nullable().default(null),
     uploadedMediaKeys: z.array(z.string()).default([]),
     domain: z.string().default(''),
     status: z
@@ -124,6 +125,7 @@ export const AssetsSchema = z.object({
             formData: z.object({
                 title: z.string(),
                 description: z.string(),
+                longDescription: z.string(),
                 moods: z.array(z.string()),
                 tags: z.array(z.string()),
             }),
