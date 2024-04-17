@@ -20,3 +20,7 @@ export interface ResponseAssetsPaginated {
     total: number;
     limit: number;
 }
+
+export interface DataIPFS {
+    [key: string]: string;
+}

@@ -8,3 +8,5 @@ export * from './mongo';
 export * from './login';
 export * from './redis';
 export * from './shortstack';
+export * from './assets';
+export * from './ipfs';
