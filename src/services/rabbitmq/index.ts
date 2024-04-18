@@ -30,7 +30,7 @@ export const getConnection = async () => {
         logger('Error connecting to rabbitmq: %O', err);
         captureException(err, { tags: { scope: 'rabbitmq' } });
         process.exit(1);
-        // status.connection = null;
+        // status.connection = null
     }
     return status.connection;
 };
