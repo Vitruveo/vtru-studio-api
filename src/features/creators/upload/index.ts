@@ -19,27 +19,25 @@ export const sendToExchangeCreators = async (
         if (!status.channel) {
             status.channel = await getChannel();
 
-            console.log(
-                'RABBITMQ_EXCHANGE_CREATORS',
-                RABBITMQ_EXCHANGE_CREATORS
-            );
-            status.channel?.assertExchange(
-                RABBITMQ_EXCHANGE_CREATORS,
-                'topic',
-                {
-                    durable: true,
-                }
-            );
-            status.channel?.on('close', () => {
-                console.log('status.channel.on.close');
-                status.channel = null;
+            if (!status.channel) {
+                logger('Channel not available');
+                process.exit(1);
+            }
+
+            status.channel.on('close', () => {
+                logger('Channel closed');
+                process.exit(1);
+            });
+            status.channel.on('error', (error) => {
+                logger('Error occurred in channel:', error);
+                process.exit(1);
+            });
+
+            status.channel.assertExchange(RABBITMQ_EXCHANGE_CREATORS, 'topic', {
+                durable: true,
             });
         }
         if (status.channel) {
-            console.log(
-                'RABBITMQ_EXCHANGE_CREATORS',
-                RABBITMQ_EXCHANGE_CREATORS
-            );
             status.channel.publish(
                 RABBITMQ_EXCHANGE_CREATORS,
                 routingKey,
