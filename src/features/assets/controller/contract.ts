@@ -102,8 +102,7 @@ route.post('/:id', async (req, res) => {
                 refId: assetRefId,
                 agreeDateTime: Date.now(),
                 title: asset.assetMetadata.context.formData.title,
-                description:
-                    asset.assetMetadata.context.formData.longDescription,
+                description: asset.assetMetadata.context.formData.description,
                 metadataRefId: Date.now(), // TODO: Implement metadata
             },
             creator: {
