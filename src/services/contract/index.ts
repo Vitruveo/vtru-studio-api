@@ -62,25 +62,22 @@ export const createContract = async ({
 
         if (assetLog) {
             const events = await contract.queryFilter(assetLog);
-            const latest = events[events.length - 1];
 
-            if (
-                latest?.topics &&
-                Array.isArray(latest.topics) &&
-                latest.topics.length >= 1
-            ) {
-                assetId = Number(latest.topics[1]);
+            if (Array.isArray(events) && events.length > 0) {
+                const latest = events[events.length - 1];
+
+                if (
+                    latest?.topics &&
+                    Array.isArray(latest.topics) &&
+                    latest.topics.length > 1
+                ) {
+                    assetId = Number(latest.topics[1]);
+                }
+
+                response.explorer = `${explorer}tx/${latest?.transactionHash}`;
+                response.tx = latest?.transactionHash;
+                response.assetId = assetId;
             }
-
-            const report = {
-                explorer: `${explorer}tx/${latest.transactionHash}`,
-                tx: latest.transactionHash,
-                assetId,
-            };
-
-            response.explorer = report.explorer;
-            response.tx = report.tx;
-            response.assetId = report.assetId;
         }
 
         // Add extra licenses

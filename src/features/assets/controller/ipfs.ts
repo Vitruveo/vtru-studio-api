@@ -20,12 +20,18 @@ route.post('/:id', async (req, res) => {
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
+        res.write(`event: start_processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
+
         const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
-            res.write('event: asset_not_found\n');
+            res.write(`event: asset_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            return;
+            res.write(`data: ${req.params.id}\n\n`);
+
+            throw new Error('asset_not_found');
         }
 
         // update last . to _signed.
@@ -65,6 +71,10 @@ route.post('/:id', async (req, res) => {
             // send file to ipfs
             const response = await uploadToIPFS({ url: file.url });
 
+            res.write(`event: processing\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: file ${file.name} is being processed\n\n`);
+
             // save response on data
             data[file.name] = response.data.Hash;
         }
@@ -75,12 +85,15 @@ route.post('/:id', async (req, res) => {
             asset: { ipfs: data },
         });
 
-        res.write(`event: pifs_success\n`);
+        res.write(`event: ipfs_success\n`);
         res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
     } catch (error) {
-        logger('IPFS  failed: %O', error);
-        res.write('event: ipfs_contract_error\n');
+        logger('Contract  failed: %O', error);
+
+        res.write(`event: ipfs_error\n`);
         res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${error}\n\n`);
     } finally {
         res.end();
     }

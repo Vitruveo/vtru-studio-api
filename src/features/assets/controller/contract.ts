@@ -16,18 +16,30 @@ route.post('/:id', async (req, res) => {
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
+        res.write(`event: start_processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
+
         const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
-            res.write('event: asset_not_found\n');
+            res.write(`event: asset_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            return;
+            res.write(`data: ${req.params.id}\n\n`);
+
+            throw new Error('asset_not_found');
         }
 
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: asset ${asset._id} is being processed\n\n`);
+
         if (!asset.framework.createdBy) {
-            res.write('event: created_by_found\n');
+            res.write(`event: asset_created_by_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            return;
+            res.write(`data: ${asset.framework.createdBy}\n\n`);
+
+            throw new Error('asset_created_by_not_found');
         }
 
         const creator = await modelCreator.findCreatorById({
@@ -35,11 +47,16 @@ route.post('/:id', async (req, res) => {
         });
 
         if (!creator) {
-            res.write('event: creator_not_found\n');
+            res.write(`event: creator_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${asset.framework.createdBy}\n\n`);
 
-            return;
+            throw new Error('creator_not_found');
         }
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: creator ${creator._id} is being processed\n\n`);
 
         let { assetRefId } = asset;
         let { creatorRefId } = creator;
@@ -127,7 +144,31 @@ route.post('/:id', async (req, res) => {
             },
         };
 
+        if (!params.creator.vault) {
+            res.write(`event: creator_wallet_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${creator._id}\n\n`);
+
+            throw new Error('creator_wallet_not_found');
+        }
+
+        if (!params.assetMedia.original) {
+            res.write(`event: asset_media_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${asset._id}\n\n`);
+
+            throw new Error('asset_media_not_found');
+        }
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: values are being processed\n\n`);
+
         const response = await createContract(params);
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: contract ${response.tx} is being processed\n\n`);
 
         await model.updateAssets({
             id: req.params.id,
@@ -153,8 +194,10 @@ route.post('/:id', async (req, res) => {
         res.write(`data: ${JSON.stringify(response)}\n\n`);
     } catch (error) {
         logger('Contract  failed: %O', error);
-        res.write('event: assets_contract_error\n');
+
+        res.write(`event: contract_error\n`);
         res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${error}\n\n`);
     } finally {
         res.end();
     }
