@@ -57,7 +57,7 @@ export const createContract = async ({
             tx: '',
             assetId,
         };
-        // Get the event that was logged
+        // Get the event that was logged.
         const assetLog = contract.filters.AssetConsigned(null, creator.vault);
 
         if (assetLog) {
