@@ -36,5 +36,6 @@ export const sendToExchangeMail = async (
     } catch (error) {
         logger('Error sending to queue: %O', error);
         captureException(error, { tags: { scope: 'sendToQueue' } });
+        process.exit(1);
     }
 };
