@@ -23,6 +23,7 @@ export const sendToExchangeMail = async (
             });
             status.channel?.on('close', () => {
                 status.channel = null;
+                process.exit(1);
             });
         }
         if (status.channel) {
