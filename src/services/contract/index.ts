@@ -64,7 +64,11 @@ export const createContract = async ({
             const events = await contract.queryFilter(assetLog);
             const latest = events[events.length - 1];
 
-            if (Array.isArray(latest.topics) && latest.topics.length >= 1) {
+            if (
+                latest?.topics &&
+                Array.isArray(latest.topics) &&
+                latest.topics.length >= 1
+            ) {
                 assetId = Number(latest.topics[1]);
             }
 
