@@ -114,6 +114,14 @@ route.post('/:id', async (req, res) => {
             licenses.push(licensePrint);
         }
 
+        if (
+            !creator.walletDefault &&
+            Array.isArray(creator.wallets) &&
+            creator.wallets.length > 0
+        ) {
+            creator.walletDefault = creator.wallets[0].address;
+        }
+
         const params = {
             header: {
                 refId: assetRefId,
