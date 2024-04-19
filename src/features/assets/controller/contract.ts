@@ -59,14 +59,14 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: creator ${creator._id} is being processed\n\n`);
 
-        let { assetRefId } = asset;
-        let { creatorRefId } = creator;
+        let creatorRefId = Date.now();
+        let assetRefId = Date.now();
 
-        if (!assetRefId) {
-            assetRefId = Date.now();
+        if (asset?.assetRefId) {
+            assetRefId = asset.assetRefId;
         }
-        if (!creatorRefId) {
-            creatorRefId = Date.now();
+        if (creator?.creatorRefId) {
+            creatorRefId = creator.creatorRefId;
         }
 
         const licenses = [];
