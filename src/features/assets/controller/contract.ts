@@ -175,6 +175,14 @@ route.post('/:id', async (req, res) => {
 
         const response = await createContract(params);
 
+        if (!response.explorer) {
+            res.write(`event: contract_url_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${response.explorer}\n\n`);
+
+            throw new Error('contract_url_not_found');
+        }
+
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: contract ${response.tx} is being processed\n\n`);
