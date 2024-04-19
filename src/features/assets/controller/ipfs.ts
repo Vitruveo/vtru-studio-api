@@ -9,6 +9,7 @@ import { ASSET_STORAGE_URL } from '../../../constants';
 import * as model from '../model';
 import type { DataIPFS } from './types';
 import { uploadToIPFS } from '../../../services/ipfs';
+import { captureException } from '../../../services';
 
 const logger = debug('features:assets:controller:ipfs');
 const route = Router();
@@ -90,6 +91,7 @@ route.post('/:id', async (req, res) => {
         res.write(`data: \n\n`);
     } catch (error) {
         logger('Contract  failed: %O', error);
+        captureException(error);
 
         res.write(`event: ipfs_error\n`);
         res.write(`id: ${nanoid()}\n`);

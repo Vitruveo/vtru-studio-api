@@ -5,6 +5,7 @@ import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
+import { captureException } from '../../../services';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
@@ -202,6 +203,7 @@ route.post('/:id', async (req, res) => {
         res.write(`data: ${JSON.stringify(response)}\n\n`);
     } catch (error) {
         logger('Contract  failed: %O', error);
+        captureException(error);
 
         res.write(`event: contract_error\n`);
         res.write(`id: ${nanoid()}\n`);
