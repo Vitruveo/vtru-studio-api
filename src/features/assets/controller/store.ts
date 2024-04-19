@@ -9,9 +9,9 @@ import { responseRenderUrl } from '../utils/response.render.url';
 const logger = debug('features:assets:controller:store');
 const route = Router();
 
-route.get('/:assetId/html', async (req, res) => {
+route.get('/:id/html', async (req, res) => {
     try {
-        const asset = await model.findAssetsById({ id: req.params.assetId });
+        const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
             res.status(404).json({

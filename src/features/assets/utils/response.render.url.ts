@@ -29,7 +29,7 @@ export const responseRenderUrl = ({
             <meta property="og:type" content="website">
             <meta property="og:title" content="${title}">
             <meta property="og:description" content="${description}">
-            <meta property="og:image" content="${awsURL}/${image}.png?${Date.now()}">
+            <meta property="og:image" content="${awsURL}/${image}">
         
             <!-- Twitter Meta Tags -->
             <meta name="twitter:card" content="summary_large_image">
@@ -37,7 +37,7 @@ export const responseRenderUrl = ({
             <meta property="twitter:url" content="${frontURL}/${creatorName}/${assetId}/${Date.now()}">
             <meta name="twitter:title" content="${title}">
             <meta name="twitter:description" content="${description}">
-            <meta name="twitter:image" content="${awsURL}/${image}.png?${Date.now()}">
+            <meta name="twitter:image" content="${awsURL}/${image}">
         </head>
         <body>
         </body>
