@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { RABBITMQ_EXCHANGE_CREATORS } from '../../../constants';
-import { getChannel, Channel } from '../../../services/rabbitmq';
+import { getChannel, Channel, disconnect } from '../../../services/rabbitmq';
 import { captureException } from '../../../services/sentry';
 
 const logger = debug('features:creators:upload:queue');
@@ -20,6 +20,14 @@ export const sendToExchangeCreators = async (
 
         if (!status.channel) {
             status.channel = await getChannel();
+
+            process.once('SIGINT', async () => {
+                if (status.channel) {
+                    await status.channel.close();
+                }
+
+                await disconnect();
+            });
 
             if (!status.channel) {
                 logger('Channel not available');

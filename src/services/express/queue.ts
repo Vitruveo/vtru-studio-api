@@ -1,5 +1,5 @@
 import debug from 'debug';
-import { getChannel, Channel } from '../rabbitmq';
+import { getChannel, Channel, disconnect } from '../rabbitmq';
 import { captureException } from '../sentry';
 import { RABBITMQ_EXCHANGE_EXPRESS } from '../../constants';
 
@@ -15,6 +15,14 @@ export const sendToExchange = async (message: string, routingKey = 'log') => {
     try {
         if (!status.channel) {
             status.channel = await getChannel();
+
+            process.once('SIGINT', async () => {
+                if (status.channel) {
+                    await status.channel.close();
+                }
+
+                await disconnect();
+            });
 
             if (!status.channel) {
                 logger('Channel not available');
