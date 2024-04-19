@@ -30,6 +30,8 @@ export const sendToExchange = async (message: string, routingKey = 'log') => {
                 process.exit(1);
             });
 
+            logger('Channel services express started');
+
             status.channel.assertExchange(RABBITMQ_EXCHANGE_EXPRESS, 'topic', {
                 durable: true,
             });

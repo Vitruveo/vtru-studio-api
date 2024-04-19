@@ -16,6 +16,8 @@ export const sendToExchangeCreators = async (
     routingKey = 'assets'
 ) => {
     try {
+        logger('Sending to exchange creators');
+
         if (!status.channel) {
             status.channel = await getChannel();
 
@@ -33,11 +35,17 @@ export const sendToExchangeCreators = async (
                 process.exit(1);
             });
 
+            logger('Channel creators assets started');
+
             status.channel.assertExchange(RABBITMQ_EXCHANGE_CREATORS, 'topic', {
                 durable: true,
             });
         }
         if (status.channel) {
+            logger('Sending to queue: %s', message);
+            logger('Routing key: %s', routingKey);
+            logger('Exchange: %s', RABBITMQ_EXCHANGE_CREATORS);
+
             status.channel.publish(
                 RABBITMQ_EXCHANGE_CREATORS,
                 routingKey,
