@@ -1,3 +1,5 @@
+import { AWS_ASSET_URL, STORE_URL } from '../../../constants';
+
 export interface ResponseRenderUrlParams {
     creatorName: string;
     assetId: string;
@@ -6,8 +8,8 @@ export interface ResponseRenderUrlParams {
     image: string;
 }
 
-const frontURL = 'https://store.vtru.dev';
-const awsURL = 'https://vitruveo-studio-qa-assets.s3.amazonaws.com';
+const frontURL = STORE_URL;
+const awsURL = AWS_ASSET_URL;
 
 export const responseRenderUrl = ({
     creatorName,
