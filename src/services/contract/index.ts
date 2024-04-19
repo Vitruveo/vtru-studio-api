@@ -81,7 +81,8 @@ export const createContract = async ({
         }
 
         // Add extra licenses
-        if (licenses.length > 1) {
+        // TODO: verify assetId
+        if (licenses.length > 1 && assetId > 0) {
             for (let i = 1; i < licenses.length; i += 1) {
                 if (i === 1) await delay({ time: 10_000 });
                 else await delay({ time: 5_000 });
