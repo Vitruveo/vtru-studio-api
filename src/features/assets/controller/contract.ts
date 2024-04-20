@@ -7,7 +7,6 @@ import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
 import { captureException } from '../../../services';
 import { retry } from '../../../utils';
-import type { CreateContractResponse } from '../../../services/contract/types';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
@@ -175,16 +174,8 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: values are being processed\n\n`);
 
-        let response: CreateContractResponse = {
-            explorer: '',
-            tx: '',
-            assetId: -1,
-        };
-
-        await retry(
-            async () => {
-                response = await createContract(params);
-            },
+        const response = await retry(
+            () => createContract(params),
             10, // retries
             1000 // delay
         );
