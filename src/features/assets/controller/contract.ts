@@ -6,6 +6,8 @@ import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
 import { captureException } from '../../../services';
+import { retry } from '../../../utils';
+import type { CreateContractResponse } from '../../../services/contract/types';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
@@ -173,7 +175,19 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: values are being processed\n\n`);
 
-        const response = await createContract(params);
+        let response: CreateContractResponse = {
+            explorer: '',
+            tx: '',
+            assetId: -1,
+        };
+
+        await retry(
+            async () => {
+                response = await createContract(params);
+            },
+            10, // retries
+            1000 // delay
+        );
 
         if (!response.explorer) {
             res.write(`event: contract_url_not_found\n`);

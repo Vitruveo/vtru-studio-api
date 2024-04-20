@@ -3,7 +3,7 @@ import { JsonRpcProvider, Wallet, Contract } from 'ethers';
 
 import testConfig from './config/testConfig.json';
 import prodConfig from './config/prodConfig.json';
-import type { CreateContractParams } from './types';
+import type { CreateContractParams, CreateContractResponse } from './types';
 import {
     MAINNET_RPC,
     STUDIO_PRIVATE_KEY,
@@ -31,7 +31,7 @@ export const createContract = async ({
     licenses,
     assetMedia,
     auxiliaryMedia,
-}: CreateContractParams) => {
+}: CreateContractParams): Promise<CreateContractResponse> => {
     try {
         const provider = new JsonRpcProvider(rpc);
         const signer = new Wallet(STUDIO_PRIVATE_KEY, provider);

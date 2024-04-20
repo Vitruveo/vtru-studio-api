@@ -42,3 +42,9 @@ export interface CreateContractParams {
     assetMedia: AssetMedia;
     auxiliaryMedia: AuxiliaryMedia;
 }
+
+export interface CreateContractResponse {
+    explorer: string;
+    tx: string;
+    assetId: number;
+}
