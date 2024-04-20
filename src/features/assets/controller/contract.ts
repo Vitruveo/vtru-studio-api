@@ -175,7 +175,12 @@ route.post('/:id', async (req, res) => {
         res.write(`data: values are being processed\n\n`);
 
         const response = await retry(
-            () => createContract(params),
+            async () => {
+                const result = await createContract(params);
+                if (!result.explorer) throw new Error('contract not found');
+
+                return result;
+            },
             10, // retries
             1000 // delay
         );
