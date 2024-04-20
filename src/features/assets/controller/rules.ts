@@ -7,13 +7,17 @@ import {
 } from '../../common/record';
 import {
     schemaAssetMetadata,
+    schemaAssetUpdateStatus,
     schemaAssetUpload,
     schemaAuxiliaryMedia,
+    schemaConsignArtworkListing,
+    schemaConsignArtworkStatus,
     schemaContract,
     schemaLicenses,
     schemaPublish,
     schemaValidationForCreate,
     schemaValidationForDeleteFile,
+    schemaValidationForMakeVideo,
     schemaValidationForUpdate,
 } from './schemas';
 
@@ -80,6 +84,52 @@ export const validateBodyForUpdate = async (
     }
 };
 
+export const validateBodyForMakeVideo = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForMakeVideo.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForMakeVideo.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForMakeVideo.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.body = schemaAssetUpdateStatus.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateStatus.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
 export const validateBodyForUpdateStep = async (
     req: Request,
     res: Response,
@@ -125,6 +175,20 @@ export const validateBodyForUpdateStep = async (
                 break;
             case 'publish':
                 req.body = schemaPublish.parse(payload);
+                break;
+            case 'consignArtworkStatus':
+                schemaConsignArtworkStatus.parse(payload);
+                req.body = {
+                    'consignArtwork.status': payload.consignArtwork.status,
+                    framework: payload.framework,
+                };
+                break;
+            case 'consignArtworkListing':
+                schemaConsignArtworkListing.parse(payload);
+                req.body = {
+                    'consignArtwork.listing': payload.consignArtwork.listing,
+                    framework: payload.framework,
+                };
                 break;
             default:
                 throw new Error('Invalid step name');

@@ -57,3 +57,7 @@ export const schemaValidationForPutAvatar = z.object({
         updatedBy: z.string().nullable().default(null),
     }),
 });
+
+export const schemaValidationForRequestConnect = z.object({
+    wallet: z.string().min(3).max(255),
+});

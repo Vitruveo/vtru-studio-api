@@ -1,4 +1,5 @@
 import debug from 'debug';
+import { uniqueExecution } from '@nsfilho/unique';
 import rabbitmq, { Connection, Channel } from 'amqplib';
 import { captureException } from '../sentry';
 import { RABBITMQ_URL } from '../../constants';
@@ -11,25 +12,19 @@ const status: {
     connection: null,
 };
 
-export const getConnection = async () => {
+export const getChannel = async () => {
     try {
-        console.log('RABBITMQ_URL', RABBITMQ_URL);
         if (!status.connection) {
-            status.connection = await rabbitmq.connect(RABBITMQ_URL);
-            status.connection.on('close', () => {
-                console.log('RabbitMQ connection closed');
-                status.connection = null;
-            });
-            status.connection.on('error', (error) => {
-                console.error('Error occurred in RabbitMQ connection:', error);
-            });
+            logger('RabbitMQ connection not established');
+            process.exit(1);
         }
-    } catch (err) {
-        logger('Error connecting to rabbitmq: %O', err);
-        captureException(err, { tags: { scope: 'rabbitmq' } });
-        status.connection = null;
+
+        return status.connection.createChannel();
+    } catch (error) {
+        logger('Error creating channel: %O', error);
+        captureException(error, { tags: { scope: 'rabbitmq' } });
+        return null;
     }
-    return status.connection;
 };
 
 export const disconnect = async () => {
@@ -39,23 +34,40 @@ export const disconnect = async () => {
 
         try {
             await oldConnection.close();
+            return; // exit function
         } catch (error) {
-            // ignore
+            logger('Error closing RabbitMQ connection: %O', error);
+            captureException(error, { tags: { scope: 'rabbitmq' } });
+            process.exit(1);
         }
     }
+
+    logger('RabbitMQ connection not established');
+    process.exit(1);
 };
 
-export const getChannel = async () => {
-    try {
-        const connection = await getConnection();
-        if (connection) {
-            return connection.createChannel();
+uniqueExecution({
+    name: __filename,
+    callback: async () => {
+        try {
+            status.connection = await rabbitmq.connect(RABBITMQ_URL);
+            logger(`RabbitMQ connected: ${RABBITMQ_URL}`);
+
+            status.connection.on('close', () => {
+                logger('RabbitMQ connection closed');
+                process.exit(1);
+            });
+
+            status.connection.on('error', (error) => {
+                logger('Error occurred in RabbitMQ connection:', error);
+                process.exit(1);
+            });
+        } catch (err) {
+            logger('Error connecting to rabbitmq: %O', err);
+            captureException(err, { tags: { scope: 'rabbitmq' } });
+            process.exit(1);
         }
-    } catch (error) {
-        logger('Error creating channel: %O', error);
-        captureException(error, { tags: { scope: 'rabbitmq' } });
-    }
-    return null;
-};
+    },
+});
 
 export { Channel };

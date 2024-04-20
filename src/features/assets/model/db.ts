@@ -9,16 +9,51 @@ import type {
     UpdateUploadedMediaKeysParams,
     RemoveUploadedMediaKeysParams,
     ReplaceUploadedMediaKeyParams,
+    FindAssetsPaginatedParams,
+    CountAssetsParams,
+    FindAssetsTagsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
-// basic actions
+// basic actions.
 export const createAssets = async ({ asset }: CreateAssetsParams) => {
     const result = await assets().insertOne(asset);
     return result;
 };
+
+export const findAssetsPaginated = async ({
+    query,
+    sort,
+    skip,
+    limit,
+}: FindAssetsPaginatedParams) =>
+    assets().find(query, {}).sort(sort).skip(skip).limit(limit).toArray();
+
+export const countAssets = async ({ query }: CountAssetsParams) =>
+    assets().countDocuments(query);
+
+export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            { $unwind: '$assetMetadata.taxonomy.formData.tags' },
+            {
+                $group: {
+                    _id: '$assetMetadata.taxonomy.formData.tags',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    tag: '$_id',
+                    count: 1,
+                },
+            },
+        ])
+        .toArray();
 
 // return a stream of assets from database
 export const findAssets = async ({

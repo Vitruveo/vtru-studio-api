@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { RABBITMQ_EXCHANGE_CREATORS } from '../../../constants';
-import { getChannel, Channel } from '../../../services/rabbitmq';
+import { getChannel, Channel, disconnect } from '../../../services/rabbitmq';
 import { captureException } from '../../../services/sentry';
 
 const logger = debug('features:creators:upload:queue');
@@ -16,30 +16,44 @@ export const sendToExchangeCreators = async (
     routingKey = 'assets'
 ) => {
     try {
+        logger('Sending to exchange creators');
+
         if (!status.channel) {
             status.channel = await getChannel();
 
-            console.log(
-                'RABBITMQ_EXCHANGE_CREATORS',
-                RABBITMQ_EXCHANGE_CREATORS
-            );
-            status.channel?.assertExchange(
-                RABBITMQ_EXCHANGE_CREATORS,
-                'topic',
-                {
-                    durable: true,
+            process.once('SIGINT', async () => {
+                if (status.channel) {
+                    await status.channel.close();
                 }
-            );
-            status.channel?.on('close', () => {
-                console.log('status.channel.on.close');
-                status.channel = null;
+
+                await disconnect();
+            });
+
+            if (!status.channel) {
+                logger('Channel not available');
+                process.exit(1);
+            }
+
+            status.channel.on('close', () => {
+                logger('Channel closed');
+                process.exit(1);
+            });
+            status.channel.on('error', (error) => {
+                logger('Error occurred in channel:', error);
+                process.exit(1);
+            });
+
+            logger('Channel creators assets started');
+
+            status.channel.assertExchange(RABBITMQ_EXCHANGE_CREATORS, 'topic', {
+                durable: true,
             });
         }
         if (status.channel) {
-            console.log(
-                'RABBITMQ_EXCHANGE_CREATORS',
-                RABBITMQ_EXCHANGE_CREATORS
-            );
+            logger('Sending to queue: %s', message);
+            logger('Routing key: %s', routingKey);
+            logger('Exchange: %s', RABBITMQ_EXCHANGE_CREATORS);
+
             status.channel.publish(
                 RABBITMQ_EXCHANGE_CREATORS,
                 routingKey,

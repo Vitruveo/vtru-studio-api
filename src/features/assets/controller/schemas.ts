@@ -50,6 +50,14 @@ export const schemaValidationForUpdate = z.object({
     }),
 });
 
+export const schemaAssetUpdateStatus = z.object({
+    status: z.enum(['active', 'blocked']),
+});
+
+export const schemaValidationForMakeVideo = z.object({
+    artworks: z.array(z.string()),
+});
+
 export const schemaAssetUpload = z.object({
     formats: z.object({
         original: z
@@ -206,6 +214,7 @@ export const schemaAssetMetadata = z.object({
                 .object({
                     title: z.string().or(z.null()),
                     description: z.string().or(z.null()),
+                    longDescription: z.string().or(z.null()),
                     culture: z.string().or(z.null()),
                     mood: z.array(z.string().or(z.null())),
                     colors: z.array(z.string()).or(z.null()),
@@ -299,6 +308,58 @@ export const schemaContract = z.object({
 
 export const schemaPublish = z.object({
     status: z.enum(['draft', 'published', 'archived', 'preview']),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaConsignArtworkStatus = z.object({
+    consignArtwork: z.object({
+        status: z
+            .enum(['draft', 'preview', 'active', 'hidden'])
+            .default('draft'),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaConsignArtworkListing = z.object({
+    consignArtwork: z.object({
+        artworkListing: z
+            .string()
+            .nullable()
+            .default(null)
+            .transform((value) => (value ? new Date(value) : null)),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaConsignArtwork = z.object({
+    consignArtwork: z.object({
+        status: z
+            .enum(['draft', 'preview', 'active', 'hidden'])
+            .default('draft'),
+        artworkListing: z
+            .string()
+            .nullable()
+            .default(null)
+            .transform((value) => (value ? new Date(value) : null)),
+        creatorWallet: z.string().nullable().default(null),
+        creatorCredits: z.number().nullable().default(null),
+        creatorContract: z.date().nullable().default(null),
+    }),
     framework: z.object({
         createdAt: z.date(),
         createdBy: z.string(),

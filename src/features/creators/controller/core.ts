@@ -1,7 +1,6 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import {} from './schemas';
 import * as model from '../model';
 import { sendToExchangeCreators } from '../upload';
 import { Query } from '../../common/types';
@@ -185,6 +184,17 @@ route.delete(
 
 route.get('/:username/username', async (req, res) => {
     try {
+        if (!/^[a-zA-Z0-9_]+$/.test(req.params.username)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.admin.creators.username.invalid',
+                message: `Checked username failed: username invalid`,
+                args: [],
+                transaction: nanoid(),
+            } as APIResponse);
+
+            return;
+        }
+
         const creator = await model.checkUsernameExist({
             username: req.params.username,
         });

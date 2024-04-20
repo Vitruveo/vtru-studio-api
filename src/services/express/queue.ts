@@ -1,5 +1,5 @@
 import debug from 'debug';
-import { getChannel, Channel } from '../rabbitmq';
+import { getChannel, Channel, disconnect } from '../rabbitmq';
 import { captureException } from '../sentry';
 import { RABBITMQ_EXCHANGE_EXPRESS } from '../../constants';
 
@@ -15,10 +15,35 @@ export const sendToExchange = async (message: string, routingKey = 'log') => {
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-            status.channel?.assertExchange(RABBITMQ_EXCHANGE_EXPRESS, 'topic', {
+
+            process.once('SIGINT', async () => {
+                if (status.channel) {
+                    await status.channel.close();
+                }
+
+                await disconnect();
+            });
+
+            if (!status.channel) {
+                logger('Channel not available');
+                process.exit(1);
+            }
+
+            status.channel.on('close', () => {
+                logger('Channel closed');
+                process.exit(1);
+            });
+            status.channel.on('error', (error) => {
+                logger('Error occurred in channel:', error);
+                process.exit(1);
+            });
+
+            logger('Channel services express started');
+
+            status.channel.assertExchange(RABBITMQ_EXCHANGE_EXPRESS, 'topic', {
                 durable: true,
             });
-            status.channel?.on('close', () => {
+            status.channel.on('close', () => {
                 status.channel = null;
             });
         }

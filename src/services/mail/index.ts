@@ -1,5 +1,6 @@
 import debug from 'debug';
-import { getChannel, Channel } from '../rabbitmq';
+
+import { Channel, disconnect, getChannel } from '../rabbitmq';
 import { captureException } from '../sentry';
 import { RABBITMQ_EXCHANGE_MAIL } from '../../constants';
 
@@ -18,11 +19,33 @@ export const sendToExchangeMail = async (
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-            status.channel?.assertExchange(RABBITMQ_EXCHANGE_MAIL, 'topic', {
-                durable: true,
+
+            process.once('SIGINT', async () => {
+                if (status.channel) {
+                    await status.channel.close();
+                }
+
+                await disconnect();
             });
-            status.channel?.on('close', () => {
-                status.channel = null;
+
+            if (!status.channel) {
+                logger('Channel not available');
+                process.exit(1);
+            }
+
+            status.channel.on('close', () => {
+                logger('Channel closed');
+                process.exit(1);
+            });
+            status.channel.on('error', (error) => {
+                logger('Error occurred in channel:', error);
+                process.exit(1);
+            });
+
+            logger('Channel services mail started');
+
+            status.channel.assertExchange(RABBITMQ_EXCHANGE_MAIL, 'topic', {
+                durable: true,
             });
         }
         if (status.channel) {

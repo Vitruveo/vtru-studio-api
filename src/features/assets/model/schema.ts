@@ -4,6 +4,7 @@ import { ObjectId } from '../../../services';
 export const COLLECTION_ASSETS = 'assets';
 
 export const AssetsSchema = z.object({
+    assetRefId: z.number().nullable().default(null),
     uploadedMediaKeys: z.array(z.string()).default([]),
     domain: z.string().default(''),
     status: z
@@ -124,6 +125,7 @@ export const AssetsSchema = z.object({
             formData: z.object({
                 title: z.string(),
                 description: z.string(),
+                longDescription: z.string(),
                 moods: z.array(z.string()),
                 tags: z.array(z.string()),
             }),
@@ -133,6 +135,35 @@ export const AssetsSchema = z.object({
     generatedArtworkAI: z.boolean().default(false),
     notMintedOtherBlockchain: z.boolean().default(false),
     contract: z.boolean().default(false),
+    consignArtwork: z
+        .object({
+            status: z.enum(['draft', 'preview', 'active', 'hidden', 'locked']),
+            artworkListing: z.date().nullable().default(null),
+            creatorWallet: z.string().nullable().default(null),
+            creatorCredits: z.number().nullable().default(null),
+            creatorContract: z.date().nullable().default(null),
+        })
+        .default({
+            status: 'draft',
+            artworkListing: null,
+            creatorWallet: null,
+            creatorCredits: null,
+            creatorContract: null,
+        }),
+    ipfs: z.object({
+        // Main
+        original: z.string(),
+        display: z.string(),
+        exhibition: z.string(),
+        preview: z.string(),
+        print: z.string(),
+        // Auxiliary
+        arImage: z.string(),
+        arVideo: z.string(),
+        btsImage: z.string(),
+        btsVideo: z.string(),
+        codeZip: z.string(),
+    }),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),

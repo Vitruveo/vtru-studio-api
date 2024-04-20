@@ -12,6 +12,20 @@ export interface FindAssetsParams {
     limit?: number;
 }
 
+export interface FindAssetsPaginatedParams {
+    query: Record<string, unknown>;
+    sort: any;
+    skip: number;
+    limit: number;
+}
+
+export interface FindAssetsTagsParams {
+    query: Record<string, unknown>;
+}
+export interface CountAssetsParams {
+    query: Record<string, unknown>;
+}
+
 export interface FindAssetsByIdParams {
     id: string | ObjectId;
 }
