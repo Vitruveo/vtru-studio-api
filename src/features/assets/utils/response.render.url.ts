@@ -1,4 +1,4 @@
-import { AWS_ASSET_URL, STORE_URL } from '../../../constants';
+import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
 
 export interface ResponseRenderUrlParams {
     creatorName: string;
@@ -9,7 +9,7 @@ export interface ResponseRenderUrlParams {
 }
 
 const frontURL = STORE_URL;
-const awsURL = AWS_ASSET_URL;
+const awsURL = ASSET_STORAGE_URL;
 
 export const responseRenderUrl = ({
     creatorName,
