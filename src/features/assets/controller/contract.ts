@@ -5,6 +5,8 @@ import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
+import { captureException } from '../../../services';
+import { retry } from '../../../utils';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
@@ -58,14 +60,14 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: creator ${creator._id} is being processed\n\n`);
 
-        let { assetRefId } = asset;
-        let { creatorRefId } = creator;
+        let creatorRefId = Date.now();
+        let assetRefId = Date.now();
 
-        if (!assetRefId) {
-            assetRefId = Date.now();
+        if (asset?.assetRefId) {
+            assetRefId = asset.assetRefId;
         }
-        if (!creatorRefId) {
-            creatorRefId = Date.now();
+        if (creator?.creatorRefId) {
+            creatorRefId = creator.creatorRefId;
         }
 
         const licenses = [];
@@ -112,6 +114,14 @@ route.post('/:id', async (req, res) => {
         }
         if (asset.licenses.print.added) {
             licenses.push(licensePrint);
+        }
+
+        if (
+            !creator.walletDefault &&
+            Array.isArray(creator.wallets) &&
+            creator.wallets.length > 0
+        ) {
+            creator.walletDefault = creator.wallets[0].address;
         }
 
         const params = {
@@ -164,7 +174,24 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: values are being processed\n\n`);
 
-        const response = await createContract(params);
+        const response = await retry(
+            async () => {
+                const result = await createContract(params);
+                if (!result.explorer) throw new Error('contract not found');
+
+                return result;
+            },
+            10, // retries
+            1000 // delay
+        );
+
+        if (!response.explorer) {
+            res.write(`event: contract_url_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${response.explorer}\n\n`);
+
+            throw new Error('contract_url_not_found');
+        }
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
@@ -194,6 +221,7 @@ route.post('/:id', async (req, res) => {
         res.write(`data: ${JSON.stringify(response)}\n\n`);
     } catch (error) {
         logger('Contract  failed: %O', error);
+        captureException(error);
 
         res.write(`event: contract_error\n`);
         res.write(`id: ${nanoid()}\n`);
