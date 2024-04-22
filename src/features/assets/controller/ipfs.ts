@@ -10,6 +10,7 @@ import * as model from '../model';
 import type { DataIPFS } from './types';
 import { uploadToIPFS } from '../../../services/ipfs';
 import { captureException } from '../../../services';
+import { retry } from '../../../utils';
 
 const logger = debug('features:assets:controller:ipfs');
 const route = Router();
@@ -66,11 +67,23 @@ route.post('/:id', async (req, res) => {
                 url: `${ASSET_STORAGE_URL}/${value}`,
             }));
 
+        if (!files.length) {
+            res.write(`event: files_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: No files to process\n\n`);
+
+            throw new Error('files_not_found');
+        }
+
         const data: DataIPFS = {};
 
         for (const file of files) {
             // send file to ipfs
-            const response = await uploadToIPFS({ url: file.url });
+            const response = await retry(
+                () => uploadToIPFS({ url: file.url }),
+                10, // retries
+                1000 // delay
+            );
 
             res.write(`event: processing\n`);
             res.write(`id: ${nanoid()}\n`);
