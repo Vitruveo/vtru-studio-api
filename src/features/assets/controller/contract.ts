@@ -6,7 +6,6 @@ import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
 import { captureException } from '../../../services';
-import { retry } from '../../../utils';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
@@ -129,7 +128,8 @@ route.post('/:id', async (req, res) => {
                 refId: assetRefId,
                 agreeDateTime: Date.now(),
                 title: asset?.assetMetadata?.context?.formData?.title || '',
-                description: asset?.assetMetadata?.context?.formData?.description || '',
+                description:
+                    asset?.assetMetadata?.context?.formData?.description || '',
                 metadataRefId: Date.now(), // TODO: Implement metadata
             },
             creator: {
@@ -174,16 +174,7 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: values are being processed\n\n`);
 
-        const response = await retry(
-            async () => {
-                const result = await createContract(params);
-                if (!result.explorer) throw new Error('contract not found');
-
-                return result;
-            },
-            10, // retries
-            1000 // delay
-        );
+        const response = await createContract(params);
 
         if (!response.explorer) {
             res.write(`event: contract_url_not_found\n`);
