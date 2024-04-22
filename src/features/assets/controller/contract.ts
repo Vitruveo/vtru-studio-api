@@ -128,8 +128,8 @@ route.post('/:id', async (req, res) => {
             header: {
                 refId: assetRefId,
                 agreeDateTime: Date.now(),
-                title: asset.assetMetadata.context.formData.title,
-                description: asset.assetMetadata.context.formData.description,
+                title: asset?.assetMetadata?.context?.formData?.title || '',
+                description: asset?.assetMetadata?.context?.formData?.description || '',
                 metadataRefId: Date.now(), // TODO: Implement metadata
             },
             creator: {
@@ -139,18 +139,18 @@ route.post('/:id', async (req, res) => {
             },
             licenses,
             assetMedia: {
-                original: asset.ipfs?.original || '',
-                display: asset.ipfs?.display || '',
-                exhibition: asset.ipfs?.exhibition || '',
-                preview: asset.ipfs?.preview || '',
-                print: asset.ipfs?.print || '',
+                original: asset?.ipfs?.original || '',
+                display: asset?.ipfs?.display || '',
+                exhibition: asset?.ipfs?.exhibition || '',
+                preview: asset?.ipfs?.preview || '',
+                print: asset?.ipfs?.print || '',
             },
             auxiliaryMedia: {
-                arImage: asset.ipfs?.arImage || '',
-                arVideo: asset.ipfs?.arVideo || '',
-                btsImage: asset.ipfs?.btsImage || '',
-                btsVideo: asset.ipfs?.btsVideo || '',
-                codeZip: asset.ipfs?.codeZip || '',
+                arImage: asset?.ipfs?.arImage || '',
+                arVideo: asset?.ipfs?.arVideo || '',
+                btsImage: asset?.ipfs?.btsImage || '',
+                btsVideo: asset?.ipfs?.btsVideo || '',
+                codeZip: asset?.ipfs?.codeZip || '',
             },
         };
 
