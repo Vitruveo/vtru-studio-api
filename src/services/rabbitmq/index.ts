@@ -61,7 +61,7 @@ export const getChannel = async () => {
         const myChannel = await status.connection.createChannel();
 
         // Handle interrupt signals
-        const interruptSignals = ['SIGINT', 'SIGTERM', 'SIGKILL'];
+        const interruptSignals = ['SIGINT'];
         const handleInterrupt = async () => {
             if (myChannel) {
                 await myChannel.close();
@@ -109,6 +109,11 @@ export const disconnect = async () => {
 uniqueExecution({
     name: __filename,
     callback: () => getConnection(),
+    advanced: {
+        delay: 0,
+        blockExecution: true,
+        priority: 20,
+    },
 });
 
 export { Channel };
