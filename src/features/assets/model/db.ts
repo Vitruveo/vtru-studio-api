@@ -17,7 +17,7 @@ import { getDb, ObjectId } from '../../../services/mongo';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
-// basic actions
+// basic actions.
 export const createAssets = async ({ asset }: CreateAssetsParams) => {
     const result = await assets().insertOne(asset);
     return result;
