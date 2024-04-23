@@ -1,4 +1,5 @@
 /* eslint-disable no-await-in-loop */
+import debug from 'debug';
 import { JsonRpcProvider, Wallet, Contract } from 'ethers';
 
 import testConfig from './config/testConfig.json';
@@ -10,6 +11,10 @@ import {
     TESTNET,
     TESTNET_RPC,
 } from '../../constants';
+import { retry } from '../../utils';
+import { captureException } from '../sentry';
+
+const logger = debug('services:contract');
 
 const isTestNet = TESTNET === 'true';
 const rpc = isTestNet ? TESTNET_RPC : MAINNET_RPC;
@@ -41,15 +46,21 @@ export const createContract = async ({
             signer
         );
 
-        // Consign artwork
-        await contract.consign(
-            header,
-            creator, // Only one supported due to Solidity. Call function addCreator() to add more
-            licenses[0], // Only one supported due to Solidity. Call function addLicense() to add more
-            assetMedia,
-            auxiliaryMedia,
-            { value: 0 } // Optional if sending funds to payable function
+        await retry(
+            () =>
+                contract.consign(
+                    header,
+                    creator, // Only one supported due to Solidity. Call function addCreator() to add more
+                    licenses[0], // Only one supported due to Solidity. Call function addLicense() to add more
+                    assetMedia,
+                    auxiliaryMedia,
+                    { value: 0 } // Optional if sending funds to payable function
+                ),
+            10,
+            1000
         );
+
+        await delay({ time: 10_000 });
 
         let assetId = -1;
         const response = {
@@ -80,18 +91,30 @@ export const createContract = async ({
             }
         }
 
+        await delay({ time: 10_000 });
+
         // Add extra licenses
-        // TODO: verify assetId
         if (licenses.length > 1 && assetId > 0) {
             for (let i = 1; i < licenses.length; i += 1) {
-                if (i === 1) await delay({ time: 10_000 });
-                else await delay({ time: 5_000 });
+                try {
+                    await retry(
+                        () =>
+                            contract.addLicense(
+                                assetId,
+                                licenses[i],
+                                { value: 0 } // Optional if sending funds to payable function
+                            ),
+                        10,
+                        1000
+                    );
+                } catch (error) {
+                    // send sentry
+                    captureException(error);
+                    // logger
+                    logger('Error on addLicense:', error);
+                }
 
-                await contract.addLicense(
-                    assetId,
-                    licenses[i],
-                    { value: 0 } // Optional if sending funds to payable function
-                );
+                await delay({ time: 5_000 });
             }
         }
 
