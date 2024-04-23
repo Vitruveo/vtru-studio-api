@@ -377,3 +377,7 @@ export const schemaValidationForDeleteFile = z.object({
         updatedBy: z.string().nullable().default(null),
     }),
 });
+
+export const schemaValidationForPostColors = z.object({
+    path: z.string(),
+});

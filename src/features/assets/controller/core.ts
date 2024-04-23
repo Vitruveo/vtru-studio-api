@@ -1,4 +1,6 @@
 import debug from 'debug';
+import fs from 'fs/promises';
+import { join } from 'path';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
@@ -18,11 +20,14 @@ import {
 import {
     validateBodyForCreate,
     validateBodyForDeleteFile,
+    validateBodyForPostColors,
     validateBodyForUpdate,
     validateBodyForUpdateStatus,
     validateBodyForUpdateStep,
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
+import { downloadFromS3 } from '../../../services/aws/downloadFromS3';
+import { hadleExtractColor } from '../../../services/extractColor';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -403,6 +408,43 @@ route.post('/request/upload', async (req, res) => {
             args: error,
             transaction: transactionApiId,
         } as APIResponse);
+    }
+});
+
+route.post('/colors', validateBodyForPostColors, async (req, res) => {
+    const { path } = req.body;
+
+    const imagePath = () => join('/', 'tmp', path);
+
+    try {
+        console.log('path:', path);
+
+        await downloadFromS3({ file: path });
+
+        console.log('downloaded');
+
+        const colors = await hadleExtractColor({ imagePath: imagePath() });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.colors.success',
+            message: 'Extract color success',
+            transaction: nanoid(),
+            data: colors,
+        } as APIResponse<string[]>);
+    } catch (error) {
+        logger('Extract color failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.colors.failed',
+            message: `Extract color failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    } finally {
+        try {
+            await fs.unlink(imagePath());
+        } catch (error) {
+            logger('Remove image failed: %O', error);
+        }
     }
 });
 

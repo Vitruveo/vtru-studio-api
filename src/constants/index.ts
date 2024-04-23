@@ -11,3 +11,4 @@ export * from './shortstack';
 export * from './assets';
 export * from './ipfs';
 export * from './contract';
+export * from './aws';
