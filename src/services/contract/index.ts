@@ -60,6 +60,8 @@ export const createContract = async ({
             1000
         );
 
+        await delay({ time: 10_000 });
+
         let assetId = -1;
         const response = {
             explorer: '',
@@ -89,12 +91,11 @@ export const createContract = async ({
             }
         }
 
+        await delay({ time: 10_000 });
+
         // Add extra licenses
         if (licenses.length > 1 && assetId > 0) {
             for (let i = 1; i < licenses.length; i += 1) {
-                if (i === 1) await delay({ time: 10_000 });
-                else await delay({ time: 5_000 });
-
                 try {
                     await retry(
                         () =>
@@ -112,6 +113,8 @@ export const createContract = async ({
                     // logger
                     logger('Error on addLicense:', error);
                 }
+
+                await delay({ time: 5_000 });
             }
         }
 

@@ -157,7 +157,7 @@ route.post('/:id', async (req, res) => {
         if (!params.creator.vault) {
             res.write(`event: creator_wallet_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${creator._id}\n\n`);
+            res.write(`data: ${JSON.stringify(params.creator)}\n\n`);
 
             throw new Error('creator_wallet_not_found');
         }
@@ -165,7 +165,7 @@ route.post('/:id', async (req, res) => {
         if (!params.assetMedia.original) {
             res.write(`event: asset_media_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${asset._id}\n\n`);
+            res.write(`data: ${JSON.stringify(params.assetMedia)}\n\n`);
 
             throw new Error('asset_media_not_found');
         }
