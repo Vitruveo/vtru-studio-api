@@ -380,7 +380,14 @@ export const schemaValidationForDeleteFile = z.object({
 
 export const schemaC2pa = z.object({
     c2pa: z.object({
-        finishedAt: z.date().nullable().default(null),
+        finishedAt: z
+            .string()
+            .refine((value) => !Number.isNaN(Date.parse(value)), {
+                message: 'Must be a valid date string',
+            })
+            .transform((value) => new Date(value))
+            .nullable()
+            .default(null),
     }),
     framework: z.object({
         createdAt: z.date(),
@@ -402,7 +409,14 @@ export const schemaIpfs = z.object({
         btsImage: z.string().nullable().default(null),
         btsVideo: z.string().nullable().default(null),
         codeZip: z.string().nullable().default(null),
-        finishedAt: z.date().nullable().default(null),
+        finishedAt: z
+            .string()
+            .refine((value) => !Number.isNaN(Date.parse(value)), {
+                message: 'Must be a valid date string',
+            })
+            .transform((value) => new Date(value))
+            .nullable()
+            .default(null),
     }),
     framework: z.object({
         createdAt: z.date(),
@@ -419,7 +433,14 @@ export const schemaContractExplorer = z.object({
         assetId: z.number().nullable().default(null),
         assetRefId: z.number().nullable().default(null),
         creatorRefId: z.number().nullable().default(null),
-        finishedAt: z.date().nullable().default(null),
+        finishedAt: z
+            .string()
+            .refine((value) => !Number.isNaN(Date.parse(value)), {
+                message: 'Must be a valid date string',
+            })
+            .transform((value) => new Date(value))
+            .nullable()
+            .default(null),
     }),
     framework: z.object({
         createdAt: z.date(),
