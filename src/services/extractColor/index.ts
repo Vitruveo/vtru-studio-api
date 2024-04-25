@@ -1,17 +1,18 @@
+import degub from 'debug';
 import getPixels from 'get-pixels';
 import { extractColors } from 'extract-colors';
 
+const logger = degub('services:extractColor');
+
 interface HandleExtractColorParams {
-    imagePath: string;
+    filename: string;
 }
 
-export const hadleExtractColor = ({ imagePath }: HandleExtractColorParams) =>
+export const hadleExtractColor = ({ filename }: HandleExtractColorParams) =>
     new Promise((resolve, reject) => {
-        console.log('imagePath:', imagePath);
-
-        getPixels(imagePath, async (error, pixels) => {
+        getPixels(filename, async (error, pixels) => {
             if (error) {
-                console.log('Error:', error);
+                logger('Error:', error);
                 reject(error);
             }
 
@@ -19,13 +20,7 @@ export const hadleExtractColor = ({ imagePath }: HandleExtractColorParams) =>
             const width = Math.round(Math.sqrt(data.length / 4));
             const height = width;
 
-            console.log('data:', data);
-            console.log('width:', width);
-            console.log('height:', height);
-
             const response = await extractColors({ data, width, height });
-
-            console.log('response:', response);
 
             resolve(response.map((item) => item.hex));
         });

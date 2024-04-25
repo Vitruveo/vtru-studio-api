@@ -28,6 +28,7 @@ import {
 import { sendToExchangeCreators } from '../../creators/upload';
 import { downloadFromS3 } from '../../../services/aws/downloadFromS3';
 import { hadleExtractColor } from '../../../services/extractColor';
+import { ASSET_TEMP_DIR } from '../../../constants';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -414,16 +415,16 @@ route.post('/request/upload', async (req, res) => {
 route.post('/colors', validateBodyForPostColors, async (req, res) => {
     const { path } = req.body;
 
-    const imagePath = () => join('/', 'tmp', path);
+    // TODO: deve receber um parametro contendo o ID do asset
+    // TODO: deve verificar se o asset existe
+    // TODO: deve verificar se o asset pertence ao usuário logado
+
+    const imagePath = () => join(ASSET_TEMP_DIR, path);
 
     try {
-        console.log('path:', path);
+        await downloadFromS3({ filename: path });
 
-        await downloadFromS3({ file: path });
-
-        console.log('downloaded');
-
-        const colors = await hadleExtractColor({ imagePath: imagePath() });
+        const colors = await hadleExtractColor({ filename: imagePath() });
 
         res.json({
             code: 'vitruveo.studio.api.assets.colors.success',
