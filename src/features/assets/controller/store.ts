@@ -4,9 +4,43 @@ import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { APIResponse } from '../../../services';
+import { responseRenderUrl } from '../utils/response.render.url';
 
 const logger = debug('features:assets:controller:store');
 const route = Router();
+
+route.get('/:id/html', async (req, res) => {
+    try {
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.store.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const html = responseRenderUrl({
+            creatorName: asset.framework.createdBy || '',
+            assetId: asset._id.toString(),
+            title: asset.assetMetadata.context.formData.title,
+            description: asset.assetMetadata.context.formData.description,
+            image: asset.formats.preview?.path || '',
+        });
+
+        res.send(html);
+    } catch (error) {
+        logger('Render asset html failed: %O', error);
+        res.status(500).json({
+            code: 'studio.api.store.html.failed',
+            message: `Render asset html failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.get('/:creator/:id', async (req, res) => {
     try {

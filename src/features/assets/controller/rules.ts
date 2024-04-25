@@ -10,9 +10,12 @@ import {
     schemaAssetUpdateStatus,
     schemaAssetUpload,
     schemaAuxiliaryMedia,
+    schemaC2pa,
     schemaConsignArtworkListing,
     schemaConsignArtworkStatus,
     schemaContract,
+    schemaContractExplorer,
+    schemaIpfs,
     schemaLicenses,
     schemaPublish,
     schemaValidationForCreate,
@@ -190,6 +193,23 @@ export const validateBodyForUpdateStep = async (
                     framework: payload.framework,
                 };
                 break;
+            case 'c2pa': {
+                req.body = schemaC2pa.parse(payload);
+                break;
+            }
+            case 'ipfs': {
+                req.body = schemaIpfs.parse(payload);
+                break;
+            }
+            case 'contractExplorer': {
+                schemaContractExplorer.parse(payload);
+                req.body = {
+                    'contractExplorer.finishedAt':
+                        payload.contractExplorer.finishedAt,
+                    framework: payload.framework,
+                };
+                break;
+            }
             default:
                 throw new Error('Invalid step name');
         }

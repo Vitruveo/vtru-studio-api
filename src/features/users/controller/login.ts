@@ -5,7 +5,6 @@ import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from '../../common/types';
 import {
     UserDocument,
-    createUser,
     encryptCode,
     findOneUser,
     pushUserLoginHistory,
@@ -13,15 +12,12 @@ import {
 } from '../model';
 import {
     MAIL_SENDGRID_TEMPLATE_SIGNIN,
-    MAIL_SENDGRID_TEMPLATE_SIGNUP,
     JWT_SECRETKEY,
 } from '../../../constants';
 import type { APIResponse } from '../../../services/express';
 import { sendToExchangeMail } from '../../../services/mail';
-import { ObjectId } from '../../../services/mongo';
 import { redis } from '../../../services/redis';
 import { otpConfirmSchema } from './schemas';
-import { findRoleReturnPermissions } from '../../roles/model';
 import { validateBodyForLogin } from './rules';
 
 export interface LoginAnswer {
