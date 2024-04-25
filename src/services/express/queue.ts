@@ -1,5 +1,5 @@
 import debug from 'debug';
-import { getChannel, Channel, disconnect } from '../rabbitmq';
+import { getChannel, Channel } from '../rabbitmq';
 import { captureException } from '../sentry';
 import { RABBITMQ_EXCHANGE_EXPRESS } from '../../constants';
 
@@ -15,47 +15,35 @@ export const sendToExchange = async (message: string, routingKey = 'log') => {
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-
-            process.once('SIGINT', async () => {
-                if (status.channel) {
-                    await status.channel.close();
-                }
-
-                await disconnect();
-            });
-
-            if (!status.channel) {
-                logger('Channel not available');
-                process.exit(1);
-            }
-
-            status.channel.on('close', () => {
-                logger('Channel closed');
-                process.exit(1);
-            });
-            status.channel.on('error', (error) => {
-                logger('Error occurred in channel:', error);
-                process.exit(1);
-            });
-
-            logger('Channel services express started');
-
+            logger('Asserting exchange: %s', RABBITMQ_EXCHANGE_EXPRESS);
             status.channel.assertExchange(RABBITMQ_EXCHANGE_EXPRESS, 'topic', {
                 durable: true,
             });
-            status.channel.on('close', () => {
-                status.channel = null;
-            });
         }
-        if (status.channel) {
-            status.channel.publish(
-                RABBITMQ_EXCHANGE_EXPRESS,
-                routingKey,
-                Buffer.from(message)
-            );
-        }
+        logger('Sending to express exchange', {
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_EXPRESS,
+        });
+        status.channel.publish(
+            RABBITMQ_EXCHANGE_EXPRESS,
+            routingKey,
+            Buffer.from(message)
+        );
     } catch (error) {
-        logger('Error sending to queue: %O', error);
-        captureException(error, { tags: { scope: 'sendToQueue' } });
+        logger('Error sending to exchange: %O', {
+            error,
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_EXPRESS,
+        });
+        captureException(error, {
+            extra: {
+                message,
+                routingKey,
+                exchange: RABBITMQ_EXCHANGE_EXPRESS,
+            },
+            tags: { scope: 'sendToExchange' },
+        });
     }
 };

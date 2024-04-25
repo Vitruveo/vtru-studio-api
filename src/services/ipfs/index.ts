@@ -1,3 +1,4 @@
+import debug from 'debug';
 import axios, { AxiosResponse } from 'axios';
 import FormData from 'form-data';
 import { createWriteStream, createReadStream, promises } from 'fs';
@@ -11,6 +12,9 @@ import {
     IPFS_PORT,
     IPFS_PROTOCOL,
 } from '../../constants';
+import { captureException } from '../sentry';
+
+const logger = debug('services:ipfs');
 
 const tempFilename = customAlphabet('1234567890abcdefg', 10);
 
@@ -44,33 +48,46 @@ export const uploadToIPFS = async ({
 }: {
     url: string;
 }): Promise<AxiosResponse> => {
-    const baseURL = `${IPFS_PROTOCOL}://${IPFS_HOST}:${IPFS_PORT}/api/v0/add?pin=true`;
-    const headers = {
-        Authorization: IPFS_AUTHORIZATION,
-    };
-
-    // create temp dir
-    await promises.mkdir(ASSET_TEMP_DIR, { recursive: true });
     const filename = join(ASSET_TEMP_DIR, tempFilename());
 
-    // download file via stream
-    await download({ path: filename, url });
+    try {
+        const baseURL = `${IPFS_PROTOCOL}://${IPFS_HOST}:${IPFS_PORT}/api/v0/add?pin=true`;
+        const headers = {
+            Authorization: IPFS_AUTHORIZATION,
+        };
 
-    // create form data
-    const formData = new FormData();
-    formData.append('file', createReadStream(filename), {
-        filename: url,
-    });
+        // create temp dir
+        await promises.mkdir(ASSET_TEMP_DIR, { recursive: true });
 
-    const response = await axios.post(baseURL, formData, {
-        headers: {
-            ...formData.getHeaders(),
-            ...headers,
-        },
-    });
+        // download file via stream
+        await download({ path: filename, url });
 
-    // delete file
-    await promises.unlink(filename);
+        // create form data
+        const formData = new FormData();
+        formData.append('file', createReadStream(filename), {
+            filename: url,
+        });
 
-    return response;
+        const response = await axios.post(baseURL, formData, {
+            headers: {
+                ...formData.getHeaders(),
+                ...headers,
+            },
+        });
+
+        return response;
+    } catch (error) {
+        logger('uploadToIPFS failed: %O', error);
+        captureException(error, {
+            extra: {
+                url,
+                filename,
+            },
+            tags: { scope: 'uploadToIPFS' },
+        });
+        throw error;
+    } finally {
+        // delete file
+        await promises.unlink(filename);
+    }
 };

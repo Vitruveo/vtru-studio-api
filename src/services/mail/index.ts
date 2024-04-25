@@ -19,44 +19,35 @@ export const sendToExchangeMail = async (
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-
-            process.once('SIGINT', async () => {
-                if (status.channel) {
-                    await status.channel.close();
-                }
-
-                await disconnect();
-            });
-
-            if (!status.channel) {
-                logger('Channel not available');
-                process.exit(1);
-            }
-
-            status.channel.on('close', () => {
-                logger('Channel closed');
-                process.exit(1);
-            });
-            status.channel.on('error', (error) => {
-                logger('Error occurred in channel:', error);
-                process.exit(1);
-            });
-
-            logger('Channel services mail started');
-
+            logger('Asserting exchange: %s', RABBITMQ_EXCHANGE_MAIL);
             status.channel.assertExchange(RABBITMQ_EXCHANGE_MAIL, 'topic', {
                 durable: true,
             });
         }
-        if (status.channel) {
-            status.channel.publish(
-                RABBITMQ_EXCHANGE_MAIL,
-                routingKey,
-                Buffer.from(message)
-            );
-        }
+        logger('Sending to mail exchange', {
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_MAIL,
+        });
+        status.channel.publish(
+            RABBITMQ_EXCHANGE_MAIL,
+            routingKey,
+            Buffer.from(message)
+        );
     } catch (error) {
-        logger('Error sending to queue: %O', error);
-        captureException(error, { tags: { scope: 'sendToQueue' } });
+        logger('Error sending to exchange: %O', {
+            error,
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_MAIL,
+        });
+        captureException(error, {
+            extra: {
+                message,
+                routingKey,
+                exchange: RABBITMQ_EXCHANGE_MAIL,
+            },
+            tags: { scope: 'sendToExchangeCreators' },
+        });
     }
 };

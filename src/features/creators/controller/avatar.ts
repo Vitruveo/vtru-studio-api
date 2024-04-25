@@ -9,11 +9,11 @@ import * as model from '../model';
 const logger = debug('features:creators:controller:avatar');
 const route = Router();
 
-route.get('/:username', async (req, res) => {
+route.get('/:id', async (req, res) => {
     try {
-        const { username } = req.params;
+        const { id } = req.params;
 
-        const creator = await model.findOneCreator({ query: { username } });
+        const creator = await model.findCreatorById({ id });
 
         if (!creator) {
             res.status(404).json({

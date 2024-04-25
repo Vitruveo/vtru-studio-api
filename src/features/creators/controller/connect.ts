@@ -6,7 +6,7 @@ import { Router } from 'express';
 
 import type { APIResponse } from '../../../services/express';
 import type { AuthResponse } from './types';
-import { CreatorDocument } from '../model';
+import { CreatorDocument, checkWalletExists } from '../model';
 import { validateBodyForRequestConnect } from './rules';
 import { keyRedisRequest } from '../utils/keyRedisRequest';
 import { authenticateSignature } from '../middleware/authenticateSignature';
@@ -47,6 +47,18 @@ ${uuidv4()}`;
 
 route.post('/verify', authenticateSignature, async (req, res) => {
     try {
+        const { wallet } = req.body;
+        const walletExists = await checkWalletExists({ address: wallet });
+
+        if (walletExists) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.verifyConnect.failed',
+                message: 'Wallet already exists',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
         res.status(200).json({
             code: 'vitruveo.studio.api.connect.success',
             message: 'Connect success',

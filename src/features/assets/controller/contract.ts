@@ -6,7 +6,6 @@ import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
 import { captureException } from '../../../services';
-import { retry } from '../../../utils';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
@@ -128,8 +127,9 @@ route.post('/:id', async (req, res) => {
             header: {
                 refId: assetRefId,
                 agreeDateTime: Date.now(),
-                title: asset.assetMetadata.context.formData.title,
-                description: asset.assetMetadata.context.formData.description,
+                title: asset?.assetMetadata?.context?.formData?.title || '',
+                description:
+                    asset?.assetMetadata?.context?.formData?.description || '',
                 metadataRefId: Date.now(), // TODO: Implement metadata
             },
             creator: {
@@ -139,25 +139,25 @@ route.post('/:id', async (req, res) => {
             },
             licenses,
             assetMedia: {
-                original: asset.ipfs?.original || '',
-                display: asset.ipfs?.display || '',
-                exhibition: asset.ipfs?.exhibition || '',
-                preview: asset.ipfs?.preview || '',
-                print: asset.ipfs?.print || '',
+                original: asset?.ipfs?.original || '',
+                display: asset?.ipfs?.display || '',
+                exhibition: asset?.ipfs?.exhibition || '',
+                preview: asset?.ipfs?.preview || '',
+                print: asset?.ipfs?.print || '',
             },
             auxiliaryMedia: {
-                arImage: asset.ipfs?.arImage || '',
-                arVideo: asset.ipfs?.arVideo || '',
-                btsImage: asset.ipfs?.btsImage || '',
-                btsVideo: asset.ipfs?.btsVideo || '',
-                codeZip: asset.ipfs?.codeZip || '',
+                arImage: asset?.ipfs?.arImage || '',
+                arVideo: asset?.ipfs?.arVideo || '',
+                btsImage: asset?.ipfs?.btsImage || '',
+                btsVideo: asset?.ipfs?.btsVideo || '',
+                codeZip: asset?.ipfs?.codeZip || '',
             },
         };
 
         if (!params.creator.vault) {
             res.write(`event: creator_wallet_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${creator._id}\n\n`);
+            res.write(`data: ${JSON.stringify(params.creator)}\n\n`);
 
             throw new Error('creator_wallet_not_found');
         }
@@ -165,7 +165,7 @@ route.post('/:id', async (req, res) => {
         if (!params.assetMedia.original) {
             res.write(`event: asset_media_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${asset._id}\n\n`);
+            res.write(`data: ${JSON.stringify(params.assetMedia)}\n\n`);
 
             throw new Error('asset_media_not_found');
         }
@@ -174,16 +174,7 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: values are being processed\n\n`);
 
-        const response = await retry(
-            async () => {
-                const result = await createContract(params);
-                if (!result.explorer) throw new Error('contract not found');
-
-                return result;
-            },
-            10, // retries
-            1000 // delay
-        );
+        const response = await createContract(params);
 
         if (!response.explorer) {
             res.write(`event: contract_url_not_found\n`);
