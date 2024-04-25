@@ -1,6 +1,6 @@
 import debug from 'debug';
 
-import { Channel, disconnect, getChannel } from '../rabbitmq';
+import { Channel, getChannel } from '../rabbitmq';
 import { captureException } from '../sentry';
 import { RABBITMQ_EXCHANGE_MAIL } from '../../constants';
 
