@@ -12,6 +12,7 @@ import type {
     UpdateCodeHashEmailCreatorParams,
     AddEmailCreatorParams,
     UpdateAvatarParams,
+    CheckWalletExistsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -145,4 +146,11 @@ export const updateAvatar = async ({ id, fileId }: UpdateAvatarParams) => {
         { $set: { 'profile.avatar': fileId } }
     );
     return result;
+};
+
+export const checkWalletExists = async ({
+    address,
+}: CheckWalletExistsParams) => {
+    const result = await creators().countDocuments({ wallets: { address } });
+    return !!result;
 };

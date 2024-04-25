@@ -378,6 +378,74 @@ export const schemaValidationForDeleteFile = z.object({
     }),
 });
 
-export const schemaValidationForPostColors = z.object({
-    path: z.string(),
+export const schemaC2pa = z.object({
+    c2pa: z.object({
+        finishedAt: z
+            .string()
+            .refine((value) => !Number.isNaN(Date.parse(value)), {
+                message: 'Must be a valid date string',
+            })
+            .transform((value) => new Date(value))
+            .nullable()
+            .default(null),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaIpfs = z.object({
+    ipfs: z.object({
+        original: z.string(),
+        display: z.string(),
+        exhibition: z.string(),
+        preview: z.string(),
+        print: z.string().nullable().default(null),
+        arImage: z.string().nullable().default(null),
+        arVideo: z.string().nullable().default(null),
+        btsImage: z.string().nullable().default(null),
+        btsVideo: z.string().nullable().default(null),
+        codeZip: z.string().nullable().default(null),
+        finishedAt: z
+            .string()
+            .refine((value) => !Number.isNaN(Date.parse(value)), {
+                message: 'Must be a valid date string',
+            })
+            .transform((value) => new Date(value))
+            .nullable()
+            .default(null),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
+});
+
+export const schemaContractExplorer = z.object({
+    contractExplorer: z.object({
+        explorer: z.string().nullable().default(null),
+        tx: z.string().nullable().default(null),
+        assetId: z.number().nullable().default(null),
+        assetRefId: z.number().nullable().default(null),
+        creatorRefId: z.number().nullable().default(null),
+        finishedAt: z
+            .string()
+            .refine((value) => !Number.isNaN(Date.parse(value)), {
+                message: 'Must be a valid date string',
+            })
+            .transform((value) => new Date(value))
+            .nullable()
+            .default(null),
+    }),
+    framework: z.object({
+        createdAt: z.date(),
+        createdBy: z.string(),
+        updatedAt: z.date().default(new Date()),
+        updatedBy: z.string().nullable().default(null),
+    }),
 });

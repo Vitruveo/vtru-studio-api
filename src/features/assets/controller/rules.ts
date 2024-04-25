@@ -10,15 +10,17 @@ import {
     schemaAssetUpdateStatus,
     schemaAssetUpload,
     schemaAuxiliaryMedia,
+    schemaC2pa,
     schemaConsignArtworkListing,
     schemaConsignArtworkStatus,
     schemaContract,
+    schemaContractExplorer,
+    schemaIpfs,
     schemaLicenses,
     schemaPublish,
     schemaValidationForCreate,
     schemaValidationForDeleteFile,
     schemaValidationForMakeVideo,
-    schemaValidationForPostColors,
     schemaValidationForUpdate,
 } from './schemas';
 
@@ -191,6 +193,18 @@ export const validateBodyForUpdateStep = async (
                     framework: payload.framework,
                 };
                 break;
+            case 'c2pa': {
+                req.body = schemaC2pa.parse(payload);
+                break;
+            }
+            case 'ipfs': {
+                req.body = schemaIpfs.parse(payload);
+                break;
+            }
+            case 'contractExplorer': {
+                req.body = schemaContractExplorer.parse(payload);
+                break;
+            }
             default:
                 throw new Error('Invalid step name');
         }
@@ -235,34 +249,6 @@ export const validateBodyForDeleteFile = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForDeleteFile.failed',
-            message: '',
-            transaction: nanoid(),
-            args: error,
-        } as APIResponse);
-    }
-};
-
-export const validateBodyForPostColors = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    if (req.method !== 'POST') {
-        res.status(405).json({
-            code: 'vitruveo.studio.api.assets.validateBodyForPostColors.failed',
-            message: '',
-            transaction: nanoid(),
-        } as APIResponse);
-
-        return;
-    }
-
-    try {
-        req.body = schemaValidationForPostColors.parse(req.body);
-        next();
-    } catch (error) {
-        res.status(400).json({
-            code: 'vitruveo.studio.api.assets.validateBodyForPostColors.failed',
             message: '',
             transaction: nanoid(),
             args: error,

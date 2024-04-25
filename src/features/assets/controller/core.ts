@@ -2,7 +2,7 @@ import debug from 'debug';
 import fs from 'fs/promises';
 import { join } from 'path';
 import { nanoid } from 'nanoid';
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import * as model from '../model';
 import { middleware } from '../../users';
 import {
@@ -20,7 +20,6 @@ import {
 import {
     validateBodyForCreate,
     validateBodyForDeleteFile,
-    validateBodyForPostColors,
     validateBodyForUpdate,
     validateBodyForUpdateStatus,
     validateBodyForUpdateStep,
@@ -412,12 +411,37 @@ route.post('/request/upload', async (req, res) => {
     }
 });
 
-route.post('/colors', validateBodyForPostColors, async (req, res) => {
-    const { path } = req.body;
+route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
+    const asset = await model.findAssetsById({ id: req.params.id });
 
-    // TODO: deve receber um parametro contendo o ID do asset
-    // TODO: deve verificar se o asset existe
-    // TODO: deve verificar se o asset pertence ao usuário logado
+    if (!asset) {
+        res.status(404).json({
+            code: 'vitruveo.studio.api.assets.colors.notFound',
+            message: 'Asset not found',
+            transaction: nanoid(),
+        } as APIResponse);
+        return;
+    }
+
+    if (asset.framework.createdBy !== req.auth.id) {
+        res.status(403).json({
+            code: 'vitruveo.studio.api.assets.colors.forbidden',
+            message: 'Forbidden access to asset',
+            transaction: nanoid(),
+        } as APIResponse);
+        return;
+    }
+
+    if (!asset.formats?.original?.path) {
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.colors.notFound',
+            message: 'Original image not found',
+            transaction: nanoid(),
+        } as APIResponse);
+        return;
+    }
+
+    const { path } = asset.formats.original;
 
     const imagePath = () => join(ASSET_TEMP_DIR, path);
 
