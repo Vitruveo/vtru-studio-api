@@ -150,6 +150,17 @@ export const AssetsSchema = z.object({
             creatorCredits: null,
             creatorContract: null,
         }),
+    c2pa: z.object({
+        finishedAt: z.date().nullable().default(null),
+    }),
+    contractExplorer: z.object({
+        explorer: z.string().nullable().default(null),
+        tx: z.string().nullable().default(null),
+        assetId: z.number().nullable().default(null),
+        assetRefId: z.number().nullable().default(null),
+        creatorRefId: z.number().nullable().default(null),
+        finishedAt: z.date().nullable().default(null),
+    }),
     ipfs: z.object({
         // Main
         original: z.string(),
@@ -163,6 +174,7 @@ export const AssetsSchema = z.object({
         btsImage: z.string(),
         btsVideo: z.string(),
         codeZip: z.string(),
+        finishedAt: z.date().nullable().default(null),
     }),
     framework: z
         .object({

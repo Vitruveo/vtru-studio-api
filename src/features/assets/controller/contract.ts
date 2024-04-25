@@ -5,6 +5,7 @@ import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { createContract } from '../../../services/contract';
+import { captureException } from '../../../services';
 
 const logger = debug('features:assets:controller:contract');
 const route = Router();
@@ -16,18 +17,30 @@ route.post('/:id', async (req, res) => {
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
+        res.write(`event: start_processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
+
         const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
-            res.write('event: asset_not_found\n');
+            res.write(`event: asset_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            return;
+            res.write(`data: ${req.params.id}\n\n`);
+
+            throw new Error('asset_not_found');
         }
 
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: asset ${asset._id} is being processed\n\n`);
+
         if (!asset.framework.createdBy) {
-            res.write('event: created_by_found\n');
+            res.write(`event: asset_created_by_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            return;
+            res.write(`data: ${asset.framework.createdBy}\n\n`);
+
+            throw new Error('asset_created_by_not_found');
         }
 
         const creator = await modelCreator.findCreatorById({
@@ -35,20 +48,25 @@ route.post('/:id', async (req, res) => {
         });
 
         if (!creator) {
-            res.write('event: creator_not_found\n');
+            res.write(`event: creator_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${asset.framework.createdBy}\n\n`);
 
-            return;
+            throw new Error('creator_not_found');
         }
 
-        let { assetRefId } = asset;
-        let { creatorRefId } = creator;
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: creator ${creator._id} is being processed\n\n`);
 
-        if (!assetRefId) {
-            assetRefId = Date.now();
+        let creatorRefId = Date.now();
+        let assetRefId = Date.now();
+
+        if (asset?.assetRefId) {
+            assetRefId = asset.assetRefId;
         }
-        if (!creatorRefId) {
-            creatorRefId = Date.now();
+        if (creator?.creatorRefId) {
+            creatorRefId = creator.creatorRefId;
         }
 
         const licenses = [];
@@ -97,13 +115,21 @@ route.post('/:id', async (req, res) => {
             licenses.push(licensePrint);
         }
 
+        if (
+            !creator.walletDefault &&
+            Array.isArray(creator.wallets) &&
+            creator.wallets.length > 0
+        ) {
+            creator.walletDefault = creator.wallets[0].address;
+        }
+
         const params = {
             header: {
                 refId: assetRefId,
                 agreeDateTime: Date.now(),
-                title: asset.assetMetadata.context.formData.title,
+                title: asset?.assetMetadata?.context?.formData?.title || '',
                 description:
-                    asset.assetMetadata.context.formData.longDescription,
+                    asset?.assetMetadata?.context?.formData?.description || '',
                 metadataRefId: Date.now(), // TODO: Implement metadata
             },
             creator: {
@@ -113,22 +139,54 @@ route.post('/:id', async (req, res) => {
             },
             licenses,
             assetMedia: {
-                original: asset.ipfs?.original || '',
-                display: asset.ipfs?.display || '',
-                exhibition: asset.ipfs?.exhibition || '',
-                preview: asset.ipfs?.preview || '',
-                print: asset.ipfs?.print || '',
+                original: asset?.ipfs?.original || '',
+                display: asset?.ipfs?.display || '',
+                exhibition: asset?.ipfs?.exhibition || '',
+                preview: asset?.ipfs?.preview || '',
+                print: asset?.ipfs?.print || '',
             },
             auxiliaryMedia: {
-                arImage: asset.ipfs?.arImage || '',
-                arVideo: asset.ipfs?.arVideo || '',
-                btsImage: asset.ipfs?.btsImage || '',
-                btsVideo: asset.ipfs?.btsVideo || '',
-                codeZip: asset.ipfs?.codeZip || '',
+                arImage: asset?.ipfs?.arImage || '',
+                arVideo: asset?.ipfs?.arVideo || '',
+                btsImage: asset?.ipfs?.btsImage || '',
+                btsVideo: asset?.ipfs?.btsVideo || '',
+                codeZip: asset?.ipfs?.codeZip || '',
             },
         };
 
+        if (!params.creator.vault) {
+            res.write(`event: creator_wallet_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${JSON.stringify(params.creator)}\n\n`);
+
+            throw new Error('creator_wallet_not_found');
+        }
+
+        if (!params.assetMedia.original) {
+            res.write(`event: asset_media_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${JSON.stringify(params.assetMedia)}\n\n`);
+
+            throw new Error('asset_media_not_found');
+        }
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: values are being processed\n\n`);
+
         const response = await createContract(params);
+
+        if (!response.explorer) {
+            res.write(`event: contract_url_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${response.explorer}\n\n`);
+
+            throw new Error('contract_url_not_found');
+        }
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: contract ${response.tx} is being processed\n\n`);
 
         await model.updateAssets({
             id: req.params.id,
@@ -154,8 +212,11 @@ route.post('/:id', async (req, res) => {
         res.write(`data: ${JSON.stringify(response)}\n\n`);
     } catch (error) {
         logger('Contract  failed: %O', error);
-        res.write('event: assets_contract_error\n');
+        captureException(error);
+
+        res.write(`event: contract_error\n`);
         res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${error}\n\n`);
     } finally {
         res.end();
     }

@@ -9,6 +9,8 @@ import { ASSET_STORAGE_URL } from '../../../constants';
 import * as model from '../model';
 import type { DataIPFS } from './types';
 import { uploadToIPFS } from '../../../services/ipfs';
+import { captureException } from '../../../services';
+import { retry } from '../../../utils';
 
 const logger = debug('features:assets:controller:ipfs');
 const route = Router();
@@ -20,12 +22,18 @@ route.post('/:id', async (req, res) => {
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
+        res.write(`event: start_processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
+
         const asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
-            res.write('event: asset_not_found\n');
+            res.write(`event: asset_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            return;
+            res.write(`data: ${req.params.id}\n\n`);
+
+            throw new Error('asset_not_found');
         }
 
         // update last . to _signed.
@@ -59,11 +67,27 @@ route.post('/:id', async (req, res) => {
                 url: `${ASSET_STORAGE_URL}/${value}`,
             }));
 
+        if (!files.length) {
+            res.write(`event: files_not_found\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: No files to process\n\n`);
+
+            throw new Error('files_not_found');
+        }
+
         const data: DataIPFS = {};
 
         for (const file of files) {
             // send file to ipfs
-            const response = await uploadToIPFS({ url: file.url });
+            const response = await retry(
+                () => uploadToIPFS({ url: file.url }),
+                10, // retries
+                1000 // delay
+            );
+
+            res.write(`event: processing\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: file ${file.name} is being processed\n\n`);
 
             // save response on data
             data[file.name] = response.data.Hash;
@@ -75,12 +99,16 @@ route.post('/:id', async (req, res) => {
             asset: { ipfs: data },
         });
 
-        res.write(`event: pifs_success\n`);
+        res.write(`event: ipfs_success\n`);
         res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
     } catch (error) {
-        logger('IPFS  failed: %O', error);
-        res.write('event: ipfs_contract_error\n');
+        logger('Contract  failed: %O', error);
+        captureException(error);
+
+        res.write(`event: ipfs_error\n`);
         res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${error}\n\n`);
     } finally {
         res.end();
     }

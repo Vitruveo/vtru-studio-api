@@ -1,5 +1,6 @@
 import debug from 'debug';
-import { getChannel, Channel } from '../rabbitmq';
+
+import { Channel, disconnect, getChannel } from '../rabbitmq';
 import { captureException } from '../sentry';
 import { RABBITMQ_EXCHANGE_MAIL } from '../../constants';
 
@@ -18,23 +19,35 @@ export const sendToExchangeMail = async (
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-            status.channel?.assertExchange(RABBITMQ_EXCHANGE_MAIL, 'topic', {
+            logger('Asserting exchange: %s', RABBITMQ_EXCHANGE_MAIL);
+            status.channel.assertExchange(RABBITMQ_EXCHANGE_MAIL, 'topic', {
                 durable: true,
             });
-            status.channel?.on('close', () => {
-                status.channel = null;
-                process.exit(1);
-            });
         }
-        if (status.channel) {
-            status.channel.publish(
-                RABBITMQ_EXCHANGE_MAIL,
-                routingKey,
-                Buffer.from(message)
-            );
-        }
+        logger('Sending to mail exchange', {
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_MAIL,
+        });
+        status.channel.publish(
+            RABBITMQ_EXCHANGE_MAIL,
+            routingKey,
+            Buffer.from(message)
+        );
     } catch (error) {
-        logger('Error sending to queue: %O', error);
-        captureException(error, { tags: { scope: 'sendToQueue' } });
+        logger('Error sending to exchange: %O', {
+            error,
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_MAIL,
+        });
+        captureException(error, {
+            extra: {
+                message,
+                routingKey,
+                exchange: RABBITMQ_EXCHANGE_MAIL,
+            },
+            tags: { scope: 'sendToExchangeCreators' },
+        });
     }
 };

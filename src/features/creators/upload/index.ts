@@ -18,36 +18,35 @@ export const sendToExchangeCreators = async (
     try {
         if (!status.channel) {
             status.channel = await getChannel();
-
-            console.log(
-                'RABBITMQ_EXCHANGE_CREATORS',
-                RABBITMQ_EXCHANGE_CREATORS
-            );
-            status.channel?.assertExchange(
-                RABBITMQ_EXCHANGE_CREATORS,
-                'topic',
-                {
-                    durable: true,
-                }
-            );
-            status.channel?.on('close', () => {
-                console.log('status.channel.on.close');
-                status.channel = null;
+            logger('Asserting exchange: %s', RABBITMQ_EXCHANGE_CREATORS);
+            status.channel.assertExchange(RABBITMQ_EXCHANGE_CREATORS, 'topic', {
+                durable: true,
             });
         }
-        if (status.channel) {
-            console.log(
-                'RABBITMQ_EXCHANGE_CREATORS',
-                RABBITMQ_EXCHANGE_CREATORS
-            );
-            status.channel.publish(
-                RABBITMQ_EXCHANGE_CREATORS,
-                routingKey,
-                Buffer.from(message)
-            );
-        }
+        logger('Sending to creators exchange', {
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_CREATORS,
+        });
+        status.channel.publish(
+            RABBITMQ_EXCHANGE_CREATORS,
+            routingKey,
+            Buffer.from(message)
+        );
     } catch (error) {
-        logger('Error sending to queue: %O', error);
-        captureException(error, { tags: { scope: 'sendToQueue' } });
+        logger('Error sending to exchange: %O', {
+            error,
+            message,
+            routingKey,
+            exchange: RABBITMQ_EXCHANGE_CREATORS,
+        });
+        captureException(error, {
+            extra: {
+                message,
+                routingKey,
+                exchange: RABBITMQ_EXCHANGE_CREATORS,
+            },
+            tags: { scope: 'sendToExchangeCreators' },
+        });
     }
 };
