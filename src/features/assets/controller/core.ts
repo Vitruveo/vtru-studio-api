@@ -412,63 +412,68 @@ route.post('/request/upload', async (req, res) => {
 });
 
 route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
-    const asset = await model.findAssetsById({ id: req.params.id });
-
-    if (!asset) {
-        res.status(404).json({
-            code: 'vitruveo.studio.api.assets.colors.notFound',
-            message: 'Asset not found',
-            transaction: nanoid(),
-        } as APIResponse);
-        return;
-    }
-
-    if (asset.framework.createdBy !== req.auth.id) {
-        res.status(403).json({
-            code: 'vitruveo.studio.api.assets.colors.forbidden',
-            message: 'Forbidden access to asset',
-            transaction: nanoid(),
-        } as APIResponse);
-        return;
-    }
-
-    if (!asset.formats?.original?.path) {
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.colors.notFound',
-            message: 'Original image not found',
-            transaction: nanoid(),
-        } as APIResponse);
-        return;
-    }
-
-    const { path } = asset.formats.original;
-
-    const imagePath = () => join(ASSET_TEMP_DIR, path);
-
     try {
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        res.write(`event: start_processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+        if (!asset) {
+            throw new Error('asset_not_found');
+        }
+
+        if (asset.framework.createdBy !== req.auth.id) {
+            throw new Error('creator_not_found');
+        }
+
+        if (!asset.formats?.original?.path) {
+            throw new Error('asset_file_not_found');
+        }
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: values are being processed\n\n`);
+
+        const { path } = asset.formats.original;
+        const filename = join(ASSET_TEMP_DIR, path);
+
         await downloadFromS3({ filename: path });
 
-        const colors = await hadleExtractColor({ filename: imagePath() });
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: file downloaded\n\n`);
 
-        res.json({
-            code: 'vitruveo.studio.api.assets.colors.success',
-            message: 'Extract color success',
-            transaction: nanoid(),
-            data: colors,
-        } as APIResponse<string[]>);
+        const colors = await hadleExtractColor({ filename });
+
+        res.write(`event: extract_color_success\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${JSON.stringify(colors)}\n\n`);
     } catch (error) {
         logger('Extract color failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.colors.failed',
-            message: `Extract color failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+
+        res.write(`event: extract_color_error\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${error}\n\n`);
     } finally {
         try {
-            await fs.unlink(imagePath());
+            const asset = await model.findAssetsById({ id: req.params.id });
+            if (asset?.formats.original?.path) {
+                const filename = join(
+                    ASSET_TEMP_DIR,
+                    asset.formats.original.path
+                );
+                await fs.unlink(filename);
+                logger('File deleted: %s', filename);
+            }
         } catch (error) {
-            logger('Remove image failed: %O', error);
+            logger('Delete file failed: %O', error);
+        } finally {
+            res.end();
         }
     }
 });
