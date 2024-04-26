@@ -4,7 +4,7 @@ import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { APIResponse } from '../../../services';
-import { responseRenderUrl } from '../utils/response.render.url';
+import { responseRenderUrl } from '../utils/responseRenderUrl';
 
 const logger = debug('features:assets:controller:store');
 const route = Router();

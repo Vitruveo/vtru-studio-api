@@ -1,6 +1,8 @@
 import debug from 'debug';
+import fs from 'fs/promises';
+import { join } from 'path';
 import { nanoid } from 'nanoid';
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import * as model from '../model';
 import { middleware } from '../../users';
 import {
@@ -23,6 +25,9 @@ import {
     validateBodyForUpdateStep,
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
+import { downloadFromS3 } from '../../../services/aws/downloadFromS3';
+import { hadleExtractColor } from '../../../services/extractColor';
+import { ASSET_TEMP_DIR } from '../../../constants';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -403,6 +408,73 @@ route.post('/request/upload', async (req, res) => {
             args: error,
             transaction: transactionApiId,
         } as APIResponse);
+    }
+});
+
+route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
+    try {
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        res.write(`event: start_processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+        if (!asset) {
+            throw new Error('asset_not_found');
+        }
+
+        if (asset.framework.createdBy !== req.auth.id) {
+            throw new Error('creator_not_found');
+        }
+
+        if (!asset.formats?.original?.path) {
+            throw new Error('asset_file_not_found');
+        }
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: values are being processed\n\n`);
+
+        const { path } = asset.formats.original;
+        const filename = join(ASSET_TEMP_DIR, path);
+
+        await downloadFromS3({ filename: path });
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: file downloaded\n\n`);
+
+        const colors = await hadleExtractColor({ filename });
+
+        res.write(`event: extract_color_success\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${JSON.stringify(colors)}\n\n`);
+    } catch (error) {
+        logger('Extract color failed: %O', error);
+
+        res.write(`event: extract_color_error\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${error}\n\n`);
+    } finally {
+        try {
+            const asset = await model.findAssetsById({ id: req.params.id });
+            if (asset?.formats.original?.path) {
+                const filename = join(
+                    ASSET_TEMP_DIR,
+                    asset.formats.original.path
+                );
+                await fs.unlink(filename);
+                logger('File deleted: %s', filename);
+            }
+        } catch (error) {
+            logger('Delete file failed: %O', error);
+        } finally {
+            res.end();
+        }
     }
 });
 
