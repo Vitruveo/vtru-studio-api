@@ -202,7 +202,12 @@ export const validateBodyForUpdateStep = async (
                 break;
             }
             case 'contractExplorer': {
-                req.body = schemaContractExplorer.parse(payload);
+                schemaContractExplorer.parse(payload);
+                req.body = {
+                    'contractExplorer.finishedAt':
+                        payload.contractExplorer.finishedAt,
+                    framework: payload.framework,
+                };
                 break;
             }
             default:
