@@ -2,35 +2,36 @@
 
 // @ts-ignore
 import Shotstack from 'shotstack-sdk';
+import debug from 'debug';
+
 import {
+    SHOTSTACK_ENV,
     SHOTSTACK_PRODUCTION_KEY,
     SHOTSTACK_STAGING_KEY,
+    SHOTSTACK_HOST,
 } from '../../constants';
+
+const logger = debug('services:shotstack');
 
 const defaultClient = Shotstack.ApiClient.instance;
 const { DeveloperKey } = defaultClient.authentications;
 const api = new Shotstack.EditApi();
 
-const useProduction = true;
-let apiUrl =
-    useProduction === true
-        ? 'https://api.shotstack.io/v1'
-        : 'https://api.shotstack.io/stage';
+const useProduction = SHOTSTACK_ENV === 'production';
 
-if (!SHOTSTACK_STAGING_KEY || !SHOTSTACK_PRODUCTION_KEY) {
-    console.log(
-        'API Key is required. Set using: export SHOTSTACK_KEY=your_key_here'
-    );
-    process.exit(1);
-}
+let apiUrl = useProduction
+    ? 'https://api.shotstack.io/v1'
+    : 'https://api.shotstack.io/stage';
 
-if (process.env.SHOTSTACK_HOST) {
-    apiUrl = process.env.SHOTSTACK_HOST;
+if (SHOTSTACK_HOST) {
+    apiUrl = SHOTSTACK_HOST;
 }
 
 defaultClient.basePath = apiUrl;
-DeveloperKey.apiKey =
-    useProduction === true ? SHOTSTACK_PRODUCTION_KEY : SHOTSTACK_STAGING_KEY;
+
+DeveloperKey.apiKey = useProduction
+    ? SHOTSTACK_PRODUCTION_KEY
+    : SHOTSTACK_STAGING_KEY;
 
 async function sleep(millis: number) {
     return new Promise((resolve) => {
@@ -45,6 +46,13 @@ interface StackeImage {
 }
 
 export async function generateVideo(stackImages: StackeImage[]) {
+    if (!SHOTSTACK_STAGING_KEY || !SHOTSTACK_PRODUCTION_KEY) {
+        logger(
+            'API Key is required. Set using: export SHOTSTACK_KEY=your_key_here'
+        );
+        throw new Error('API Key is required');
+    }
+
     if (stackImages.length <= 10) {
         const clips: any[] = [];
         let start = 0;
@@ -114,7 +122,7 @@ export async function generateVideo(stackImages: StackeImage[]) {
             if (renderInfo.response.status === 'done') {
                 return renderInfo.response;
             }
-            console.log(renderInfo.response.status);
+            logger(renderInfo.response.status);
         }
     } else {
         throw new Error('Maximum 10 images');
