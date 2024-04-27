@@ -4,8 +4,8 @@ import fs from 'fs/promises';
 
 import {
     ASSET_TEMP_DIR,
-    AWS_BUCKET_ASSET_NAME,
-    AWS_REGION,
+    ASSET_STORAGE_NAME,
+    AWS_DEFAULT_REGION,
 } from '../../constants';
 
 interface DownloadFromS3Params {
@@ -14,11 +14,11 @@ interface DownloadFromS3Params {
 
 export const downloadFromS3 = async ({ filename }: DownloadFromS3Params) => {
     const s3 = new S3Client({
-        region: AWS_REGION,
+        region: AWS_DEFAULT_REGION,
     });
     const data = await s3.send(
         new GetObjectCommand({
-            Bucket: AWS_BUCKET_ASSET_NAME,
+            Bucket: ASSET_STORAGE_NAME,
             Key: filename,
         })
     );

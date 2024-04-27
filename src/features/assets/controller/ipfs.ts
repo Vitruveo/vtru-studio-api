@@ -103,7 +103,7 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: \n\n`);
     } catch (error) {
-        logger('Contract  failed: %O', error);
+        logger('IPFS failed: %O', error);
         captureException(error);
 
         res.write(`event: ipfs_error\n`);
