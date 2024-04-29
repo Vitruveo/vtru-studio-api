@@ -45,6 +45,15 @@ export const CreatorSchema = z.object({
         .default({}),
     roles: z.array(z.string()).default([]),
     walletDefault: z.string().default(''),
+    vault: z
+        .object({
+            transactionHash: z.string().nullable().default(null),
+            createdAt: z.date().nullable().default(null),
+        })
+        .default({
+            transactionHash: null,
+            createdAt: null,
+        }),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),

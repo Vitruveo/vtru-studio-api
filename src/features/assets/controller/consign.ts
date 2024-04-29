@@ -4,13 +4,16 @@ import { Router } from 'express';
 
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
-import { createContract } from '../../../services/contract';
+import { createConsign } from '../../../services/web3/consign';
 import { captureException } from '../../../services';
+import { middleware } from '../../users';
 
-const logger = debug('features:assets:controller:contract');
+const logger = debug('features:assets:controller:consign');
 const route = Router();
 
-route.post('/:id', async (req, res) => {
+route.use(middleware.checkAuth);
+
+route.post('/', async (req, res) => {
     try {
         res.set('Content-Type', 'text/event-stream');
         res.set('Cache-Control', 'no-cache');
@@ -21,43 +24,24 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: \n\n`);
 
-        const asset = await model.findAssetsById({ id: req.params.id });
+        const creator = await modelCreator.findCreatorById({ id: req.auth.id });
 
-        if (!asset) {
-            res.write(`event: asset_not_found\n`);
-            res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${req.params.id}\n\n`);
-
-            throw new Error('asset_not_found');
-        }
-
-        res.write(`event: processing\n`);
-        res.write(`id: ${nanoid()}\n`);
-        res.write(`data: asset ${asset._id} is being processed\n\n`);
-
-        if (!asset.framework.createdBy) {
-            res.write(`event: asset_created_by_not_found\n`);
-            res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${asset.framework.createdBy}\n\n`);
-
-            throw new Error('asset_created_by_not_found');
-        }
-
-        const creator = await modelCreator.findCreatorById({
-            id: asset.framework.createdBy.toString(),
-        });
-
-        if (!creator) {
-            res.write(`event: creator_not_found\n`);
-            res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${asset.framework.createdBy}\n\n`);
-
-            throw new Error('creator_not_found');
-        }
+        if (!creator) throw new Error('creator_not_found');
+        if (!creator.vault.transactionHash) throw new Error('vault_not_found');
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: creator ${creator._id} is being processed\n\n`);
+
+        const asset = await model.findAssetCreatedBy({
+            id: creator._id.toString(),
+        });
+
+        if (!asset) throw new Error('asset_not_found');
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: asset ${asset._id} is being processed\n\n`);
 
         let creatorRefId = Date.now();
         let assetRefId = Date.now();
@@ -174,27 +158,29 @@ route.post('/:id', async (req, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: values are being processed\n\n`);
 
-        const response = await createContract(params);
+        const response = await createConsign(params);
 
-        if (!response.explorer) {
-            res.write(`event: contract_url_not_found\n`);
+        if (!response.transactionHash) {
+            res.write(`event: consign_url_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${response.explorer}\n\n`);
+            res.write(`data: ${response.transactionHash}\n\n`);
 
-            throw new Error('contract_url_not_found');
+            throw new Error('consign_url_not_found');
         }
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
-        res.write(`data: contract ${response.tx} is being processed\n\n`);
+        res.write(
+            `data: consign ${response.transactionHash} is being processed\n\n`
+        );
 
         await model.updateAssets({
-            id: req.params.id,
+            id: asset._id.toString(),
             asset: {
                 assetRefId,
                 contractExplorer: {
-                    explorer: response.explorer,
-                    tx: response.tx,
+                    explorer: response.transactionHash,
+                    tx: response.transactionHash,
                     assetId: response.assetId,
                     assetRefId,
                     creatorRefId,
@@ -207,14 +193,14 @@ route.post('/:id', async (req, res) => {
             creator: { creatorRefId },
         });
 
-        res.write(`event: contract_success\n`);
+        res.write(`event: consign_success\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: ${JSON.stringify(response)}\n\n`);
     } catch (error) {
-        logger('Contract failed: %O', error);
+        logger('Consign failed: %O', error);
         captureException(error);
 
-        res.write(`event: contract_error\n`);
+        res.write(`event: consign_error\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: ${error}\n\n`);
     } finally {

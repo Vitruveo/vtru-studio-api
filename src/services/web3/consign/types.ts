@@ -44,7 +44,6 @@ export interface CreateContractParams {
 }
 
 export interface CreateContractResponse {
-    explorer: string;
-    tx: string;
+    transactionHash: string;
     assetId: number;
 }
