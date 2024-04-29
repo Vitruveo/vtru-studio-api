@@ -7,6 +7,10 @@ export interface QueryPaginatedParams {
     sort: any;
 }
 
+export interface QueryCollectionParams {
+    name: string;
+}
+
 interface Tags {
     tag: string;
     count: number;

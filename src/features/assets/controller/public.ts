@@ -4,7 +4,11 @@ import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { APIResponse } from '../../../services';
-import { QueryPaginatedParams, ResponseAssetsPaginated } from './types';
+import {
+    QueryCollectionParams,
+    QueryPaginatedParams,
+    ResponseAssetsPaginated,
+} from './types';
 
 const logger = debug('features:assets:controller:public');
 const route = Router();
@@ -65,6 +69,70 @@ route.get('/search', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.search.failed',
             message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/collections', async (req, res) => {
+    try {
+        const { name } = req.query as unknown as QueryCollectionParams;
+
+        if (name.trim().length < 3) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.collections.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const collections = await model.findAssetsCollections({ name });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.collections.success',
+            message: 'Reader collections success',
+            transaction: nanoid(),
+            data: collections,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader collections failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.collections.failed',
+            message: `Reader collections failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/subjects', async (req, res) => {
+    try {
+        const { name } = req.query as unknown as QueryCollectionParams;
+
+        if (name.trim().length < 3) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.subjects.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const subjects = await model.findAssetsSubjects({ name });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.subjects.success',
+            message: 'Reader subjects success',
+            transaction: nanoid(),
+            data: subjects,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader subjects failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.subjects.failed',
+            message: `Reader subjects failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

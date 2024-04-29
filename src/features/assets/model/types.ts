@@ -22,6 +22,14 @@ export interface FindAssetsPaginatedParams {
 export interface FindAssetsTagsParams {
     query: Record<string, unknown>;
 }
+
+export interface FindAssetsCollectionsParams {
+    name: string;
+}
+
+export interface FindAssetsSubjectsParams {
+    name: string;
+}
 export interface CountAssetsParams {
     query: Record<string, unknown>;
 }

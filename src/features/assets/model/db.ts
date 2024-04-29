@@ -12,6 +12,8 @@ import type {
     FindAssetsPaginatedParams,
     CountAssetsParams,
     FindAssetsTagsParams,
+    FindAssetsCollectionsParams,
+    FindAssetsSubjectsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -33,6 +35,66 @@ export const findAssetsPaginated = async ({
 
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
+
+export const findAssetsCollections = async ({
+    name,
+}: FindAssetsCollectionsParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $regex: new RegExp(name, 'i'),
+                    },
+                },
+            },
+            {
+                $unwind: '$assetMetadata.taxonomy.formData.collections',
+            },
+            {
+                $group: {
+                    _id: '$assetMetadata.taxonomy.formData.collections',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
+                    count: 1,
+                },
+            },
+        ])
+        .toArray();
+
+export const findAssetsSubjects = async ({ name }: FindAssetsSubjectsParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $regex: new RegExp(name, 'i'),
+                    },
+                },
+            },
+            {
+                $unwind: '$assetMetadata.taxonomy.formData.subject',
+            },
+            {
+                $group: {
+                    _id: '$assetMetadata.taxonomy.formData.subject',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    subject: '$_id',
+                    count: 1,
+                },
+            },
+        ])
+        .toArray();
 
 export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
     assets()
