@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { route as coreRouter } from './core';
-import { route as makeVideoRouter } from './makeVideo';
+import { route as makeVideoRouter } from './videoGallery';
 import { route as notifyRouter } from './notify';
 import { route as publicRouter } from './public';
 import { route as previewRouter } from './preview';
