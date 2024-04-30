@@ -38,6 +38,11 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             }))
         );
 
+        await model.addToVideoGallery({
+            id: req.auth.id,
+            url: response.url,
+        });
+
         if (creator.emails.length) {
             const payload = JSON.stringify({
                 to: creator.emails[0].email,

@@ -54,6 +54,10 @@ export const CreatorSchema = z.object({
             transactionHash: null,
             createdAt: null,
         }),
+    videoGallery: z.array(z.object({
+        url: z.string(),
+        createdAt: z.date().default(new Date()),
+    })),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),
