@@ -41,6 +41,7 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
         await model.addToVideoGallery({
             id: req.auth.id,
             url: response.url,
+            thumbnail: response.data.timeline.tracks[0].clips[0].asset.src,  // usando a primeira imagem como thumbnail
         });
 
         if (creator.emails.length) {
@@ -60,7 +61,10 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             code: 'vitruveo.studio.api.assets.makeVideo.success',
             message: 'Make video success',
             transaction: nanoid(),
-            data: response,
+            data: {
+                ...response,
+                createdBy: req.auth.id,
+            },
         } as APIResponse);
     } catch (error) {
         logger('Make video failed: %O', error);

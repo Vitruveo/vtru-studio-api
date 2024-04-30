@@ -78,11 +78,8 @@ export interface CheckWalletExistsParams {
     address: string;
 }
 
-export interface GetVideoGalleryParams {
-    id: string | ObjectId;
-}
-
 export interface AddVideoToGalleryParams {
     id: string | ObjectId;
     url: string;
+    thumbnail: string | null;
 }

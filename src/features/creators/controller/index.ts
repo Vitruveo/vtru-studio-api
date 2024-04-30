@@ -12,7 +12,7 @@ router.use('/creators/vault', vaultRouter);
 router.use('/creators/avatar', avatarRouter);
 router.use('/creators/login', loginRouter);
 router.use('/creators/connect', connectRouter);
-router.use('/creators', coreRouter);
 router.use('/creators/search', searchRouter)
+router.use('/creators', coreRouter);
 
 export { router };
