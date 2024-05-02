@@ -120,7 +120,7 @@ route.get('/:creator/:id/mint', async (req, res) => {
 
         const assetExists = await model.findAssetsById({ id: req.params.id });
         if (!assetExists) {
-            res.write('event: error');
+            res.write('event: mint_nft_error\n');
             res.write(`id: ${nanoid()}\n`);
             res.write(
                 `data: ${JSON.stringify({
@@ -136,7 +136,7 @@ route.get('/:creator/:id/mint', async (req, res) => {
             id: req.params.creator,
         });
         if (!creatorExists) {
-            res.write('event: error');
+            res.write('event: mint_nft_error\n');
             res.write(`id: ${nanoid()}\n`);
             res.write(
                 `data: ${JSON.stringify({
@@ -152,7 +152,7 @@ route.get('/:creator/:id/mint', async (req, res) => {
             -> nik codes here <-
         */
 
-        res.write('event: mint asset');
+        res.write('event: mint_nft_success\n');
         res.write(`id: ${nanoid()}\n`);
         res.write(
             `data: ${JSON.stringify({
@@ -163,7 +163,7 @@ route.get('/:creator/:id/mint', async (req, res) => {
         );
     } catch (error) {
         logger('Search profile failed: %O', error);
-        res.write('event: event_error\n');
+        res.write('event: mint_nft_error\n');
         res.write(`id: ${nanoid()}\n`);
         res.end();
     }
