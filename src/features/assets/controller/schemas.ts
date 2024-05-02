@@ -56,6 +56,7 @@ export const schemaAssetUpdateStatus = z.object({
 
 export const schemaValidationForMakeVideo = z.object({
     artworks: z.array(z.string()),
+    title: z.string().default(''),
 });
 
 export const schemaAssetUpload = z.object({

@@ -160,6 +160,7 @@ export const addToVideoGallery = async ({
     id,
     url,
     thumbnail,
+    title,
 }: AddVideoToGalleryParams) => {
     const result = await creators().updateOne(
         { _id: new ObjectId(id) },
@@ -169,6 +170,7 @@ export const addToVideoGallery = async ({
                     url,
                     createdAt: new Date(),
                     thumbnail,
+                    title
                 },
             },
         }

@@ -1,11 +1,13 @@
 interface CreateVideoGalleryHTMLParams {
-    videoURL: string;
-    thumbnailURL: string;
+    video: string;
+    thumbnail: string;
+    title: string;
 }
-// verificar o tamanho da imagem
+
 export const createVideoGalleryHTML = ({
-    videoURL,
-    thumbnailURL,
+    video,
+    thumbnail,
+    title
 }: CreateVideoGalleryHTMLParams) =>
     `
   <!DOCTYPE html>
@@ -14,12 +16,13 @@ export const createVideoGalleryHTML = ({
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <meta name="twitter:card" content="player" />
-      <meta name="twitter:title" content='Video Gallery' />
-      <meta name="twitter:site" content="@vitruveo" />
-      <meta name="twitter:player" content="${videoURL}" />
+      <meta name="twitter:text" content="${title ?? 'Video Gallery'}" />
+      <meta name="twitter:title" content="${title ?? 'Video Gallery'}" />
+      <meta name="twitter:site" content="@vitruveochain"/>
+      <meta name="twitter:player" content="${video}" />
       <meta name="twitter:player:width" content="480" />
       <meta name="twitter:player:height" content="480" />
-      <meta name="twitter:image" content="${thumbnailURL}" />
+      <meta name="twitter:image" content="${thumbnail}" />
     </head>
     <body>
     </body>

@@ -60,6 +60,7 @@ export const CreatorSchema = z.object({
                 url: z.string(),
                 createdAt: z.date().default(new Date()),
                 thumbnail: z.string().nullable().default(null),
+                title: z.string().default('')
             })
         )
         .default([]),

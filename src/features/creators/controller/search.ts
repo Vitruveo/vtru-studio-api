@@ -36,8 +36,9 @@ route.get('/:id/html', async (req, res) => {
         const lastGeneratedVideo = gallery[gallery.length - 1];
 
         const html = createVideoGalleryHTML({
-            videoURL: lastGeneratedVideo.url,
-            thumbnailURL: lastGeneratedVideo.thumbnail ?? '',
+            video: lastGeneratedVideo.url,
+            thumbnail: lastGeneratedVideo.thumbnail ?? '',
+            title: lastGeneratedVideo.title
         });
 
         res.send(html);

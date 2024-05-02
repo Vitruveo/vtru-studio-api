@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-
+import { infer as zodInfer } from 'zod'
 import { MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY } from '../../../constants';
 import { APIResponse } from '../../../services';
 import { generateVideo } from '../../../services/shortstack';
@@ -9,6 +9,7 @@ import { validateBodyForMakeVideo } from './rules';
 import { middleware } from '../../users';
 import { sendToExchangeMail } from '../../../services/mail';
 import * as model from '../../creators/model';
+import { schemaValidationForMakeVideo } from './schemas';
 
 const logger = debug('features:assets:controller:makeVideo');
 const route = Router();
@@ -28,7 +29,7 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             return;
         }
 
-        const { artworks } = req.body;
+        const { artworks, title } = req.body as zodInfer<typeof schemaValidationForMakeVideo> ;
 
         const response = await generateVideo(
             artworks.map((item: string) => ({
@@ -41,7 +42,8 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
         await model.addToVideoGallery({
             id: req.auth.id,
             url: response.url,
-            thumbnail: response.data.timeline.tracks[0].clips[0].asset.src,  // usando a primeira imagem como thumbnail
+            thumbnail: response.data.timeline.tracks[0].clips[0].asset.src,
+            title,
         });
 
         if (creator.emails.length) {

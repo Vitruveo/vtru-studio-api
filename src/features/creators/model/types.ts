@@ -82,4 +82,5 @@ export interface AddVideoToGalleryParams {
     id: string | ObjectId;
     url: string;
     thumbnail: string | null;
+    title: string;
 }
