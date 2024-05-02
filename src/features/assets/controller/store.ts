@@ -112,4 +112,46 @@ route.get('/:creator/:id', async (req, res) => {
     }
 });
 
+route.get('/mint/:id', async (req, res) => {
+    try {
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+
+        const assetExists = await model.findAssetsById({ id: req.params.id });
+        if (!assetExists) {
+            res.write('event: error');
+            res.write(`id: ${nanoid()}\n`);
+            res.write(
+                `data: ${JSON.stringify({
+                    code: 'vitruveo.studio.api.admin.assets.store.notFound',
+                    message: 'Asset not found',
+                    transaction: nanoid(),
+                })}\n\n`
+            );
+            res.end();
+        }
+
+        /*
+            -> nik codes here <-
+        */
+
+        res.write('event: mint asset');
+        res.write(`id: ${nanoid()}\n`);
+        res.write(
+            `data: ${JSON.stringify({
+                code: 'vitruveo.studio.api.admin.assets.store.success',
+                message: 'Store mint asset success',
+                transaction: nanoid(),
+            })}\n\n`
+        );
+        res.end();
+    } catch (error) {
+        logger('Search profile failed: %O', error);
+        res.write('event: event_error\n');
+        res.write(`id: ${nanoid()}\n`);
+        res.end();
+    }
+});
+
 export { route };
