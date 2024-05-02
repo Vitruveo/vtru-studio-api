@@ -22,17 +22,17 @@ route.get('/:id/html', async (req, res) => {
             return;
         }
 
-        const image = asset.formats.preview?.path || '';
-        const parts = image.split('.');
-        const extension = parts.pop();
-        const thumbnail = `${parts.join('.')}_thumb.${extension}`;
+        const image = asset.formats.preview?.path.replace(
+            /\.(?=[^.]*$)/,
+            '_thumb.'
+        );
 
         const html = responseRenderUrl({
             creatorName: asset.framework.createdBy || '',
             assetId: asset._id.toString(),
             title: asset.assetMetadata.context.formData.title,
             description: asset.assetMetadata.context.formData.description,
-            image: thumbnail ?? image,
+            image: image || '',
         });
 
         res.send(html);
