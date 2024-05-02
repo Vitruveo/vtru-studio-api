@@ -16,7 +16,6 @@ export const createVideoGalleryHTML = ({
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <meta name="twitter:card" content="player" />
-      <meta name="twitter:text" content="${title ?? 'Video Gallery'}" />
       <meta name="twitter:title" content="${title ?? 'Video Gallery'}" />
       <meta name="twitter:site" content="@vitruveochain"/>
       <meta name="twitter:player" content="${video}" />
