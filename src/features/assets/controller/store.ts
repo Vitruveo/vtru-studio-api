@@ -112,7 +112,7 @@ route.get('/:creator/:id', async (req, res) => {
     }
 });
 
-route.get('/mint/:id', async (req, res) => {
+route.get('/:creator/:id/mint', async (req, res) => {
     try {
         res.set('Content-Type', 'text/event-stream');
         res.set('Cache-Control', 'no-cache');
@@ -132,6 +132,22 @@ route.get('/mint/:id', async (req, res) => {
             res.end();
         }
 
+        const creatorExists = await model.findAssetCreatedBy({
+            id: req.params.creator,
+        });
+        if (!creatorExists) {
+            res.write('event: error');
+            res.write(`id: ${nanoid()}\n`);
+            res.write(
+                `data: ${JSON.stringify({
+                    code: 'vitruveo.studio.api.admin.assets.store.creatorNotFound',
+                    message: 'Creator not found',
+                    transaction: nanoid(),
+                })}\n\n`
+            );
+            res.end();
+        }
+
         /*
             -> nik codes here <-
         */
@@ -145,7 +161,6 @@ route.get('/mint/:id', async (req, res) => {
                 transaction: nanoid(),
             })}\n\n`
         );
-        res.end();
     } catch (error) {
         logger('Search profile failed: %O', error);
         res.write('event: event_error\n');
