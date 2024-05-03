@@ -63,10 +63,7 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             code: 'vitruveo.studio.api.assets.makeVideo.success',
             message: 'Make video success',
             transaction: nanoid(),
-            data: {
-                ...response,
-                createdBy: req.auth.id,
-            },
+            data: response
         } as APIResponse);
     } catch (error) {
         logger('Make video failed: %O', error);

@@ -156,13 +156,13 @@ export const checkWalletExists = async ({
     return !!result;
 };
 
-export const addToVideoGallery = async ({
+export const addToVideoGallery = ({
     id,
     url,
     thumbnail,
     title,
-}: AddVideoToGalleryParams) => {
-    const result = await creators().updateOne(
+}: AddVideoToGalleryParams) =>
+    creators().updateOne(
         { _id: new ObjectId(id) },
         {
             $push: {
@@ -170,10 +170,8 @@ export const addToVideoGallery = async ({
                     url,
                     createdAt: new Date(),
                     thumbnail,
-                    title
+                    title,
                 },
             },
         }
     );
-    return result;
-};
