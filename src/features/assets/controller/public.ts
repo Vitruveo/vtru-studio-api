@@ -151,7 +151,7 @@ route.get('/creators', async (req, res) => {
             } as APIResponse);
             return;
         }
-        
+
         const creators = await creatorModel.findCreatorsByName({ name });
 
         res.json({
@@ -185,7 +185,7 @@ route.get('/:id', async (req, res) => {
             return;
         }
 
-        const creatorId = await asset.framework.createdBy;
+        const creatorId = asset.framework.createdBy;
 
         if (!creatorId) {
             res.status(404).json({
