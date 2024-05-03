@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { infer as zodInfer } from 'zod';
 import {
     ASSET_STORAGE_URL,
+    DEFAULT_AVATAR_URL,
     GENERAL_STORAGE_URL,
     MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY,
 } from '../../../constants';
@@ -61,23 +62,20 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             return;
         }
 
-        logger('ASSET_STORAGE_URL', ASSET_STORAGE_URL);
-        logger('GENERAL_STORAGE_URL', GENERAL_STORAGE_URL);
-
         const payloadArtwork = await Promise.all(
             assets.map((asset) =>
                 model
                     .findCreatorById({ id: asset.framework.createdBy! })
                     .then((item) => ({
-                        artworkUrl:
-                            `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}` ??
-                            '',
-                        artistUrl:
-                            `${GENERAL_STORAGE_URL}/${item?.profile?.avatar}` ??
-                            '',
+                        artworkUrl: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
+                        artistUrl: !item?.profile?.avatar
+                            ? DEFAULT_AVATAR_URL
+                            : `${GENERAL_STORAGE_URL}/${item?.profile?.avatar}`,
                         artistName:
-                            asset.assetMetadata.creators?.formData[0]?.name,
-                        title: asset.assetMetadata.context?.formData?.title,
+                            asset.assetMetadata.creators?.formData[0]?.name ??
+                            '',
+                        title:
+                            asset.assetMetadata.context?.formData?.title ?? '',
                     }))
             )
         );
