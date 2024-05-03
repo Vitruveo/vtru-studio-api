@@ -198,7 +198,13 @@ export const validateBodyForUpdateStep = async (
                 break;
             }
             case 'ipfs': {
-                req.body = schemaIpfs.parse(payload);
+                schemaIpfs.parse(payload);
+
+                req.body = {
+                    'ipfs.finishedAt': payload.ipfs.finishedAt,
+                    framework: payload.framework,
+                };
+
                 break;
             }
             case 'contractExplorer': {

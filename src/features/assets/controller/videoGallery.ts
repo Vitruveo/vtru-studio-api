@@ -9,6 +9,7 @@ import { validateBodyForMakeVideo } from './rules';
 import { middleware } from '../../users';
 import { sendToExchangeMail } from '../../../services/mail';
 import * as model from '../../creators/model';
+import * as modelAssets from '../model';
 
 const logger = debug('features:assets:controller:makeVideo');
 const route = Router();
@@ -30,13 +31,44 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
 
         const { artworks } = req.body;
 
-        const response = await generateVideo(
-            artworks.map((item: string) => ({
-                artworkUrl: item,
-                artistUrl: '',
-                artistName: '',
-            }))
+        const assets = await modelAssets.findAssetsByPath({
+            path: 'formats.preview.path',
+            query: { $in: artworks },
+            options: {
+                projection: {
+                    _id: 1,
+                    'framework.createdBy': 1,
+                    'assetMetadata.creators.formData.name': 1,
+                    'formats.preview.path': 1,
+                    'assetMetadata.context.formData.title': 1,
+                },
+            },
+        });
+
+        if (!assets.length) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.makeVideo.failed',
+                message: 'Assets not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const payloadArtwork = await Promise.all(
+            assets.map((asset) =>
+                model
+                    .findCreatorById({ id: asset.framework.createdBy! })
+                    .then((item) => ({
+                        artworkUrl: asset.formats.preview?.path ?? '',
+                        artistUrl: item?.profile?.avatar ?? '',
+                        artistName:
+                            asset.assetMetadata.creators?.formData[0]?.name,
+                        title: asset.assetMetadata.context?.formData?.title,
+                    }))
+            )
         );
+
+        const response = await generateVideo(payloadArtwork);
 
         if (creator.emails.length) {
             const payload = JSON.stringify({
@@ -55,7 +87,6 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             code: 'vitruveo.studio.api.assets.makeVideo.success',
             message: 'Make video success',
             transaction: nanoid(),
-            data: response,
         } as APIResponse);
     } catch (error) {
         logger('Make video failed: %O', error);

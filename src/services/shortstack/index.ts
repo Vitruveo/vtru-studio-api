@@ -43,7 +43,57 @@ interface StackeImage {
     artworkUrl: string;
     artistUrl: string;
     artistName: string;
+    title: string;
 }
+
+const templates = {
+    left: {
+        url: 'https://bafybeigea3qlu4ihdmmlla5fi2okzpltamtprpi2awq4wo3xqegrf2eldq.ipfs.nftstorage.link',
+        avatar: {
+            x: 0.331,
+            y: 0.14,
+        },
+        username: {
+            x: 0.317,
+            y: -0.154,
+        },
+        title: {
+            x: 0.322,
+            y: -0.23,
+        },
+        background: {
+            x: 0.003,
+            y: -0.002,
+        },
+        artwork: {
+            x: -0.254,
+            y: -0.065,
+        },
+    },
+    right: {
+        url: 'https://bafybeib5b5mnng2lhyfvqe3ktqexckicotawlbdnksyzwt3mxex36mwyre.ipfs.nftstorage.link',
+        avatar: {
+            x: -0.331,
+            y: 0.14,
+        },
+        username: {
+            x: -0.339,
+            y: -0.125,
+        },
+        title: {
+            x: -0.33,
+            y: -0.23,
+        },
+        background: {
+            x: 0.006,
+            y: 0.004,
+        },
+        artwork: {
+            x: 0.268,
+            y: -0.047,
+        },
+    },
+};
 
 export async function generateVideo(stackImages: StackeImage[]) {
     if (!SHOTSTACK_STAGING_KEY || !SHOTSTACK_PRODUCTION_KEY) {
@@ -53,11 +103,7 @@ export async function generateVideo(stackImages: StackeImage[]) {
         throw new Error('API Key is required');
     }
 
-    if (stackImages.length <= 10) {
-        const clips: any[] = [];
-        let start = 0;
-        const length = 2;
-
+    if (stackImages.length <= 15) {
         const soundtrack = new Shotstack.Soundtrack();
         soundtrack
             .setSrc(
@@ -65,51 +111,162 @@ export async function generateVideo(stackImages: StackeImage[]) {
             )
             .setEffect('fadeInFadeOut');
 
-        let effectCounter = 0;
-        let effect = 'slideLeft';
-        stackImages.forEach((stackItem) => {
-            if (effectCounter === 0) {
-                effect = 'slideLeft';
-                effectCounter += 1;
-            } else if (effectCounter === 1) {
-                effect = 'slideRight';
-                effectCounter += 1;
-            } else if (effectCounter === 2) {
-                effect = 'slideDown';
-                effectCounter += 1;
-            } else if (effectCounter === 3) {
-                effect = 'slideUp';
-                effectCounter = 0;
-            }
+        const clips: any = {
+            avatar: [],
+            username: [],
+            title: [],
+            background: [],
+            artwork: [],
+        };
 
-            const imageAsset = new Shotstack.ImageAsset();
-            imageAsset.setSrc(stackItem.artworkUrl);
+        const length = 3;
+        stackImages.forEach((item, index) => {
+            const template = index % 2 === 0 ? templates.left : templates.right;
 
-            const clip = new Shotstack.Clip();
-            clip.setAsset(imageAsset)
-                .setStart(start)
+            const avatar = new Shotstack.ImageAsset();
+            avatar.setSrc(item.artistUrl);
+
+            const clipAvatar = new Shotstack.Clip();
+            clipAvatar
+                .setAsset(avatar)
+                .setStart(index * length)
+                .setOffset({
+                    x: template.avatar.x,
+                    y: template.avatar.y,
+                })
+                .setPosition('center')
+                .setScale(0.236)
                 .setLength(length)
-                .setEffect(effect);
+                .setFit('contain')
+                .setTransition({
+                    in: 'fade',
+                });
+            clips.avatar.push(clipAvatar);
 
-            start += length;
-            clips.push(clip);
+            const username = new Shotstack.HtmlAsset();
+            username
+                .setHtml(`<p data-html-type="text">@${item.artistName}</p>`)
+                .setCss(
+                    "p { color: #ffffff; font-size: 20px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+                )
+                .setWidth(388);
+
+            const clipUsername = new Shotstack.Clip();
+            clipUsername
+                .setAsset(username)
+                .setStart(index * length)
+                .setFit('none')
+                .setScale(1)
+                .setOffset({
+                    x: template.username.x,
+                    y: template.username.y,
+                })
+                .setPosition('center')
+                .setLength(length)
+                .setTransition({
+                    in: 'fade',
+                });
+            clips.username.push(clipUsername);
+
+            const title = new Shotstack.HtmlAsset();
+            title
+                .setHtml(`<p data-html-type="text">${item.title}</p>`)
+                .setCss(
+                    "p { color: #ffffff; font-size: 12px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+                )
+                .setWidth(388);
+
+            const cliptitle = new Shotstack.Clip();
+            cliptitle
+                .setAsset(title)
+                .setStart(index * length)
+                .setFit('none')
+                .setScale(1)
+                .setOffset({
+                    x: template.title.x,
+                    y: template.title.y,
+                })
+                .setPosition('center')
+                .setLength(length)
+                .setTransition({
+                    in: 'fade',
+                });
+            clips.title.push(cliptitle);
+
+            const imageBackground = new Shotstack.ImageAsset();
+            imageBackground.setSrc(template.url);
+
+            const clipBackground = new Shotstack.Clip();
+            clipBackground
+                .setAsset(imageBackground)
+                .setStart(index * length)
+                .setOffset({
+                    x: template.background.x,
+                    y: template.background.y,
+                })
+                .setPosition('center')
+                .setLength(length)
+                .setFit('contain')
+                .setTransition({
+                    in: 'fade',
+                })
+                .setScale(1);
+            clips.background.push(clipBackground);
+
+            const artwork = new Shotstack.ImageAsset();
+            artwork.setSrc(item.artworkUrl);
+
+            const clipArtwork = new Shotstack.Clip();
+            clipArtwork
+                .setAsset(artwork)
+                .setStart(index * length)
+                .setOffset({
+                    x: template.artwork.x,
+                    y: template.artwork.y,
+                })
+                .setPosition('center')
+                .setLength(length)
+                .setFit('contain')
+                .setTransition({
+                    in: 'fade',
+                })
+                .setScale(0.65);
+            clips.artwork.push(clipArtwork);
         });
 
-        const track = new Shotstack.Track();
-        track.setClips(clips);
+        const trackAvatar = new Shotstack.Track();
+        trackAvatar.setClips(clips.avatar);
+
+        const trackUsername = new Shotstack.Track();
+        trackUsername.setClips(clips.username);
+
+        const trackBackground = new Shotstack.Track();
+        trackBackground.setClips(clips.background);
+
+        const tracktitle = new Shotstack.Track();
+        tracktitle.setClips(clips.title);
+
+        const trackArtwork = new Shotstack.Track();
+        trackArtwork.setClips(clips.artwork);
 
         const timeline = new Shotstack.Timeline();
         timeline
             .setBackground('#000000')
             .setSoundtrack(soundtrack)
-            .setTracks([track]);
+            .setTracks([
+                tracktitle,
+                trackAvatar,
+                trackUsername,
+                trackBackground,
+                trackArtwork,
+            ]);
 
         const output = new Shotstack.Output();
         output
             .setFormat('mp4')
             .setResolution('hd')
-            .setAspectRatio('1:1')
-            .setFps(30);
+            .setAspectRatio('16:9')
+            .setFps(25);
 
         const edit = new Shotstack.Edit();
         edit.setTimeline(timeline).setOutput(output);
