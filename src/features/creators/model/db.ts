@@ -13,6 +13,7 @@ import type {
     AddEmailCreatorParams,
     UpdateAvatarParams,
     CheckWalletExistsParams,
+    AddVideoToGalleryParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -154,3 +155,23 @@ export const checkWalletExists = async ({
     const result = await creators().countDocuments({ wallets: { address } });
     return !!result;
 };
+
+export const addToVideoGallery = ({
+    id,
+    url,
+    thumbnail,
+    title,
+}: AddVideoToGalleryParams) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $push: {
+                videoGallery: {
+                    url,
+                    createdAt: new Date(),
+                    thumbnail,
+                    title,
+                },
+            },
+        }
+    );

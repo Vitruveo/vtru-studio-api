@@ -1,8 +1,12 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-
-import { MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY } from '../../../constants';
+import { infer as zodInfer } from 'zod';
+import {
+    ASSET_STORAGE_URL,
+    GENERAL_STORAGE_URL,
+    MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY,
+} from '../../../constants';
 import { APIResponse } from '../../../services';
 import { generateVideo } from '../../../services/shortstack';
 import { validateBodyForMakeVideo } from './rules';
@@ -10,6 +14,7 @@ import { middleware } from '../../users';
 import { sendToExchangeMail } from '../../../services/mail';
 import * as model from '../../creators/model';
 import * as modelAssets from '../model';
+import { schemaValidationForMakeVideo } from './schemas';
 
 const logger = debug('features:assets:controller:makeVideo');
 const route = Router();
@@ -29,7 +34,9 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             return;
         }
 
-        const { artworks } = req.body;
+        const { artworks, title } = req.body as zodInfer<
+            typeof schemaValidationForMakeVideo
+        >;
 
         const assets = await modelAssets.findAssetsByPath({
             path: 'formats.preview.path',
@@ -59,8 +66,12 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
                 model
                     .findCreatorById({ id: asset.framework.createdBy! })
                     .then((item) => ({
-                        artworkUrl: asset.formats.preview?.path ?? '',
-                        artistUrl: item?.profile?.avatar ?? '',
+                        artworkUrl:
+                            `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}` ??
+                            '',
+                        artistUrl:
+                            `${GENERAL_STORAGE_URL}/${item?.profile?.avatar}` ??
+                            '',
                         artistName:
                             asset.assetMetadata.creators?.formData[0]?.name,
                         title: asset.assetMetadata.context?.formData?.title,
@@ -69,6 +80,12 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
         );
 
         const response = await generateVideo(payloadArtwork);
+        await model.addToVideoGallery({
+            id: req.auth.id,
+            url: response.url,
+            thumbnail: response.data.timeline.tracks[0].clips[0].asset.src,
+            title,
+        });
 
         if (creator.emails.length) {
             const payload = JSON.stringify({
@@ -87,6 +104,7 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             code: 'vitruveo.studio.api.assets.makeVideo.success',
             message: 'Make video success',
             transaction: nanoid(),
+            data: response,
         } as APIResponse);
     } catch (error) {
         logger('Make video failed: %O', error);

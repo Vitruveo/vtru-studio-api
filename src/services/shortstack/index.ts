@@ -10,6 +10,7 @@ import {
     SHOTSTACK_STAGING_KEY,
     SHOTSTACK_HOST,
 } from '../../constants';
+import { MakeVideoResponse } from '../../features/assets/controller/types';
 
 const logger = debug('services:shotstack');
 
@@ -62,8 +63,8 @@ const templates = {
             y: -0.23,
         },
         background: {
-            x: 0.003,
-            y: -0.002,
+            x: 0.006,
+            y: 0.004,
         },
         artwork: {
             x: -0.254,
@@ -95,7 +96,9 @@ const templates = {
     },
 };
 
-export async function generateVideo(stackImages: StackeImage[]) {
+export async function generateVideo(
+    stackImages: StackeImage[]
+): Promise<MakeVideoResponse> {
     if (!SHOTSTACK_STAGING_KEY || !SHOTSTACK_PRODUCTION_KEY) {
         logger(
             'API Key is required. Set using: export SHOTSTACK_KEY=your_key_here'
