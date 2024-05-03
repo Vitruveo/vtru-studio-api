@@ -84,3 +84,7 @@ export interface AddVideoToGalleryParams {
     thumbnail: string | null;
     title: string;
 }
+
+export interface FindCreatorsByName {
+    name: string;
+}

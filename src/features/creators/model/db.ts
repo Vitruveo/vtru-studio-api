@@ -14,6 +14,7 @@ import type {
     UpdateAvatarParams,
     CheckWalletExistsParams,
     AddVideoToGalleryParams,
+    FindCreatorsByName,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -175,3 +176,29 @@ export const addToVideoGallery = ({
             },
         }
     );
+
+export const findCreatorsByName = ({ name }: FindCreatorsByName) => creators().aggregate([
+    {
+        $match: {
+            'username': {
+                $regex: new RegExp(name, 'i'),
+            },
+        },
+    },
+    {
+        $unwind: '$username',
+    },
+    {
+        $group: {
+            _id: '$username',
+            count: { $sum: 1 },
+        },
+    },
+    {
+        $project: {
+            _id: 0,
+            collection: '$_id',
+            count: 1,
+        },
+    },
+]).toArray();
