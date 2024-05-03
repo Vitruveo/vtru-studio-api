@@ -11,6 +11,7 @@ import {
     SHOTSTACK_HOST,
 } from '../../constants';
 import { MakeVideoResponse } from '../../features/assets/controller/types';
+import { captureException } from '../sentry';
 
 const logger = debug('services:shotstack');
 
@@ -282,7 +283,13 @@ export async function generateVideo(
             if (renderInfo.response.status === 'done') {
                 return renderInfo.response;
             }
-            logger(renderInfo.response.status);
+
+            if (renderInfo.response.status === 'failed') {
+                captureException(renderInfo.response, {
+                    tags: { scope: 'videoGallery' },
+                });
+                throw new Error(renderInfo.response.error);
+            }
         }
     } else {
         throw new Error('Maximum 10 images');
