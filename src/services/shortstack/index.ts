@@ -10,8 +10,8 @@ import {
     SHOTSTACK_STAGING_KEY,
     SHOTSTACK_HOST,
 } from '../../constants';
-import { MakeVideoResponse } from '../../features/assets/controller/types';
 import { captureException } from '../sentry';
+import type { GenerateVideosParams, Response } from './types';
 
 const logger = debug('services:shotstack');
 
@@ -39,13 +39,6 @@ async function sleep(millis: number) {
     return new Promise((resolve) => {
         setTimeout(resolve, millis);
     });
-}
-
-interface StackeImage {
-    artworkUrl: string;
-    artistUrl: string;
-    artistName: string;
-    title: string;
 }
 
 const templates = {
@@ -97,9 +90,10 @@ const templates = {
     },
 };
 
-export async function generateVideo(
-    stackImages: StackeImage[]
-): Promise<MakeVideoResponse> {
+export async function generateVideo({
+    stackImages,
+    sound,
+}: GenerateVideosParams): Promise<Response> {
     if (!SHOTSTACK_STAGING_KEY || !SHOTSTACK_PRODUCTION_KEY) {
         logger(
             'API Key is required. Set using: export SHOTSTACK_KEY=your_key_here'
@@ -111,7 +105,8 @@ export async function generateVideo(
         const soundtrack = new Shotstack.Soundtrack();
         soundtrack
             .setSrc(
-                'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/music/gangsta.mp3'
+                sound ??
+                    'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/music/gangsta.mp3'
             )
             .setEffect('fadeInFadeOut');
 

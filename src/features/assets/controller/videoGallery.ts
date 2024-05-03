@@ -35,7 +35,7 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             return;
         }
 
-        const { artworks, title } = req.body as zodInfer<
+        const { artworks, title, sound } = req.body as zodInfer<
             typeof schemaValidationForMakeVideo
         >;
 
@@ -80,7 +80,10 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             )
         );
 
-        const response = await generateVideo(payloadArtwork);
+        const response = await generateVideo({
+            stackImages: payloadArtwork,
+            sound,
+        });
         await model.addToVideoGallery({
             id: req.auth.id,
             url: response.url,
