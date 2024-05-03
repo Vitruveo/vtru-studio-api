@@ -1,5 +1,6 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import path from 'path';
+import debug from 'debug';
 import fs from 'fs/promises';
 
 import {
@@ -8,11 +9,16 @@ import {
     AWS_DEFAULT_REGION,
 } from '../../constants';
 
+const logger = debug('services:aws:downloadFromS3');
 interface DownloadFromS3Params {
     filename: string;
 }
 
 export const downloadFromS3 = async ({ filename }: DownloadFromS3Params) => {
+    logger('filename', filename);
+    logger('AWS_DEFAULT_REGION', AWS_DEFAULT_REGION);
+    logger('ASSET_STORAGE_NAME', ASSET_STORAGE_NAME);
+
     const s3 = new S3Client({
         region: AWS_DEFAULT_REGION,
     });

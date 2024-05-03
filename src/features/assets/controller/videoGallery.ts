@@ -1,14 +1,20 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { infer as zodInfer } from 'zod'
-import { MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY } from '../../../constants';
+import { infer as zodInfer } from 'zod';
+import {
+    ASSET_STORAGE_URL,
+    DEFAULT_AVATAR_URL,
+    GENERAL_STORAGE_URL,
+    MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY,
+} from '../../../constants';
 import { APIResponse } from '../../../services';
 import { generateVideo } from '../../../services/shortstack';
 import { validateBodyForMakeVideo } from './rules';
 import { middleware } from '../../users';
 import { sendToExchangeMail } from '../../../services/mail';
 import * as model from '../../creators/model';
+import * as modelAssets from '../model';
 import { schemaValidationForMakeVideo } from './schemas';
 
 const logger = debug('features:assets:controller:makeVideo');
@@ -29,16 +35,55 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             return;
         }
 
-        const { artworks, title } = req.body as zodInfer<typeof schemaValidationForMakeVideo> ;
+        const { artworks, title, sound } = req.body as zodInfer<
+            typeof schemaValidationForMakeVideo
+        >;
 
-        const response = await generateVideo(
-            artworks.map((item: string) => ({
-                artworkUrl: item,
-                artistUrl: '',
-                artistName: '',
-            }))
+        const assets = await modelAssets.findAssetsByPath({
+            path: 'formats.preview.path',
+            query: { $in: artworks },
+            options: {
+                projection: {
+                    _id: 1,
+                    'framework.createdBy': 1,
+                    'assetMetadata.creators.formData.name': 1,
+                    'formats.preview.path': 1,
+                    'assetMetadata.context.formData.title': 1,
+                },
+            },
+        });
+
+        if (!assets.length) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.makeVideo.failed',
+                message: 'Assets not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const payloadArtwork = await Promise.all(
+            assets.map((asset) =>
+                model
+                    .findCreatorById({ id: asset.framework.createdBy! })
+                    .then((item) => ({
+                        artworkUrl: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
+                        artistUrl: !item?.profile?.avatar
+                            ? DEFAULT_AVATAR_URL
+                            : `${GENERAL_STORAGE_URL}/${item?.profile?.avatar}`,
+                        artistName:
+                            asset.assetMetadata.creators?.formData[0]?.name ??
+                            '',
+                        title:
+                            asset.assetMetadata.context?.formData?.title ?? '',
+                    }))
+            )
         );
 
+        const response = await generateVideo({
+            stackImages: payloadArtwork,
+            sound,
+        });
         await model.addToVideoGallery({
             id: req.auth.id,
             url: response.url,
@@ -63,7 +108,7 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             code: 'vitruveo.studio.api.assets.makeVideo.success',
             message: 'Make video success',
             transaction: nanoid(),
-            data: response
+            data: response,
         } as APIResponse);
     } catch (error) {
         logger('Make video failed: %O', error);

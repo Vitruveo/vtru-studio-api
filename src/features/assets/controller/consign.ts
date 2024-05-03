@@ -39,6 +39,9 @@ route.post('/', async (req, res) => {
 
         if (!asset) throw new Error('asset_not_found');
 
+        if (asset.contractExplorer?.explorer)
+            throw new Error('asset_consigned');
+
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: asset ${asset._id} is being processed\n\n`);
@@ -54,6 +57,9 @@ route.post('/', async (req, res) => {
         }
 
         const licenses = [];
+
+        // TODO: todas as posições 0 do data sempre sera o available
+        // TODO: todas as posições 1 do data sempre sera o preço
 
         const licenseNFT = {
             id: 0,
@@ -177,6 +183,8 @@ route.post('/', async (req, res) => {
         await model.updateAssets({
             id: asset._id.toString(),
             asset: {
+                'consignArtwork.status': 'active',
+                'consignArtwork.listing': new Date().toISOString(),
                 assetRefId,
                 contractExplorer: {
                     explorer: response.transactionHash,

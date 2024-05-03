@@ -15,7 +15,7 @@ import type {
     FindAssetsCollectionsParams,
     FindAssetsSubjectsParams,
 } from './types';
-import { getDb, ObjectId } from '../../../services/mongo';
+import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
@@ -163,6 +163,19 @@ export const updateAssets = async ({ id, asset }: UpdateAssetsParams) => {
     );
     return result;
 };
+
+export const findAssetsByPath = ({
+    path,
+    query,
+    options,
+}: {
+    path: string;
+    query: Record<string, any>;
+    options?: FindOptions;
+}) =>
+    assets()
+        .find({ [path]: query }, options)
+        .toArray();
 
 export const findAssetsCodeZipByPath = async ({ path }: { path: string }) => {
     const result = await assets().findOne({
