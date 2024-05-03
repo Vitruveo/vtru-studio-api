@@ -61,6 +61,9 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
             return;
         }
 
+        logger('ASSET_STORAGE_URL', ASSET_STORAGE_URL);
+        logger('GENERAL_STORAGE_URL', GENERAL_STORAGE_URL);
+
         const payloadArtwork = await Promise.all(
             assets.map((asset) =>
                 model
