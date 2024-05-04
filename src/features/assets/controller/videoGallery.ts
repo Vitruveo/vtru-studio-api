@@ -10,19 +10,20 @@ import {
 } from '../../../constants';
 import { APIResponse } from '../../../services';
 import { generateVideo } from '../../../services/shortstack';
-import { validateBodyForMakeVideo } from './rules';
+import { validateBodyForVideoGallery } from './rules';
 import { middleware } from '../../users';
 import { sendToExchangeMail } from '../../../services/mail';
+import { schemaValidationForVideoGallery } from './schemas';
 import * as model from '../../creators/model';
 import * as modelAssets from '../model';
-import { schemaValidationForMakeVideo } from './schemas';
+import { sendToExchangeRSS } from '../../../services/rss';
 
 const logger = debug('features:assets:controller:makeVideo');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.post('/', validateBodyForMakeVideo, async (req, res) => {
+route.post('/', validateBodyForVideoGallery, async (req, res) => {
     try {
         const creator = await model.findCreatorById({ id: req.auth.id });
 
@@ -36,7 +37,7 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
         }
 
         const { artworks, title, sound } = req.body as zodInfer<
-            typeof schemaValidationForMakeVideo
+            typeof schemaValidationForVideoGallery
         >;
 
         const assets = await modelAssets.findAssetsByPath({
@@ -103,6 +104,15 @@ route.post('/', validateBodyForMakeVideo, async (req, res) => {
 
             await sendToExchangeMail(payload);
         }
+
+        const payload = JSON.stringify({
+            creator: creator.username,
+            assets: assets.map((asset) => asset._id),
+            title,
+            sound,
+            url: response.url,
+        });
+        sendToExchangeRSS(payload);
 
         res.json({
             code: 'vitruveo.studio.api.assets.makeVideo.success',

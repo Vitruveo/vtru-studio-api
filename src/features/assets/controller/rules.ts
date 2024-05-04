@@ -20,7 +20,7 @@ import {
     schemaPublish,
     schemaValidationForCreate,
     schemaValidationForDeleteFile,
-    schemaValidationForMakeVideo,
+    schemaValidationForVideoGallery,
     schemaValidationForUpdate,
 } from './schemas';
 
@@ -87,7 +87,7 @@ export const validateBodyForUpdate = async (
     }
 };
 
-export const validateBodyForMakeVideo = async (
+export const validateBodyForVideoGallery = async (
     req: Request,
     res: Response,
     next: NextFunction
@@ -103,7 +103,7 @@ export const validateBodyForMakeVideo = async (
     }
 
     try {
-        req.body = schemaValidationForMakeVideo.parse(req.body);
+        req.body = schemaValidationForVideoGallery.parse(req.body);
         next();
     } catch (error) {
         res.status(400).json({
