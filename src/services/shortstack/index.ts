@@ -12,6 +12,7 @@ import {
     GENERAL_STORAGE_URL,
 } from '../../constants';
 import { captureException } from '../sentry';
+import { isVideo } from './utils';
 import type { GenerateVideosParams, Response } from './types';
 
 const logger = debug('services:shotstack');
@@ -211,7 +212,9 @@ export async function generateVideo({
                 .setScale(1);
             clips.background.push(clipBackground);
 
-            const artwork = new Shotstack.ImageAsset();
+            const artwork = isVideo({ path: item.artworkUrl })
+                ? new Shotstack.VideoAsset()
+                : new Shotstack.ImageAsset();
             artwork.setSrc(item.artworkUrl);
 
             const clipArtwork = new Shotstack.Clip();

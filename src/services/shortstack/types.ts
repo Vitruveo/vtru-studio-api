@@ -61,3 +61,7 @@ export interface Response {
     updated: string;
     createdBy: string;
 }
+
+export interface IsVideoParams {
+    path: string;
+}
