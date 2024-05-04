@@ -104,12 +104,9 @@ export async function generateVideo({
 
     if (stackImages.length <= 15) {
         const soundtrack = new Shotstack.Soundtrack();
-        // TODO: subir os audios para o s3 e adicionar aqui
+
         soundtrack
-            .setSrc(
-                sound ??
-                    'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/music/gangsta.mp3'
-            )
+            .setSrc(`${GENERAL_STORAGE_URL}/${sound}`)
             .setEffect('fadeInFadeOut');
 
         const clips: any = {
