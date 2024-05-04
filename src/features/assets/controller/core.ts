@@ -25,9 +25,9 @@ import {
     validateBodyForUpdateStep,
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
-import { downloadFromS3 } from '../../../services/aws/downloadFromS3';
+import { download } from '../../../services/aws';
 import { hadleExtractColor } from '../../../services/extractColor';
-import { ASSET_TEMP_DIR } from '../../../constants';
+import { ASSET_STORAGE_NAME, ASSET_TEMP_DIR } from '../../../constants';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -442,7 +442,7 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
         const { path } = asset.formats.original;
         const filename = join(ASSET_TEMP_DIR, path);
 
-        await downloadFromS3({ filename: path });
+        await download({ key: path, bucket: ASSET_STORAGE_NAME, fileName: path  });
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);

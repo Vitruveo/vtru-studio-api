@@ -9,6 +9,7 @@ import {
     SHOTSTACK_PRODUCTION_KEY,
     SHOTSTACK_STAGING_KEY,
     SHOTSTACK_HOST,
+    GENERAL_STORAGE_URL,
 } from '../../constants';
 import { captureException } from '../sentry';
 import type { GenerateVideosParams, Response } from './types';
@@ -43,7 +44,7 @@ async function sleep(millis: number) {
 
 const templates = {
     left: {
-        url: 'https://bafybeigea3qlu4ihdmmlla5fi2okzpltamtprpi2awq4wo3xqegrf2eldq.ipfs.nftstorage.link',
+        url: `${GENERAL_STORAGE_URL}/template-artwork-left`,
         avatar: {
             x: 0.331,
             y: 0.14,
@@ -66,7 +67,7 @@ const templates = {
         },
     },
     right: {
-        url: 'https://bafybeib5b5mnng2lhyfvqe3ktqexckicotawlbdnksyzwt3mxex36mwyre.ipfs.nftstorage.link',
+        url: `${GENERAL_STORAGE_URL}/template-artwork-right`,
         avatar: {
             x: -0.331,
             y: 0.14,
@@ -103,6 +104,7 @@ export async function generateVideo({
 
     if (stackImages.length <= 15) {
         const soundtrack = new Shotstack.Soundtrack();
+        // TODO: subir os audios para o s3 e adicionar aqui
         soundtrack
             .setSrc(
                 sound ??
