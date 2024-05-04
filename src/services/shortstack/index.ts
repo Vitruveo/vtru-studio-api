@@ -45,10 +45,9 @@ async function sleep(millis: number) {
 
 const templates = {
     left: {
-        url: `${GENERAL_STORAGE_URL}/template-artwork-left`,
         avatar: {
-            x: 0.331,
-            y: 0.14,
+            x: 0.345,
+            y: 0.163,
         },
         username: {
             x: 0.317,
@@ -59,8 +58,14 @@ const templates = {
             y: -0.23,
         },
         background: {
+            url: `${GENERAL_STORAGE_URL}/template-artwork-left`,
             x: 0.006,
             y: 0.004,
+        },
+        border: {
+            url: `${GENERAL_STORAGE_URL}/border.png`,
+            x: 0.347,
+            y: 0.162,
         },
         artwork: {
             x: -0.254,
@@ -68,7 +73,6 @@ const templates = {
         },
     },
     right: {
-        url: `${GENERAL_STORAGE_URL}/template-artwork-right`,
         avatar: {
             x: -0.331,
             y: 0.14,
@@ -82,8 +86,14 @@ const templates = {
             y: -0.23,
         },
         background: {
+            url: `${GENERAL_STORAGE_URL}/template-artwork-right`,
             x: 0.006,
             y: 0.004,
+        },
+        border: {
+            url: `${GENERAL_STORAGE_URL}/border.png`,
+            x: -0.331,
+            y: 0.137,
         },
         artwork: {
             x: 0.268,
@@ -111,6 +121,7 @@ export async function generateVideo({
             .setEffect('fadeInFadeOut');
 
         const clips: any = {
+            border: [],
             avatar: [],
             username: [],
             title: [],
@@ -134,13 +145,33 @@ export async function generateVideo({
                     y: template.avatar.y,
                 })
                 .setPosition('center')
-                .setScale(0.236)
+                .setScale(0.284)
                 .setLength(length)
                 .setFit('contain')
                 .setTransition({
                     in: 'fade',
                 });
             clips.avatar.push(clipAvatar);
+
+            const border = new Shotstack.ImageAsset();
+            border.setSrc(template.border.url);
+
+            const clipBorder = new Shotstack.Clip();
+            clipBorder
+                .setAsset(border)
+                .setStart(index * length)
+                .setOffset({
+                    x: template.border.x,
+                    y: template.border.y,
+                })
+                .setPosition('center')
+                .setScale(0.243)
+                .setLength(length)
+                .setFit('crop')
+                .setTransition({
+                    in: 'fade',
+                });
+            clips.border.push(clipBorder);
 
             const username = new Shotstack.HtmlAsset();
             username
@@ -193,7 +224,7 @@ export async function generateVideo({
             clips.title.push(cliptitle);
 
             const imageBackground = new Shotstack.ImageAsset();
-            imageBackground.setSrc(template.url);
+            imageBackground.setSrc(template.background.url);
 
             const clipBackground = new Shotstack.Clip();
             clipBackground
@@ -250,12 +281,16 @@ export async function generateVideo({
         const trackArtwork = new Shotstack.Track();
         trackArtwork.setClips(clips.artwork);
 
+        const trackBorder = new Shotstack.Track();
+        trackBorder.setClips(clips.border);
+
         const timeline = new Shotstack.Timeline();
         timeline
             .setBackground('#000000')
             .setSoundtrack(soundtrack)
             .setTracks([
                 tracktitle,
+                trackBorder,
                 trackAvatar,
                 trackUsername,
                 trackBackground,
