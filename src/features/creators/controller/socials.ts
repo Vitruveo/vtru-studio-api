@@ -295,4 +295,37 @@ const googleCallback = async (req: Request, res: Response) => {
     }
 };
 
+route.delete('/:social', middleware.checkAuth, (req, res) => {
+    if (!['x', 'facebook', 'google'].includes(req.params.social)) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.creator.delete.social.failed',
+            message: 'Delete social failed: Invalid social',
+            transaction: nanoid(),
+        } as APIResponse);
+        return;
+    }
+
+    model
+        .removeCreatorSocialById({
+            id: req.auth.id,
+            key: req.params.social as 'x' | 'facebook' | 'google',
+        })
+        .then(() => {
+            res.json({
+                code: 'vitruveo.studio.api.creator.remove.social.success',
+                message: 'Remove social success',
+                transaction: nanoid(),
+            } as APIResponse);
+        })
+        .catch((error) => {
+            logger('Remove social failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.creator.remove.social.failed',
+                message: `Remove social failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        });
+});
+
 export { route, xCallback, facebookCallback, googleCallback };

@@ -16,6 +16,7 @@ import type {
     AddVideoToGalleryParams,
     FindCreatorsByName,
     UpdateCreatorSocialById,
+    RemoveCreatorSocialById,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -188,6 +189,16 @@ export const updateCreatorSocialById = ({
         {
             $set: {
                 [`socials.${key}`]: value,
+            },
+        }
+    );
+
+export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $unset: {
+                [`socials.${key}`]: '',
             },
         }
     );

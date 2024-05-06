@@ -94,6 +94,11 @@ export interface UpdateCreatorSocialById {
     };
 }
 
+export interface RemoveCreatorSocialById {
+    id: string;
+    key: 'x' | 'facebook' | 'google';
+}
+
 export interface FindCreatorsByName {
     name: string;
 }
