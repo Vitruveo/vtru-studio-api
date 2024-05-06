@@ -15,7 +15,7 @@ import type {
     FindAssetsCollectionsParams,
     FindAssetsSubjectsParams,
 } from './types';
-import { getDb, ObjectId } from '../../../services/mongo';
+import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
@@ -25,13 +25,21 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
     return result;
 };
 
+// recebendo _ids para filtrar os assets por _id e retornar os assets paginados
 export const findAssetsPaginated = async ({
     query,
     sort,
     skip,
     limit,
-}: FindAssetsPaginatedParams) =>
-    assets().find(query, {}).sort(sort).skip(skip).limit(limit).toArray();
+}: FindAssetsPaginatedParams) => {
+    const parsedQuery = { ...query }
+
+    if (parsedQuery._id && parsedQuery._id?.$in) {
+        parsedQuery._id.$in = parsedQuery._id.$in.map((id) => new ObjectId(id));
+    }
+
+    return assets().find(parsedQuery, {}).sort(sort).skip(skip).limit(limit).toArray();
+}
 
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
@@ -155,6 +163,19 @@ export const updateAssets = async ({ id, asset }: UpdateAssetsParams) => {
     );
     return result;
 };
+
+export const findAssetsByPath = ({
+    path,
+    query,
+    options,
+}: {
+    path: string;
+    query: Record<string, any>;
+    options?: FindOptions;
+}) =>
+    assets()
+        .find({ [path]: query }, options)
+        .toArray();
 
 export const findAssetsCodeZipByPath = async ({ path }: { path: string }) => {
     const result = await assets().findOne({

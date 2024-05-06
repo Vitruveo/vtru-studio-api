@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { route as coreRouter } from './core';
-import { route as makeVideoRouter } from './videoGallery';
+import { route as videoGalleryRouter } from './videoGallery';
 import { route as notifyRouter } from './notify';
 import { route as publicRouter } from './public';
 import { route as previewRouter } from './preview';
@@ -12,7 +12,7 @@ const router = Router();
 
 router.use('/assets/ipfs', ipfsRouter);
 router.use('/assets/consign', consignRouter);
-router.use('/assets/makeVideo', makeVideoRouter);
+router.use('/assets/videoGallery', videoGalleryRouter);
 router.use('/assets/notify', notifyRouter);
 router.use('/assets/public', publicRouter);
 router.use('/assets/preview', previewRouter);
