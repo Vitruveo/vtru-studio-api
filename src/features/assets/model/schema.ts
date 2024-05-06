@@ -93,7 +93,7 @@ export const AssetsSchema = z.object({
             license: z.string(),
             elastic: z.object({
                 editionPrice: z.number(),
-                numberOfEditions: z.number(),
+                numberOfEditions: z.number(), // TODO: CHANGE numberOfEditions TO availableLicenses
                 totalPrice: z.number(),
                 editionDiscount: z.boolean(),
             }),
@@ -104,12 +104,10 @@ export const AssetsSchema = z.object({
                 editionPrice: z.number(),
             }),
             editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
-            availableLicenses: z.number(),
         }),
         stream: z.object({
             version: z.string(),
             added: z.boolean(),
-            availableLicenses: z.number(),
         }),
         print: z.object({
             version: z.string(),
