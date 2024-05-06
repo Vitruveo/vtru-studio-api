@@ -85,6 +85,15 @@ export interface AddVideoToGalleryParams {
     title: string;
 }
 
+export interface UpdateCreatorSocialById {
+    id: string;
+    key: 'x' | 'facebook' | 'google';
+    value: {
+        name: string;
+        avatar: string;
+    };
+}
+
 export interface FindCreatorsByName {
     name: string;
 }
