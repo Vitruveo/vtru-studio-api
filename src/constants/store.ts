@@ -1,0 +1,2 @@
+export const MAIL_SENDGRID_TEMPLATE_MINT =
+    process.env.MAIL_SENDGRID_TEMPLATE_MINT || '';

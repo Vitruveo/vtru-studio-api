@@ -13,3 +13,4 @@ export * from './ipfs';
 export * from './contract';
 export * from './aws';
 export * from './videoGallery';
+export * from './store';
