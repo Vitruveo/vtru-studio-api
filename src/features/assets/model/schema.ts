@@ -104,20 +104,24 @@ export const AssetsSchema = z.object({
                 editionPrice: z.number(),
             }),
             editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
+            availableLicenses: z.number(),
         }),
         stream: z.object({
             version: z.string(),
             added: z.boolean(),
+            availableLicenses: z.number(),
         }),
         print: z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number(),
         }),
         remix: z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number(),
         }),
     }),
     assetMetadata: z.object({

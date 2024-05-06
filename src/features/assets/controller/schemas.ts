@@ -184,20 +184,24 @@ export const schemaLicenses = z.object({
                 editionPrice: z.number(),
             }),
             editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
+            availableLicenses: z.number().min(1).default(1),
         }),
         stream: z.object({
             version: z.string(),
             added: z.boolean(),
+            availableLicenses: z.number().min(1).default(1),
         }),
         print: z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number().min(1).default(1),
         }),
         remix: z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number().min(1).default(1),
         }),
     }),
     framework: z.object({
