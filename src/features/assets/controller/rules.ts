@@ -22,6 +22,7 @@ import {
     schemaValidationForDeleteFile,
     schemaValidationForVideoGallery,
     schemaValidationForUpdate,
+    schemaSearch,
 } from './schemas';
 
 export const validateBodyForCreate = async (
@@ -260,6 +261,63 @@ export const validateBodyForDeleteFile = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForDeleteFile.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForSearch = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const queryBuilder = (keyPairs: Record<string, any>) => {
+            const result: any[] = [];
+            const problems: string[] = [];
+            Object.entries(keyPairs).forEach(([key, value]) => {
+                const buildItem = schemaSearch.find((i) => i.name === key);
+                if (!buildItem) {
+                    problems.push(`Field: ${key} not found`);
+                    return;
+                }
+
+                // validate the item
+                const validationResult = buildItem.validation.safeParse(value);
+                if (!validationResult.success) {
+                    problems.push(
+                        `Field: ${key} is not valid: ${validationResult.error.message}`
+                    );
+                    return;
+                }
+
+                // build query
+                const expression = buildItem.expression(value);
+                result.push(expression);
+            });
+            return [result, problems];
+        };
+
+        const [result, problems] = queryBuilder(req.body);
+
+        if (problems.length) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.validateBodyForSearch.failed',
+                message: '',
+                transaction: nanoid(),
+                args: problems,
+            } as APIResponse);
+            return;
+        }
+
+        req.body = result;
+
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForSearch.failed',
             message: '',
             transaction: nanoid(),
             args: error,

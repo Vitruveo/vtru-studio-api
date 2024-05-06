@@ -441,3 +441,26 @@ export const schemaContractExplorer = z.object({
         updatedBy: z.string().nullable().default(null),
     }),
 });
+
+export const schemaSearch = [
+    {
+        name: 'titleOrDescription',
+        validation: z.string(),
+        expression: (value: string) => ({
+            $match: {
+                $or: [
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: new RegExp(value, 'i'),
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: new RegExp(value, 'i'),
+                        },
+                    },
+                ],
+            },
+        }),
+    },
+];

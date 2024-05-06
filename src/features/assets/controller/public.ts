@@ -9,18 +9,20 @@ import {
     QueryPaginatedParams,
     ResponseAssetsPaginated,
 } from './types';
+import { validateBodyForSearch } from './rules';
 
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
-route.get('/search', async (req, res) => {
+route.post('/search', validateBodyForSearch, async (req, res) => {
     try {
         const {
-            query = {},
             sort,
             page = 1,
             limit = 10,
         } = req.query as unknown as QueryPaginatedParams;
+
+        const stages = req.body;
 
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
@@ -34,22 +36,26 @@ route.get('/search', async (req, res) => {
             return;
         }
 
-        query['consignArtwork.status'] = 'active';
-        query['licenses.nft.added'] = true;
-        query['formats.preview.path'] = {
-            $exists: true,
-            $ne: null,
-        };
+        stages.push({
+            $match: {
+                'consignArtwork.status': 'active',
+                'licenses.nft.added': true,
+                'formats.preview.path': {
+                    $exists: true,
+                    $ne: null,
+                },
+            },
+        });
 
-        const total = await model.countAssets({ query });
+        const total = await model.countAssets({ query: {} });
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
-            query,
+            query: stages,
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
         });
-        const tags = await model.findAssetsTags({ query });
+        const tags = await model.findAssetsTags({ query: {} });
 
         res.json({
             code: 'vitruveo.studio.api.assets.search.success',

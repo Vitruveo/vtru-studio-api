@@ -26,22 +26,14 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
 };
 
 // recebendo _ids para filtrar os assets por _id e retornar os assets paginados
-export const findAssetsPaginated = async ({
+export const findAssetsPaginated = ({
     query,
     sort,
     skip,
     limit,
-}: FindAssetsPaginatedParams) => {
-    const parsedQuery = { ...query }
+}: FindAssetsPaginatedParams) => assets().aggregate(query).toArray();
 
-    if (parsedQuery._id && parsedQuery._id?.$in) {
-        parsedQuery._id.$in = parsedQuery._id.$in.map((id) => new ObjectId(id));
-    }
-
-    return assets().find(parsedQuery, {}).sort(sort).skip(skip).limit(limit).toArray();
-}
-
-export const countAssets = async ({ query }: CountAssetsParams) =>
+export const countAssets = ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
 
 export const findAssetsCollections = async ({
