@@ -88,7 +88,10 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
         await model.addToVideoGallery({
             id: req.auth.id,
             url: response.url,
-            thumbnail: response.data.timeline.tracks[0].clips[0].asset.src,
+            thumbnail:
+                response.data.timeline.tracks[
+                    response.data.timeline.tracks.length - 1
+                ].clips[0].asset.src,
             title,
         });
 
@@ -106,13 +109,18 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
         }
 
         const payload = JSON.stringify({
-            creator: creator.username,
-            assets: assets.map((asset) => asset._id),
+            assets: assets.map((asset) => ({
+                artist: asset.assetMetadata.creators.formData[0].name ?? '',
+                title: asset.assetMetadata.context.formData.title ?? '',
+                description:
+                    asset.assetMetadata.context.formData.description ?? '',
+                url: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
+            })),
             title,
             sound,
             url: response.url,
         });
-        sendToExchangeRSS(payload);
+        await sendToExchangeRSS(payload, 'video');
 
         res.json({
             code: 'vitruveo.studio.api.assets.makeVideo.success',

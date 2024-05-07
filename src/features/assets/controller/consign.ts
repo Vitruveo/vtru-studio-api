@@ -7,6 +7,8 @@ import * as modelCreator from '../../creators/model';
 import { createConsign } from '../../../services/web3/consign';
 import { captureException } from '../../../services';
 import { middleware } from '../../users';
+import { sendToExchangeRSS } from '../../../services/rss';
+import { ASSET_STORAGE_URL } from '../../../constants';
 
 const logger = debug('features:assets:controller:consign');
 const route = Router();
@@ -27,7 +29,9 @@ route.post('/', async (req, res) => {
         const creator = await modelCreator.findCreatorById({ id: req.auth.id });
 
         if (!creator) throw new Error('creator_not_found');
-        if (!creator.vault.transactionHash) throw new Error('vault_not_found');
+
+        // TODO: Verificar se o creator tem walletDefault
+        // if (!creator.vault.transactionHash) throw new Error('vault_not_found');
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
@@ -39,8 +43,15 @@ route.post('/', async (req, res) => {
 
         if (!asset) throw new Error('asset_not_found');
 
-        if (asset.contractExplorer?.explorer)
-            throw new Error('asset_consigned');
+        if (asset.contractExplorer?.explorer) {
+            res.write(`event: consign_already_done\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(
+                `data: asset ${asset._id} already has a consign ${asset.contractExplorer.explorer}\n\n`
+            );
+
+            return;
+        }
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
@@ -200,6 +211,25 @@ route.post('/', async (req, res) => {
             id: creator._id.toString(),
             creator: { creatorRefId },
         });
+
+        await Promise.all(
+            Object.entries(asset.licenses).map(([key, license]) => {
+                if (license.added) {
+                    const payload = JSON.stringify({
+                        license: key,
+                        title: asset.assetMetadata.context.formData.title,
+                        url: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
+                        creator: asset.assetMetadata.creators.formData[0].name,
+                    });
+                    sendToExchangeRSS(payload, 'consign').then(() => {
+                        res.write(`event: rss_print\n`);
+                        res.write(`id: ${nanoid()}\n`);
+                        res.write(`data: ${payload}\n\n`);
+                    });
+                }
+                return license;
+            })
+        );
 
         res.write(`event: consign_success\n`);
         res.write(`id: ${nanoid()}\n`);

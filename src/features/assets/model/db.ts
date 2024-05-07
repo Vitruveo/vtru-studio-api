@@ -14,6 +14,7 @@ import type {
     FindAssetsTagsParams,
     FindAssetsCollectionsParams,
     FindAssetsSubjectsParams,
+    FindAssetsByCreatorName,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 
@@ -102,20 +103,16 @@ export const findMaxPrice = () =>
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
 
-export const findAssetsCollections = async ({
-    name,
-}: FindAssetsCollectionsParams) =>
+export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
     assets()
         .aggregate([
+            { $unwind: '$assetMetadata.taxonomy.formData.collections' },
             {
                 $match: {
                     'assetMetadata.taxonomy.formData.collections': {
-                        $regex: new RegExp(name, 'i'),
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
                 },
-            },
-            {
-                $unwind: '$assetMetadata.taxonomy.formData.collections',
             },
             {
                 $group: {
@@ -130,21 +127,20 @@ export const findAssetsCollections = async ({
                     count: 1,
                 },
             },
+            { $sort: { count: -1, collection: 1 } },
         ])
         .toArray();
 
-export const findAssetsSubjects = async ({ name }: FindAssetsSubjectsParams) =>
+export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
     assets()
         .aggregate([
+            { $unwind: '$assetMetadata.taxonomy.formData.subject' },
             {
                 $match: {
                     'assetMetadata.taxonomy.formData.subject': {
-                        $regex: new RegExp(name, 'i'),
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
                 },
-            },
-            {
-                $unwind: '$assetMetadata.taxonomy.formData.subject',
             },
             {
                 $group: {
@@ -177,6 +173,32 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
                 $project: {
                     _id: 0,
                     tag: '$_id',
+                    count: 1,
+                },
+            },
+        ])
+        .toArray();
+
+export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'assetMetadata.creators.formData.name': {
+                        $regex: new RegExp(name, 'i'),
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$assetMetadata.creators.formData.name',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
                     count: 1,
                 },
             },
