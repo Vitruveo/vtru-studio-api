@@ -24,7 +24,7 @@ route.get('/:id/html', async (req, res) => {
         }
 
         const assetPath = asset.formats.preview?.path;
-        const thumbnail = assetPath?.replace(/\.(?=[^.]*$)/, '_thumb.');
+        const thumbnail = assetPath?.replace(/\.(\w+)$/, '_thumb.jpg');
 
         const isVideo = videoExtension.some((ext) => assetPath?.endsWith(ext));
 
