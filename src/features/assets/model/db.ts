@@ -32,14 +32,72 @@ export const findAssetsPaginated = async ({
     skip,
     limit,
 }: FindAssetsPaginatedParams) => {
-    const parsedQuery = { ...query }
+    const parsedQuery = { ...query };
 
     if (parsedQuery._id && parsedQuery._id?.$in) {
         parsedQuery._id.$in = parsedQuery._id.$in.map((id) => new ObjectId(id));
     }
 
-    return assets().find(parsedQuery, {}).sort(sort).skip(skip).limit(limit).toArray();
-}
+    return assets()
+        .find(parsedQuery, {})
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+};
+
+export const findMaxPrice = () =>
+    assets()
+        .aggregate([
+            {
+                $project: {
+                    maxPrice: {
+                        $max: [
+                            {
+                                $cond: {
+                                    if: {
+                                        $eq: [
+                                            '$licenses.nft.editionOption',
+                                            'elastic',
+                                        ],
+                                    },
+                                    then: '$licenses.nft.elastic.editionPrice',
+                                    else: 0,
+                                },
+                            },
+                            {
+                                $cond: {
+                                    if: {
+                                        $eq: [
+                                            '$licenses.nft.editionOption',
+                                            'single',
+                                        ],
+                                    },
+                                    then: '$licenses.nft.single.editionPrice',
+                                    else: 0,
+                                },
+                            },
+                            {
+                                $cond: {
+                                    if: {
+                                        $eq: [
+                                            '$licenses.nft.editionOption',
+                                            'unlimited',
+                                        ],
+                                    },
+                                    then: '$licenses.nft.unlimited.editionPrice',
+                                    else: 0,
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            { $sort: { maxPrice: -1 } },
+            { $limit: 1 },
+        ])
+        .toArray()
+        .then((result) => result.length > 0 ? result[0].maxPrice : null)
 
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
