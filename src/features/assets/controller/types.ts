@@ -5,6 +5,9 @@ export interface QueryPaginatedParams {
     page: number;
     limit: number;
     sort: any;
+    minPrice: number;
+    maxPrice: number;
+    name?: string;
 }
 
 export interface QueryCollectionParams {
