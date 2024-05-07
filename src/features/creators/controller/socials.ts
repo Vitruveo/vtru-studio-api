@@ -8,15 +8,15 @@ import { getConnection } from '@nsfilho/redis-connection';
 import * as model from '../model';
 import type { APIResponse } from '../../../services/express';
 import {
-    X_CHAIN_CALLBACK_URL,
-    X_CHAIN_CLIENT_ID,
-    X_CHAIN_CLIENT_SECRET,
-    FACEBOOK_APP_ID,
-    FACEBOOK_APP_SECRET,
-    FACEBOOK_REDIRECT_URI,
+    X_CLIENT_ID,
+    X_CLIENT_SECRET,
+    X_CALLBACK_URL,
+    FACEBOOK_CLIENT_ID,
+    FACEBOOK_CLIENT_SECRET,
+    FACEBOOK_CALLBACK_URL,
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI,
+    GOOGLE_CALLBACK_URL,
 } from '../../../constants';
 import { middleware } from '../../users';
 import { keyRedisSocial } from '../utils/keyRedisRequest';
@@ -35,9 +35,9 @@ const scopes = [
 ];
 
 const authClient = new auth.OAuth2User({
-    client_id: X_CHAIN_CLIENT_ID,
-    client_secret: X_CHAIN_CLIENT_SECRET,
-    callback: X_CHAIN_CALLBACK_URL,
+    client_id: X_CLIENT_ID,
+    client_secret: X_CLIENT_SECRET,
+    callback: X_CALLBACK_URL,
     scopes: ['tweet.read', 'users.read', 'follows.write'],
 });
 
@@ -131,7 +131,7 @@ route.get('/facebook/auth', middleware.checkAuth, async (req, res) => {
         const redis = await getConnection();
         await redis.set(keyRedisSocial(nonce), req.auth.id, 'EX', 60 * 30); // 30 minutes
 
-        const url = `https://www.facebook.com/v13.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${FACEBOOK_REDIRECT_URI}&state=${nonce}&scope=email`;
+        const url = `https://www.facebook.com/v13.0/dialog/oauth?client_id=${FACEBOOK_CLIENT_ID}&redirect_uri=${FACEBOOK_CALLBACK_URL}&state=${nonce}&scope=email`;
 
         res.json({
             code: 'vitruveo.studio.api.creator.get.social.facebook.success',
@@ -168,7 +168,7 @@ const facebookCallback = async (req: Request, res: Response) => {
         }
 
         const { data } = await axios.get(
-            `https://graph.facebook.com/v13.0/oauth/access_token?client_id=${FACEBOOK_APP_ID}&client_secret=${FACEBOOK_APP_SECRET}&code=${code}&redirect_uri=${FACEBOOK_REDIRECT_URI}`
+            `https://graph.facebook.com/v13.0/oauth/access_token?client_id=${FACEBOOK_CLIENT_ID}&client_secret=${FACEBOOK_CLIENT_SECRET}&code=${code}&redirect_uri=${FACEBOOK_CALLBACK_URL}`
         );
 
         const { access_token: accessToken } = data;
@@ -210,7 +210,7 @@ route.get('/google/auth', middleware.checkAuth, async (req, res) => {
         const redis = await getConnection();
         await redis.set(keyRedisSocial(nonce), req.auth.id, 'EX', 60 * 30); // 30 minutes
 
-        const url = `https://accounts.google.com/o/oauth2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&state=${nonce}&scope=${scopes.join(
+        const url = `https://accounts.google.com/o/oauth2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_CALLBACK_URL}&state=${nonce}&scope=${scopes.join(
             ' '
         )}&response_type=code`;
 
@@ -254,7 +254,7 @@ const googleCallback = async (req: Request, res: Response) => {
                     code,
                     client_id: GOOGLE_CLIENT_ID,
                     client_secret: GOOGLE_CLIENT_SECRET,
-                    redirect_uri: GOOGLE_REDIRECT_URI,
+                    redirect_uri: GOOGLE_CALLBACK_URL,
                     grant_type: 'authorization_code',
                 },
             }
