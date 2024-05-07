@@ -214,6 +214,9 @@ export const findCreatorsByName = ({ name }: FindCreatorsByName) =>
                 },
             },
             {
+                $unwind: '$assetMetadata.creators.formData.name',
+            },
+            {
                 $group: {
                     _id: '$assetMetadata.creators.formData.name',
                     count: { $sum: 1 },
