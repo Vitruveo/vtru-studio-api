@@ -3,12 +3,17 @@ import debug from 'debug';
 
 const logger = debug('utils');
 
-export const removeAccents = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+export const removeAccents = (text: string) =>
+    text.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
 // eslint-disable-next-line no-unused-vars
 type Callback<T, R> = (item: T, workerId: number) => Promise<R>;
 
-export const throttle = async <T, R>(lista: T[], callback: Callback<T, R>, simultaneous: number) => {
+export const throttle = async <T, R>(
+    lista: T[],
+    callback: Callback<T, R>,
+    simultaneous: number
+) => {
     const parallels: number[] = [];
     for (let x = 1; x <= simultaneous; x += 1) parallels.push(x);
 
@@ -21,7 +26,7 @@ export const throttle = async <T, R>(lista: T[], callback: Callback<T, R>, simul
                 }
             };
             return job();
-        }),
+        })
     );
 };
 
@@ -36,16 +41,31 @@ export const retry = async <T>(
     cb: CallbackRetry<T>,
     maxRetries = 10,
     delayTimeout = 1000,
-    description = '',
+    description = ''
 ): Promise<T> => {
     for (let tentative = 1; tentative <= maxRetries; tentative += 1) {
         try {
             const result: T = await cb();
             return result;
         } catch (err) {
-            logger(`Retry: ${tentative}/${maxRetries} [${description}] - Error: ${err}`);
+            logger(
+                `Retry: ${tentative}/${maxRetries} [${description}] - Error: ${err}`
+            );
             await delay(delayTimeout);
         }
     }
     throw Error(`Exceeded ${maxRetries} for ${description || 'call function'}`);
+};
+
+export interface ExitWithDelayParams {
+    exitCode?: number;
+    timeout?: number;
+}
+export const exitWithDelay = ({
+    exitCode = 1,
+    timeout = 10_000,
+}: ExitWithDelayParams) => {
+    setTimeout(() => {
+        process.exit(exitCode);
+    }, timeout);
 };
