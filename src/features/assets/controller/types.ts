@@ -8,6 +8,7 @@ export interface QueryPaginatedParams {
     minPrice: number;
     maxPrice: number;
     name?: string;
+    showOnlyAvailableArts?: boolean;
 }
 
 export interface QueryCollectionParams {
@@ -26,6 +27,7 @@ export interface ResponseAssetsPaginated {
     totalPage: number;
     total: number;
     limit: number;
+    maxPrice: number;
 }
 
 export interface DataIPFS {
