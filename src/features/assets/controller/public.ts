@@ -106,6 +106,7 @@ route.get('/search', async (req, res) => {
             }
         }
 
+        const maxAssetPrice = await model.findMaxPrice();
         const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
@@ -127,6 +128,7 @@ route.get('/search', async (req, res) => {
                 totalPage,
                 total,
                 limit: limitNumber,
+                maxPrice: maxAssetPrice || 0,
             },
         } as APIResponse<ResponseAssetsPaginated>);
     } catch (error) {
