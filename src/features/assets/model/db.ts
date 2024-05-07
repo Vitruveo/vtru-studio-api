@@ -102,6 +102,7 @@ export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
                     count: 1,
                 },
             },
+            { $sort: { count: -1, subject: 1 } },
         ])
         .toArray();
 
@@ -129,10 +130,11 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
 export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
     assets()
         .aggregate([
+            { $unwind: '$assetMetadata.creators.formData.name' },
             {
                 $match: {
                     'assetMetadata.creators.formData.name': {
-                        $regex: new RegExp(name, 'i'),
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
                 },
             },
@@ -149,6 +151,7 @@ export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
                     count: 1,
                 },
             },
+            { $sort: { count: -1, collection: 1 } },
         ])
         .toArray();
 
