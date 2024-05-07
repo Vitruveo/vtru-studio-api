@@ -208,17 +208,14 @@ export const findCreatorsByName = ({ name }: FindCreatorsByName) =>
         .aggregate([
             {
                 $match: {
-                    username: {
+                    'assetMetadata.creators.formData.name': {
                         $regex: new RegExp(name, 'i'),
                     },
                 },
             },
             {
-                $unwind: '$username',
-            },
-            {
                 $group: {
-                    _id: '$username',
+                    _id: '$assetMetadata.creators.formData.name',
                     count: { $sum: 1 },
                 },
             },
