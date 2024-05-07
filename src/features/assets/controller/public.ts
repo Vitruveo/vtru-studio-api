@@ -25,7 +25,7 @@ route.get('/search', async (req, res) => {
             name,
             sort,
         } = req.query as unknown as QueryPaginatedParams;
-        
+
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
 
@@ -84,11 +84,21 @@ route.get('/search', async (req, res) => {
 
             if (name) {
                 query.$and.push({
-                    '$or': [
-                        { 'assetMetadata.context.formData.title': { $regex: name, $options: 'i' } },
-                        { 'assetMetadata.context.formData.description': { $regex: name, $options: 'i' } },
-                    ]
-                })
+                    $or: [
+                        {
+                            'assetMetadata.context.formData.title': {
+                                $regex: name,
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'assetMetadata.context.formData.description': {
+                                $regex: name,
+                                $options: 'i',
+                            },
+                        },
+                    ],
+                });
             }
         }
 
@@ -203,7 +213,7 @@ route.get('/creators', async (req, res) => {
             return;
         }
 
-        const creators = await creatorModel.findCreatorsByName({ name });
+        const creators = await model.findAssetsByCreatorName({ name });
 
         res.json({
             code: 'vitruveo.studio.api.assets.creators.success',

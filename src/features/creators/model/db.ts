@@ -14,7 +14,6 @@ import type {
     UpdateAvatarParams,
     CheckWalletExistsParams,
     AddVideoToGalleryParams,
-    FindCreatorsByName,
     UpdateCreatorSocialById,
     RemoveCreatorSocialById,
 } from './types';
@@ -202,32 +201,3 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
             },
         }
     );
-
-export const findCreatorsByName = ({ name }: FindCreatorsByName) =>
-    creators()
-        .aggregate([
-            {
-                $match: {
-                    'assetMetadata.creators.formData.name': {
-                        $regex: new RegExp(name, 'i'),
-                    },
-                },
-            },
-            {
-                $unwind: '$assetMetadata.creators.formData.name',
-            },
-            {
-                $group: {
-                    _id: '$assetMetadata.creators.formData.name',
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    collection: '$_id',
-                    count: 1,
-                },
-            },
-        ])
-        .toArray();

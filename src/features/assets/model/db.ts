@@ -14,6 +14,7 @@ import type {
     FindAssetsTagsParams,
     FindAssetsCollectionsParams,
     FindAssetsSubjectsParams,
+    FindAssetsByCreatorName,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 
@@ -32,14 +33,19 @@ export const findAssetsPaginated = async ({
     skip,
     limit,
 }: FindAssetsPaginatedParams) => {
-    const parsedQuery = { ...query }
+    const parsedQuery = { ...query };
 
     if (parsedQuery._id && parsedQuery._id?.$in) {
         parsedQuery._id.$in = parsedQuery._id.$in.map((id) => new ObjectId(id));
     }
 
-    return assets().find(parsedQuery, {}).sort(sort).skip(skip).limit(limit).toArray();
-}
+    return assets()
+        .find(parsedQuery, {})
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+};
 
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
@@ -119,6 +125,32 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
                 $project: {
                     _id: 0,
                     tag: '$_id',
+                    count: 1,
+                },
+            },
+        ])
+        .toArray();
+
+export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'assetMetadata.creators.formData.name': {
+                        $regex: new RegExp(name, 'i'),
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$assetMetadata.creators.formData.name',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
                     count: 1,
                 },
             },
