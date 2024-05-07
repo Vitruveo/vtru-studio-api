@@ -14,7 +14,8 @@ import type {
     UpdateAvatarParams,
     CheckWalletExistsParams,
     AddVideoToGalleryParams,
-    FindCreatorsByName,
+    UpdateCreatorSocialById,
+    RemoveCreatorSocialById,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -177,28 +178,26 @@ export const addToVideoGallery = ({
         }
     );
 
-export const findCreatorsByName = ({ name }: FindCreatorsByName) => creators().aggregate([
-    {
-        $match: {
-            'username': {
-                $regex: new RegExp(name, 'i'),
+export const updateCreatorSocialById = ({
+    id,
+    key,
+    value,
+}: UpdateCreatorSocialById) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $set: {
+                [`socials.${key}`]: value,
             },
-        },
-    },
-    {
-        $unwind: '$username',
-    },
-    {
-        $group: {
-            _id: '$username',
-            count: { $sum: 1 },
-        },
-    },
-    {
-        $project: {
-            _id: 0,
-            collection: '$_id',
-            count: 1,
-        },
-    },
-]).toArray();
+        }
+    );
+
+export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $unset: {
+                [`socials.${key}`]: '',
+            },
+        }
+    );

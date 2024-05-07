@@ -3,8 +3,10 @@ import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
-import { APIResponse } from '../../../services';
+import { APIResponse, ObjectId, captureException } from '../../../services';
 import { responseRenderUrl } from '../utils/responseRenderUrl';
+import { MAIL_SENDGRID_TEMPLATE_MINT } from '../../../constants';
+import { sendToExchangeMail } from '../../../services/mail';
 import { videoExtension } from '../utils/videoExtensions';
 
 const logger = debug('features:assets:controller:store');
@@ -50,9 +52,9 @@ route.get('/:id/html', async (req, res) => {
     }
 });
 
-route.get('/:creator/:id', async (req, res) => {
+route.get('/:id', async (req, res) => {
     try {
-        if (!req.params.id || !req.params.creator) {
+        if (!req.params.id) {
             res.status(400).json({
                 code: 'vitruveo.studio.api.admin.assets.store.badRequest',
                 message: 'Bad request',
@@ -72,8 +74,17 @@ route.get('/:creator/:id', async (req, res) => {
             return;
         }
 
+        if (!asset.framework.createdBy) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.store.creatorNotFound',
+                message: 'Creator not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
         const creator = await modelCreator.findOneCreator({
-            query: { username: req.params.creator },
+            query: { _id: new ObjectId(asset.framework.createdBy) },
         });
 
         if (!creator) {
@@ -117,6 +128,69 @@ route.get('/:creator/:id', async (req, res) => {
             args: error,
             transaction: nanoid(),
         } as APIResponse);
+    }
+});
+
+route.get('/:id/mint', async (req, res) => {
+    try {
+        // TODO: receber wallet via query (do comprador)
+
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const assetExists = await model.findAssetsById({ id: req.params.id });
+        if (!assetExists) throw new Error('Asset not found');
+
+        if (!assetExists.framework.createdBy)
+            throw new Error('Creator not found');
+
+        const creatorExists = await modelCreator.findCreatorById({
+            id: assetExists.framework.createdBy,
+        });
+        if (!creatorExists) throw new Error('Creator not found');
+
+        if (
+            assetExists.framework.createdBy?.toString() !==
+            creatorExists._id.toString()
+        )
+            throw new Error('Unauthorized access');
+
+        // TODO: Mint web3
+
+        const payload = JSON.stringify({
+            to: creatorExists.emails[0].email,
+            subject: 'Mint NFT Success',
+            template: MAIL_SENDGRID_TEMPLATE_MINT,
+            creator: creatorExists.username,
+            title: assetExists.assetMetadata.context.formData.title,
+        });
+        await sendToExchangeMail(payload);
+
+        const response = JSON.stringify({
+            code: 'vitruveo.studio.api.admin.assets.store.success',
+            message: 'Store mint asset success',
+            transaction: nanoid(),
+        });
+
+        res.write('event: mint_nft_success\n');
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${response}\n\n`);
+    } catch (error) {
+        logger('Search profile failed: %O', error);
+        captureException(error, {
+            extra: {
+                message: 'Mint NFT failed',
+            },
+            tags: { scope: 'mint_NFT_error' },
+        });
+
+        res.write('event: mint_nft_error\n');
+        res.write(`data: ${error}\n\n`);
+        res.write(`id: ${nanoid()}\n`);
+    } finally {
+        res.end();
     }
 });
 

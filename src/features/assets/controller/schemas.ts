@@ -176,6 +176,7 @@ export const schemaLicenses = z.object({
                 numberOfEditions: z.number(),
                 totalPrice: z.number(),
                 editionDiscount: z.boolean(),
+                availableLicenses: z.number().min(1).default(1),
             }),
             single: z.object({
                 editionPrice: z.number(),
@@ -193,11 +194,13 @@ export const schemaLicenses = z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number().min(1).default(1),
         }),
         remix: z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number().min(1).default(1),
         }),
     }),
     framework: z.object({
