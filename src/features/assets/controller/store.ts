@@ -194,4 +194,31 @@ route.get('/:id/mint', async (req, res) => {
     }
 });
 
+route.get('/:wallet/creditsAvailable', (req, res) => {
+    try {
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        res.write('event: credits_available_success\n');
+        res.write(`data: ${Math.random().toString()}\n\n`);
+        res.write(`id: ${nanoid()}\n`);
+    } catch (error) {
+        logger('Credits Available failed: %O', error);
+        captureException(error, {
+            extra: {
+                message: 'Credits Available failed',
+            },
+            tags: { scope: 'credits_available' },
+        });
+
+        res.write('event: credits_available_error\n');
+        res.write(`data: ${error}\n\n`);
+        res.write(`id: ${nanoid()}\n`);
+    } finally {
+        res.end();
+    }
+});
+
 export { route };
