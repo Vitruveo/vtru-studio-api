@@ -130,7 +130,7 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
 export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
     assets()
         .aggregate([
-            { $unwind: '$assetMetadata.creators.formData.name' },
+            { $unwind: '$assetMetadata.creators.formData' },
             {
                 $match: {
                     'assetMetadata.creators.formData.name': {
