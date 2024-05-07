@@ -13,6 +13,7 @@ import {
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
+// TODO: ALTERAR A FORMA DE BUSCA DE ASSETS E FILTRAR
 route.get('/search', async (req, res) => {
     try {
         const {
@@ -20,6 +21,8 @@ route.get('/search', async (req, res) => {
             sort,
             page = 1,
             limit = 10,
+            minPrice,
+            maxPrice,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -40,6 +43,42 @@ route.get('/search', async (req, res) => {
             $exists: true,
             $ne: null,
         };
+
+        const numberOfEditions = query['licenses.nft.elastic.numberOfEditions'];
+
+        if (numberOfEditions) {
+            query['licenses.nft.elastic.numberOfEditions'] = {
+                $lte: Number(numberOfEditions),
+            };
+        }
+
+        if (maxPrice && minPrice) {
+            query.$or = [
+                {
+                    'licenses.nft.elastic.editionPrice': {
+                        $gte: Number(minPrice),
+                        $lte: Number(maxPrice),
+                    },
+                    'licenses.nft.editionOption': 'elastic',
+                },
+                {
+                    'licenses.nft.single.editionPrice': {
+                        $gte: Number(minPrice),
+                        $lte: Number(maxPrice),
+                    },
+                    'licenses.nft.editionOption': 'single',
+                },
+                {
+                    'licenses.nft.unlimited.editionPrice': {
+                        $gte: Number(minPrice),
+                        $lte: Number(maxPrice),
+                    },
+                    'licenses.nft.editionOption': 'unlimited',
+                }
+            ];
+        }
+
+        logger(query);
 
         const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
