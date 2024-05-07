@@ -13,18 +13,19 @@ import {
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
-// TODO: ALTERAR A FORMA DE BUSCA DE ASSETS E FILTRAR
+// TODO: ALTERAR COMPLETAMENTE FORMA DE BUSCA DE ASSETS E FILTRAR
 route.get('/search', async (req, res) => {
     try {
         const {
-            query = {},
-            sort,
+            query = {} as any,
             page = 1,
             limit = 10,
             minPrice,
             maxPrice,
+            name,
+            sort,
         } = req.query as unknown as QueryPaginatedParams;
-
+        
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
 
@@ -53,32 +54,43 @@ route.get('/search', async (req, res) => {
         }
 
         if (maxPrice && minPrice) {
-            query.$or = [
+            query.$and = [
                 {
-                    'licenses.nft.elastic.editionPrice': {
-                        $gte: Number(minPrice),
-                        $lte: Number(maxPrice),
-                    },
-                    'licenses.nft.editionOption': 'elastic',
+                    $or: [
+                        {
+                            'licenses.nft.elastic.editionPrice': {
+                                $gte: Number(minPrice),
+                                $lte: Number(maxPrice),
+                            },
+                            'licenses.nft.editionOption': 'elastic',
+                        },
+                        {
+                            'licenses.nft.single.editionPrice': {
+                                $gte: Number(minPrice),
+                                $lte: Number(maxPrice),
+                            },
+                            'licenses.nft.editionOption': 'single',
+                        },
+                        {
+                            'licenses.nft.unlimited.editionPrice': {
+                                $gte: Number(minPrice),
+                                $lte: Number(maxPrice),
+                            },
+                            'licenses.nft.editionOption': 'unlimited',
+                        },
+                    ],
                 },
-                {
-                    'licenses.nft.single.editionPrice': {
-                        $gte: Number(minPrice),
-                        $lte: Number(maxPrice),
-                    },
-                    'licenses.nft.editionOption': 'single',
-                },
-                {
-                    'licenses.nft.unlimited.editionPrice': {
-                        $gte: Number(minPrice),
-                        $lte: Number(maxPrice),
-                    },
-                    'licenses.nft.editionOption': 'unlimited',
-                }
             ];
-        }
 
-        logger(query);
+            if (name) {
+                query.$and.push({
+                    '$or': [
+                        { 'assetMetadata.context.formData.title': { $regex: name, $options: 'i' } },
+                        { 'assetMetadata.context.formData.description': { $regex: name, $options: 'i' } },
+                    ]
+                })
+            }
+        }
 
         const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
