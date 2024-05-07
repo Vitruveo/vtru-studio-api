@@ -13,7 +13,10 @@ export interface FindAssetsParams {
 }
 
 export interface FindAssetsPaginatedParams {
-    query: Record<string, unknown>;
+    query: {
+        [key: string]: unknown;
+        _id?: { $in: string[] | ObjectId[] };
+    };
     sort: any;
     skip: number;
     limit: number;

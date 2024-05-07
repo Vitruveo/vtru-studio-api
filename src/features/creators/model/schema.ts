@@ -43,6 +43,26 @@ export const CreatorSchema = z.object({
             location: z.string().nullable().default(null),
         })
         .default({}),
+    socials: z
+        .object({
+            x: z.object({
+                name: z.string().nullable().default(null),
+                avatar: z.string().nullable().default(null),
+            }),
+            facebook: z.object({
+                name: z.string().nullable().default(null),
+                avatar: z.string().nullable().default(null),
+            }),
+            google: z.object({
+                name: z.string().nullable().default(null),
+                avatar: z.string().nullable().default(null),
+            }),
+        })
+        .default({
+            x: { name: null, avatar: null },
+            facebook: { name: null, avatar: null },
+            google: { name: null, avatar: null },
+        }),
     roles: z.array(z.string()).default([]),
     walletDefault: z.string().default(''),
     vault: z
@@ -54,6 +74,16 @@ export const CreatorSchema = z.object({
             transactionHash: null,
             createdAt: null,
         }),
+    videoGallery: z
+        .array(
+            z.object({
+                url: z.string(),
+                createdAt: z.date().default(new Date()),
+                thumbnail: z.string().nullable().default(null),
+                title: z.string().default(''),
+            })
+        )
+        .default([]),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),

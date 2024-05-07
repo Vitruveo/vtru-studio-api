@@ -54,8 +54,10 @@ export const schemaAssetUpdateStatus = z.object({
     status: z.enum(['active', 'blocked']),
 });
 
-export const schemaValidationForMakeVideo = z.object({
-    artworks: z.array(z.string()),
+export const schemaValidationForVideoGallery = z.object({
+    artworks: z.array(z.string()).max(15),
+    title: z.string().default(''),
+    sound: z.string(),
 });
 
 export const schemaAssetUpload = z.object({
@@ -174,6 +176,7 @@ export const schemaLicenses = z.object({
                 numberOfEditions: z.number(),
                 totalPrice: z.number(),
                 editionDiscount: z.boolean(),
+                availableLicenses: z.number().min(1).default(1),
             }),
             single: z.object({
                 editionPrice: z.number(),
@@ -191,11 +194,13 @@ export const schemaLicenses = z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number().min(1).default(1),
         }),
         remix: z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number().min(1).default(1),
         }),
     }),
     framework: z.object({
@@ -399,16 +404,6 @@ export const schemaC2pa = z.object({
 
 export const schemaIpfs = z.object({
     ipfs: z.object({
-        original: z.string(),
-        display: z.string(),
-        exhibition: z.string(),
-        preview: z.string(),
-        print: z.string().nullable().default(null),
-        arImage: z.string().nullable().default(null),
-        arVideo: z.string().nullable().default(null),
-        btsImage: z.string().nullable().default(null),
-        btsVideo: z.string().nullable().default(null),
-        codeZip: z.string().nullable().default(null),
         finishedAt: z
             .string()
             .refine((value) => !Number.isNaN(Date.parse(value)), {

@@ -5,3 +5,4 @@ export * as creators from './creators';
 export * as assets from './assets';
 export * as allowList from './allowList';
 export * as waitingList from './waitingList';
+export * as upload from './upload';

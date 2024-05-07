@@ -2,7 +2,7 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
-import * as modelCreator from '../../creators/model';
+import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
 import {
     QueryCollectionParams,
@@ -13,15 +13,19 @@ import {
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
+// TODO: ALTERAR COMPLETAMENTE FORMA DE BUSCA DE ASSETS E FILTRAR
 route.get('/search', async (req, res) => {
     try {
         const {
-            query = {},
-            sort,
+            query = {} as any,
             page = 1,
             limit = 10,
+            minPrice,
+            maxPrice,
+            name,
+            sort,
         } = req.query as unknown as QueryPaginatedParams;
-
+        
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
 
@@ -40,6 +44,53 @@ route.get('/search', async (req, res) => {
             $exists: true,
             $ne: null,
         };
+
+        const numberOfEditions = query['licenses.nft.elastic.numberOfEditions'];
+
+        if (numberOfEditions) {
+            query['licenses.nft.elastic.numberOfEditions'] = {
+                $lte: Number(numberOfEditions),
+            };
+        }
+
+        if (maxPrice && minPrice) {
+            query.$and = [
+                {
+                    $or: [
+                        {
+                            'licenses.nft.elastic.editionPrice': {
+                                $gte: Number(minPrice),
+                                $lte: Number(maxPrice),
+                            },
+                            'licenses.nft.editionOption': 'elastic',
+                        },
+                        {
+                            'licenses.nft.single.editionPrice': {
+                                $gte: Number(minPrice),
+                                $lte: Number(maxPrice),
+                            },
+                            'licenses.nft.editionOption': 'single',
+                        },
+                        {
+                            'licenses.nft.unlimited.editionPrice': {
+                                $gte: Number(minPrice),
+                                $lte: Number(maxPrice),
+                            },
+                            'licenses.nft.editionOption': 'unlimited',
+                        },
+                    ],
+                },
+            ];
+
+            if (name) {
+                query.$and.push({
+                    '$or': [
+                        { 'assetMetadata.context.formData.title': { $regex: name, $options: 'i' } },
+                        { 'assetMetadata.context.formData.description': { $regex: name, $options: 'i' } },
+                    ]
+                })
+            }
+        }
 
         const total = await model.countAssets({ query });
         const totalPage = Math.ceil(total / limitNumber);
@@ -139,6 +190,38 @@ route.get('/subjects', async (req, res) => {
     }
 });
 
+route.get('/creators', async (req, res) => {
+    try {
+        const { name } = req.query as unknown as QueryCollectionParams;
+
+        if (name.trim().length < 3) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.creators.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const creators = await creatorModel.findCreatorsByName({ name });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.creators.success',
+            message: 'Reader creators success',
+            transaction: nanoid(),
+            data: creators,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader creators failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.creators.failed',
+            message: `Reader creators failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -153,7 +236,7 @@ route.get('/:id', async (req, res) => {
             return;
         }
 
-        const creatorId = await asset.framework.createdBy;
+        const creatorId = asset.framework.createdBy;
 
         if (!creatorId) {
             res.status(404).json({
@@ -164,7 +247,7 @@ route.get('/:id', async (req, res) => {
             return;
         }
 
-        const creator = await modelCreator.findCreatorById({ id: creatorId });
+        const creator = await creatorModel.findCreatorById({ id: creatorId });
 
         if (!creator) {
             res.status(404).json({

@@ -93,7 +93,7 @@ export const AssetsSchema = z.object({
             license: z.string(),
             elastic: z.object({
                 editionPrice: z.number(),
-                numberOfEditions: z.number(),
+                numberOfEditions: z.number(), // TODO: CHANGE numberOfEditions TO availableLicenses
                 totalPrice: z.number(),
                 editionDiscount: z.boolean(),
             }),
@@ -113,11 +113,13 @@ export const AssetsSchema = z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number(),
         }),
         remix: z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            availableLicenses: z.number(),
         }),
     }),
     assetMetadata: z.object({
@@ -130,6 +132,15 @@ export const AssetsSchema = z.object({
                 tags: z.array(z.string()),
             }),
         }),
+        creators: z
+            .object({
+                formData: z.array(
+                    z.object({
+                        name: z.string(),
+                    })
+                ),
+            })
+            .default({ formData: [] }),
     }),
     isOriginal: z.boolean().default(false),
     generatedArtworkAI: z.boolean().default(false),
@@ -138,17 +149,13 @@ export const AssetsSchema = z.object({
     consignArtwork: z
         .object({
             status: z.enum(['draft', 'preview', 'active', 'hidden', 'locked']),
-            artworkListing: z.date().nullable().default(null),
-            creatorWallet: z.string().nullable().default(null),
-            creatorCredits: z.number().nullable().default(null),
-            creatorContract: z.date().nullable().default(null),
+            listing: z.string().nullable().default(null),
+            wallet: z.string().nullable().default(null),
         })
         .default({
             status: 'draft',
-            artworkListing: null,
-            creatorWallet: null,
-            creatorCredits: null,
-            creatorContract: null,
+            listing: null,
+            wallet: null,
         }),
     c2pa: z.object({
         finishedAt: z.date().nullable().default(null),

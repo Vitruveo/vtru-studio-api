@@ -16,7 +16,7 @@ const logger = debug('core');
 
 logger('Starting API');
 
-// the unique point of code who knows about all features
+// the unique point of code who knows about all features.
 app.use(features.users.controller.router);
 app.use(features.roles.controller.router);
 app.use(features.permissions.controller.router);
@@ -24,3 +24,4 @@ app.use(features.creators.controller.router);
 app.use(features.assets.controller.router);
 app.use(features.allowList.controller.router);
 app.use(features.waitingList.controller.router);
+app.use(features.upload.controller.router);

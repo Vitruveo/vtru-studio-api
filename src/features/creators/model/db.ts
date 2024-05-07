@@ -13,6 +13,10 @@ import type {
     AddEmailCreatorParams,
     UpdateAvatarParams,
     CheckWalletExistsParams,
+    AddVideoToGalleryParams,
+    FindCreatorsByName,
+    UpdateCreatorSocialById,
+    RemoveCreatorSocialById,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -154,3 +158,76 @@ export const checkWalletExists = async ({
     const result = await creators().countDocuments({ wallets: { address } });
     return !!result;
 };
+
+export const addToVideoGallery = ({
+    id,
+    url,
+    thumbnail,
+    title,
+}: AddVideoToGalleryParams) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $push: {
+                videoGallery: {
+                    url,
+                    createdAt: new Date(),
+                    thumbnail,
+                    title,
+                },
+            },
+        }
+    );
+
+export const updateCreatorSocialById = ({
+    id,
+    key,
+    value,
+}: UpdateCreatorSocialById) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $set: {
+                [`socials.${key}`]: value,
+            },
+        }
+    );
+
+export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $unset: {
+                [`socials.${key}`]: '',
+            },
+        }
+    );
+
+export const findCreatorsByName = ({ name }: FindCreatorsByName) =>
+    creators()
+        .aggregate([
+            {
+                $match: {
+                    username: {
+                        $regex: new RegExp(name, 'i'),
+                    },
+                },
+            },
+            {
+                $unwind: '$username',
+            },
+            {
+                $group: {
+                    _id: '$username',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
+                    count: 1,
+                },
+            },
+        ])
+        .toArray();

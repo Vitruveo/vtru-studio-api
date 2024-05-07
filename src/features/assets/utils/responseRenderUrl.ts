@@ -6,6 +6,8 @@ export interface ResponseRenderUrlParams {
     title: string;
     description: string;
     image: string;
+    video: string;
+    thumbnail: string;
 }
 
 const frontURL = STORE_URL;
@@ -17,6 +19,8 @@ export const responseRenderUrl = ({
     title,
     description,
     image,
+    video,
+    thumbnail,
 }: ResponseRenderUrlParams) => `
     <!DOCTYPE html>
     <html lang="en">
@@ -39,7 +43,12 @@ export const responseRenderUrl = ({
             <meta property="twitter:url" content="${frontURL}/${creatorName}/${assetId}/${Date.now()}">
             <meta name="twitter:title" content="${title}">
             <meta name="twitter:description" content="${description}">
-            <meta name="twitter:image" content="${awsURL}/${image}">
+            <meta name="twitter:player" content="${awsURL}/${video}" />
+            <meta name="twitter:player:width" content="480" />
+            <meta name="twitter:player:height" content="480" />
+            <meta name="twitter:image" content="${awsURL}/${
+                video ? thumbnail : image
+            }">
         </head>
         <body>
         </body>

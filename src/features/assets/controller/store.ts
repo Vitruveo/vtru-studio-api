@@ -7,6 +7,7 @@ import { APIResponse, ObjectId, captureException } from '../../../services';
 import { responseRenderUrl } from '../utils/responseRenderUrl';
 import { MAIL_SENDGRID_TEMPLATE_MINT } from '../../../constants';
 import { sendToExchangeMail } from '../../../services/mail';
+import { videoExtension } from '../utils/videoExtensions';
 
 const logger = debug('features:assets:controller:store');
 const route = Router();
@@ -24,12 +25,19 @@ route.get('/:id/html', async (req, res) => {
             return;
         }
 
+        const assetPath = asset.formats.preview?.path;
+        const thumbnail = assetPath?.replace(/\.(?=[^.]*$)/, '_thumb.');
+
+        const isVideo = videoExtension.some((ext) => assetPath?.endsWith(ext));
+
         const html = responseRenderUrl({
             creatorName: asset.framework.createdBy || '',
             assetId: asset._id.toString(),
             title: asset.assetMetadata.context.formData.title,
             description: asset.assetMetadata.context.formData.description,
-            image: asset.formats.preview?.path || '',
+            image: assetPath || '',
+            thumbnail: thumbnail || '',
+            video: isVideo ? assetPath || '' : '',
         });
 
         res.send(html);
