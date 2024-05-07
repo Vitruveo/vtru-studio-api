@@ -50,20 +50,16 @@ export const findAssetsPaginated = async ({
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
 
-export const findAssetsCollections = async ({
-    name,
-}: FindAssetsCollectionsParams) =>
+export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
     assets()
         .aggregate([
+            { $unwind: '$assetMetadata.taxonomy.formData.collections' },
             {
                 $match: {
                     'assetMetadata.taxonomy.formData.collections': {
-                        $regex: new RegExp(name, 'i'),
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
                 },
-            },
-            {
-                $unwind: '$assetMetadata.taxonomy.formData.collections',
             },
             {
                 $group: {
@@ -78,21 +74,20 @@ export const findAssetsCollections = async ({
                     count: 1,
                 },
             },
+            { $sort: { count: -1, collection: 1 } },
         ])
         .toArray();
 
-export const findAssetsSubjects = async ({ name }: FindAssetsSubjectsParams) =>
+export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
     assets()
         .aggregate([
+            { $unwind: '$assetMetadata.taxonomy.formData.subject' },
             {
                 $match: {
                     'assetMetadata.taxonomy.formData.subject': {
-                        $regex: new RegExp(name, 'i'),
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
                 },
-            },
-            {
-                $unwind: '$assetMetadata.taxonomy.formData.subject',
             },
             {
                 $group: {

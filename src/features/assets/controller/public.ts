@@ -39,6 +39,10 @@ route.get('/search', async (req, res) => {
         }
 
         query['consignArtwork.status'] = 'active';
+        query['contractExplorer.explorer'] = {
+            $exists: true,
+            $ne: '',
+        };
         query['licenses.nft.added'] = true;
         query['formats.preview.path'] = {
             $exists: true,
