@@ -88,7 +88,10 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
         await model.addToVideoGallery({
             id: req.auth.id,
             url: response.url,
-            thumbnail: response.data.timeline.tracks[0].clips[0].asset.src,
+            thumbnail:
+                response.data.timeline.tracks[
+                    response.data.timeline.tracks.length - 1
+                ].clips[0].asset.src,
             title,
         });
 
