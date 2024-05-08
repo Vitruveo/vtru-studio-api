@@ -108,19 +108,26 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             await sendToExchangeMail(payload);
         }
 
-        const payload = JSON.stringify({
-            assets: assets.map((asset) => ({
-                artist: asset.assetMetadata.creators.formData[0].name ?? '',
-                title: asset.assetMetadata.context.formData.title ?? '',
-                description:
-                    asset.assetMetadata.context.formData.description ?? '',
-                url: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
-            })),
-            title,
-            sound,
-            url: response.url,
-        });
-        await sendToExchangeRSS(payload, 'video');
+        try {
+            const payload = JSON.stringify({
+                title,
+                sound,
+                url: response.url,
+                assets: assets.map((asset) => ({
+                    artist:
+                        asset?.assetMetadata?.creators?.formData[0]?.name ?? '',
+                    title: asset?.assetMetadata?.context?.formData?.title ?? '',
+                    description:
+                        asset?.mediaAuxiliary?.description ||
+                        asset?.assetMetadata?.context?.formData?.description ||
+                        '',
+                    url: `${ASSET_STORAGE_URL}/${asset?.formats?.preview?.path}`,
+                })),
+            });
+            await sendToExchangeRSS(payload, 'video');
+        } catch (error) {
+            logger('RSS video failed: %O', error);
+        }
 
         res.json({
             code: 'vitruveo.studio.api.assets.makeVideo.success',
