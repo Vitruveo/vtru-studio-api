@@ -1,10 +1,11 @@
+import { Sort } from 'mongodb';
 import { model } from '..';
 
 export interface QueryPaginatedParams {
     query: Record<string, unknown>;
     page: number;
     limit: number;
-    sort: any;
+    sort: Sort;
     minPrice: number;
     maxPrice: number;
     name?: string;
