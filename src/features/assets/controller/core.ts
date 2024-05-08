@@ -1,6 +1,5 @@
 import debug from 'debug';
 import fs from 'fs/promises';
-import sharp from 'sharp';
 import { join, parse } from 'path';
 import { customAlphabet, nanoid } from 'nanoid';
 import { Request, Router } from 'express';
@@ -463,8 +462,10 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: file downloaded\n\n`);
 
+        const sharp = await import('sharp');
+
         // resize image  down
-        const buffer = await sharp(filename).resize(100).toBuffer();
+        const buffer = await sharp.default(filename).resize(100).toBuffer();
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: file resized\n\n`);
