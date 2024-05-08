@@ -47,8 +47,14 @@ export const findAssetsPaginated = async ({
                 $addFields: {
                     'licenses.nft.availableLicenses': {
                         $ifNull: ['$licenses.nft.availableLicenses', 1],
-                    }
+                    },
                 }
+            },
+            {
+                $skip: skip,
+            },
+            {
+                $limit: limit
             },
             {
                 $sort: {
@@ -56,8 +62,6 @@ export const findAssetsPaginated = async ({
                 },
             },
         ])
-        .skip(skip)
-        .limit(limit)
         .toArray();
 };
 
