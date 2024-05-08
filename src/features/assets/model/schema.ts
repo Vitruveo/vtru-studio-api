@@ -48,6 +48,7 @@ export const AssetsSchema = z.object({
             .default(null),
     }),
     mediaAuxiliary: z.object({
+        description: z.string().default(''),
         formats: z.object({
             arImage: z
                 .object({

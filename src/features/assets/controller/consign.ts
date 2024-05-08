@@ -8,7 +8,7 @@ import { createConsign } from '../../../services/web3/consign';
 import { captureException } from '../../../services';
 import { middleware } from '../../users';
 import { sendToExchangeRSS } from '../../../services/rss';
-import { ASSET_STORAGE_URL } from '../../../constants';
+import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
 
 const logger = debug('features:assets:controller:consign');
 const route = Router();
@@ -215,17 +215,26 @@ route.post('/', async (req, res) => {
         await Promise.all(
             Object.entries(asset.licenses).map(([key, license]) => {
                 if (license.added) {
-                    const payload = JSON.stringify({
-                        license: key,
-                        title: asset.assetMetadata.context.formData.title,
-                        url: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
-                        creator: asset.assetMetadata.creators.formData[0].name,
-                    });
-                    sendToExchangeRSS(payload, 'consign').then(() => {
-                        res.write(`event: rss_print\n`);
-                        res.write(`id: ${nanoid()}\n`);
-                        res.write(`data: ${payload}\n\n`);
-                    });
+                    try {
+                        const payload = JSON.stringify({
+                            license: key,
+                            title: asset.assetMetadata.context.formData.title,
+                            url: `${STORE_URL}/${
+                                creator.username
+                            }/${asset._id.toString()}/${Date.now()}`,
+                            creator:
+                                asset.assetMetadata.creators.formData[0].name,
+                            image: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
+                            description: asset.mediaAuxiliary.description,
+                        });
+                        sendToExchangeRSS(payload, 'consign').then(() => {
+                            res.write(`event: rss_print\n`);
+                            res.write(`id: ${nanoid()}\n`);
+                            res.write(`data: ${payload}\n\n`);
+                        });
+                    } catch (error) {
+                        logger(`RSS ${key} failed: %O`, error);
+                    }
                 }
                 return license;
             })
