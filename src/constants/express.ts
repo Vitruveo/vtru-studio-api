@@ -7,4 +7,4 @@ export const EXPRESS_START_DELAY = process.env.EXPRESS_START_DELAY
 export const EXPRESS_MULTER_MAX_FILE_SIZE = process.env
     .EXPRESS_MULTER_MAX_FILE_SIZE
     ? parseInt(process.env.EXPRESS_MULTER_MAX_FILE_SIZE, 10)
-    : 1024 * 1024 * 10;
+    : 1024 * 1024 * 15;
