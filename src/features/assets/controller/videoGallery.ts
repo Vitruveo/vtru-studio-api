@@ -117,7 +117,10 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
                     artist:
                         asset?.assetMetadata?.creators?.formData[0]?.name ?? '',
                     title: asset?.assetMetadata?.context?.formData?.title ?? '',
-                    description: asset?.mediaAuxiliary?.description ?? '',
+                    description:
+                        asset?.mediaAuxiliary?.description ||
+                        asset?.assetMetadata?.context?.formData?.description ||
+                        '',
                     url: `${ASSET_STORAGE_URL}/${asset?.formats?.preview?.path}`,
                 })),
             });

@@ -225,7 +225,10 @@ route.post('/', async (req, res) => {
                             creator:
                                 asset.assetMetadata.creators.formData[0].name,
                             image: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
-                            description: asset.mediaAuxiliary.description,
+                            description:
+                                asset?.mediaAuxiliary?.description ||
+                                asset.assetMetadata.context.formData
+                                    .description,
                         });
                         sendToExchangeRSS(payload, 'consign').then(() => {
                             res.write(`event: rss_print\n`);
