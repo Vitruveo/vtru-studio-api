@@ -44,10 +44,13 @@ route.post('/', async (req, res) => {
         if (!asset) throw new Error('asset_not_found');
 
         if (asset.contractExplorer?.explorer) {
-            res.write(`event: consign_already_done\n`);
+            res.write(`event: consign_success\n`);
             res.write(`id: ${nanoid()}\n`);
             res.write(
-                `data: asset ${asset._id} already has a consign ${asset.contractExplorer.explorer}\n\n`
+                `data: ${JSON.stringify({
+                    transactionHash: asset.contractExplorer.explorer,
+                    assetId: asset.assetRefId,
+                })}\n\n`
             );
 
             return;
