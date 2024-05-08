@@ -184,7 +184,7 @@ export const schemaLicenses = z.object({
                 editionPrice: z.number(),
             }),
             editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
-            availableLicenses: z.number().min(0).nullable() // NOTE: ESSE CAMPO É NULLABLE POR CONTA DA MIGRAÇÃO DE DADOS DO SEARCH
+            availableLicenses: z.number().min(0).nullable(), // NOTE: ESSE CAMPO É NULLABLE POR CONTA DA MIGRAÇÃO DE DADOS DO SEARCH.
         }),
         stream: z.object({
             version: z.string(),
