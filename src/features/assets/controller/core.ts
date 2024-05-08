@@ -1,7 +1,7 @@
 import debug from 'debug';
 import fs from 'fs/promises';
-import { join } from 'path';
-import { nanoid } from 'nanoid';
+import { join, parse } from 'path';
+import { customAlphabet, nanoid } from 'nanoid';
 import { Request, Router } from 'express';
 import * as model from '../model';
 import { middleware } from '../../users';
@@ -25,12 +25,14 @@ import {
     validateBodyForUpdateStep,
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
-import { download } from '../../../services/aws';
-import { hadleExtractColor } from '../../../services/extractColor';
-import { ASSET_STORAGE_NAME, ASSET_TEMP_DIR } from '../../../constants';
+import { handleExtractColor } from '../../../services/extractColor';
+import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
+import { download } from '../../../services/stream';
 
 const logger = debug('features:assets:controller');
 const route = Router();
+
+const tempFilename = customAlphabet('1234567890abcdefg', 10);
 
 route.use(middleware.checkAuth);
 
@@ -412,6 +414,7 @@ route.post('/request/upload', async (req, res) => {
 });
 
 route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
+    const files: Record<string, string> = {};
     try {
         res.set('Content-Type', 'text/event-stream');
         res.set('Cache-Control', 'no-cache');
@@ -440,15 +443,23 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
         res.write(`data: values are being processed\n\n`);
 
         const { path } = asset.formats.original;
-        const filename = join(ASSET_TEMP_DIR, path);
 
-        await download({ key: path, bucket: ASSET_STORAGE_NAME, fileName: path  });
+        const url = `${ASSET_STORAGE_URL}/${path}`;
+        const parsedPath = parse(path);
+
+        const filename = join(
+            ASSET_TEMP_DIR,
+            `${tempFilename()}${parsedPath.ext}`
+        );
+
+        await download({ path: filename, url });
+        files[filename] = filename;
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: file downloaded\n\n`);
 
-        const colors = await hadleExtractColor({ filename });
+        const colors = await handleExtractColor({ filename });
 
         res.write(`event: extract_color_success\n`);
         res.write(`id: ${nanoid()}\n`);
@@ -460,21 +471,12 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: ${error}\n\n`);
     } finally {
-        try {
-            const asset = await model.findAssetsById({ id: req.params.id });
-            if (asset?.formats.original?.path) {
-                const filename = join(
-                    ASSET_TEMP_DIR,
-                    asset.formats.original.path
-                );
-                await fs.unlink(filename);
-                logger('File deleted: %s', filename);
-            }
-        } catch (error) {
-            logger('Delete file failed: %O', error);
-        } finally {
-            res.end();
-        }
+        await Promise.all(
+            Object.values(files).map((fileName) =>
+                fs.unlink(fileName).catch(() => {})
+            )
+        );
+        res.end();
     }
 });
 

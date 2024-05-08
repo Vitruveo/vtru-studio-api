@@ -64,6 +64,6 @@ export const uploadToIPFS = async ({
         throw error;
     } finally {
         // delete file
-        await promises.unlink(fileName);
+        promises.unlink(fileName).catch(() => {});
     }
 };

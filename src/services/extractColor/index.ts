@@ -8,11 +8,11 @@ interface HandleExtractColorParams {
     filename: string;
 }
 
-export const hadleExtractColor = ({ filename }: HandleExtractColorParams) =>
+export const handleExtractColor = ({ filename }: HandleExtractColorParams) =>
     new Promise((resolve, reject) => {
         getPixels(filename, async (error, pixels) => {
             if (error) {
-                logger('Error:', error);
+                logger('Error:', error, filename);
                 reject(error);
             }
 
