@@ -7,6 +7,7 @@ import {
     DEFAULT_AVATAR_URL,
     GENERAL_STORAGE_URL,
     MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY,
+    STORE_URL,
 } from '../../../constants';
 import { APIResponse } from '../../../services';
 import { generateVideo } from '../../../services/shortstack';
@@ -77,6 +78,13 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
                             '',
                         title:
                             asset.assetMetadata.context?.formData?.title ?? '',
+                        _id: asset._id,
+                        username: item?.username ?? '',
+                        description:
+                            asset.mediaAuxiliary?.description ??
+                            asset.assetMetadata.context?.formData
+                                ?.description ??
+                            '',
                     }))
             )
         );
@@ -113,15 +121,13 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
                 title,
                 sound,
                 url: response.url,
-                assets: assets.map((asset) => ({
-                    artist:
-                        asset?.assetMetadata?.creators?.formData[0]?.name ?? '',
-                    title: asset?.assetMetadata?.context?.formData?.title ?? '',
-                    description:
-                        asset?.mediaAuxiliary?.description ||
-                        asset?.assetMetadata?.context?.formData?.description ||
-                        '',
-                    url: `${ASSET_STORAGE_URL}/${asset?.formats?.preview?.path}`,
+                assets: payloadArtwork.map((asset) => ({
+                    artist: asset.artistName,
+                    title: asset.title,
+                    description: asset.description,
+                    url: `${STORE_URL}/${asset.username}/${
+                        asset._id
+                    }/${Date.now()}`,
                 })),
             });
             await sendToExchangeRSS(payload, 'video');
