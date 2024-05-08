@@ -29,7 +29,6 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
 // recebendo _ids para filtrar os assets por _id e retornar os assets paginados
 export const findAssetsPaginated = async ({
     query,
-    sort,
     skip,
     limit,
 }: FindAssetsPaginatedParams) => {
@@ -40,8 +39,23 @@ export const findAssetsPaginated = async ({
     }
 
     return assets()
-        .find(parsedQuery, {})
-        .sort(sort)
+        .aggregate([
+            {
+                $match: query,
+            },
+            {
+                $addFields: {
+                    'licenses.nft.availableLicenses': {
+                        $ifNull: ['$licenses.nft.availableLicenses', 1],
+                    }
+                }
+            },
+            {
+                $sort: {
+                    'licenses.nft.availableLicenses': -1,
+                },
+            },
+        ])
         .skip(skip)
         .limit(limit)
         .toArray();
@@ -98,7 +112,7 @@ export const findMaxPrice = () =>
             { $limit: 1 },
         ])
         .toArray()
-        .then((result) => result.length > 0 ? result[0].maxPrice : null)
+        .then((result) => (result.length > 0 ? result[0].maxPrice : null));
 
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);

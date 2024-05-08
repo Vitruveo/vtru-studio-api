@@ -23,7 +23,7 @@ route.get('/search', async (req, res) => {
             minPrice,
             maxPrice,
             name,
-            sort,
+            sort
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -41,21 +41,12 @@ route.get('/search', async (req, res) => {
         query['consignArtwork.status'] = 'active';
         query['contractExplorer.explorer'] = {
             $exists: true,
-            $ne: '',
         };
         query['licenses.nft.added'] = true;
         query['formats.preview.path'] = {
             $exists: true,
             $ne: null,
         };
-
-        const numberOfEditions = query['licenses.nft.elastic.numberOfEditions'];
-
-        if (numberOfEditions) {
-            query['licenses.nft.elastic.numberOfEditions'] = {
-                $lte: Number(numberOfEditions),
-            };
-        }
 
         if (maxPrice && minPrice) {
             query.$and = [
