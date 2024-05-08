@@ -1,6 +1,8 @@
 import debug from 'debug';
-import { nanoid } from 'nanoid';
-import { Router } from 'express';
+import fs from 'fs/promises';
+import { join, parse } from 'path';
+import { customAlphabet, nanoid } from 'nanoid';
+import { Request, Router } from 'express';
 import * as model from '../model';
 import { middleware } from '../../users';
 import {
@@ -23,9 +25,14 @@ import {
     validateBodyForUpdateStep,
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
+import { handleExtractColor } from '../../../services/extractColor';
+import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
+import { download } from '../../../services/stream';
 
 const logger = debug('features:assets:controller');
 const route = Router();
+
+const tempFilename = customAlphabet('1234567890abcdefg', 10);
 
 route.use(middleware.checkAuth);
 
@@ -403,6 +410,89 @@ route.post('/request/upload', async (req, res) => {
             args: error,
             transaction: transactionApiId,
         } as APIResponse);
+    }
+});
+
+route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
+    const files: Record<string, string> = {};
+    try {
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        res.write(`event: start_processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: \n\n`);
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+        if (!asset) {
+            throw new Error('asset_not_found');
+        }
+
+        if (asset.framework.createdBy !== req.auth.id) {
+            throw new Error('creator_not_found');
+        }
+
+        if (!asset.formats?.original?.path) {
+            throw new Error('asset_file_not_found');
+        }
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: values are being processed\n\n`);
+
+        const { path } = asset.formats.original;
+
+        const url = `${ASSET_STORAGE_URL}/${path}`;
+        const parsedPath = parse(path);
+
+        // create temp dir
+        await fs.mkdir(ASSET_TEMP_DIR, { recursive: true });
+
+        const filename = join(
+            ASSET_TEMP_DIR,
+            `${tempFilename()}${parsedPath.ext}`
+        );
+
+        await download({ path: filename, url });
+        files[filename] = filename;
+
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: file downloaded\n\n`);
+
+        const sharp = await import('sharp');
+
+        // resize image  down
+        const buffer = await sharp.default(filename).resize(100).toBuffer();
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: file resized\n\n`);
+
+        await fs.writeFile(filename, buffer);
+        res.write(`event: processing\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: file writed\n\n`);
+
+        const colors = await handleExtractColor({ filename });
+
+        res.write(`event: extract_color_success\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${JSON.stringify(colors)}\n\n`);
+    } catch (error) {
+        logger('Extract color failed: %O', error);
+
+        res.write(`event: extract_color_error\n`);
+        res.write(`id: ${nanoid()}\n`);
+        res.write(`data: ${error}\n\n`);
+    } finally {
+        await Promise.all(
+            Object.values(files).map((fileName) =>
+                fs.unlink(fileName).catch(() => {})
+            )
+        );
+        res.end();
     }
 });
 

@@ -12,8 +12,11 @@ import type {
     FindAssetsPaginatedParams,
     CountAssetsParams,
     FindAssetsTagsParams,
+    FindAssetsCollectionsParams,
+    FindAssetsSubjectsParams,
+    FindAssetsByCreatorName,
 } from './types';
-import { getDb, ObjectId } from '../../../services/mongo';
+import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
@@ -23,16 +26,152 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
     return result;
 };
 
+// recebendo _ids para filtrar os assets por _id e retornar os assets paginados
 export const findAssetsPaginated = async ({
     query,
-    sort,
     skip,
     limit,
-}: FindAssetsPaginatedParams) =>
-    assets().find(query, {}).sort(sort).skip(skip).limit(limit).toArray();
+}: FindAssetsPaginatedParams) => {
+    const parsedQuery = { ...query };
+
+    if (parsedQuery._id && parsedQuery._id?.$in) {
+        parsedQuery._id.$in = parsedQuery._id.$in.map((id) => new ObjectId(id));
+    }
+
+    return assets()
+        .aggregate([
+            {
+                $match: query,
+            },
+            {
+                $addFields: {
+                    'licenses.nft.availableLicenses': {
+                        $ifNull: ['$licenses.nft.availableLicenses', 1],
+                    }
+                }
+            },
+            {
+                $sort: {
+                    'licenses.nft.availableLicenses': -1,
+                },
+            },
+        ])
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+};
+
+export const findMaxPrice = () =>
+    assets()
+        .aggregate([
+            {
+                $project: {
+                    maxPrice: {
+                        $max: [
+                            {
+                                $cond: {
+                                    if: {
+                                        $eq: [
+                                            '$licenses.nft.editionOption',
+                                            'elastic',
+                                        ],
+                                    },
+                                    then: '$licenses.nft.elastic.editionPrice',
+                                    else: 0,
+                                },
+                            },
+                            {
+                                $cond: {
+                                    if: {
+                                        $eq: [
+                                            '$licenses.nft.editionOption',
+                                            'single',
+                                        ],
+                                    },
+                                    then: '$licenses.nft.single.editionPrice',
+                                    else: 0,
+                                },
+                            },
+                            {
+                                $cond: {
+                                    if: {
+                                        $eq: [
+                                            '$licenses.nft.editionOption',
+                                            'unlimited',
+                                        ],
+                                    },
+                                    then: '$licenses.nft.unlimited.editionPrice',
+                                    else: 0,
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            { $sort: { maxPrice: -1 } },
+            { $limit: 1 },
+        ])
+        .toArray()
+        .then((result) => (result.length > 0 ? result[0].maxPrice : null));
 
 export const countAssets = async ({ query }: CountAssetsParams) =>
     assets().countDocuments(query);
+
+export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
+    assets()
+        .aggregate([
+            { $unwind: '$assetMetadata.taxonomy.formData.collections' },
+            {
+                $match: {
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$assetMetadata.taxonomy.formData.collections',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
+                    count: 1,
+                },
+            },
+            { $sort: { count: -1, collection: 1 } },
+        ])
+        .toArray();
+
+export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
+    assets()
+        .aggregate([
+            { $unwind: '$assetMetadata.taxonomy.formData.subject' },
+            {
+                $match: {
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$assetMetadata.taxonomy.formData.subject',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    subject: '$_id',
+                    count: 1,
+                },
+            },
+            { $sort: { count: -1, subject: 1 } },
+        ])
+        .toArray();
 
 export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
     assets()
@@ -52,6 +191,34 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
                     count: 1,
                 },
             },
+        ])
+        .toArray();
+
+export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
+    assets()
+        .aggregate([
+            { $unwind: '$assetMetadata.creators.formData' },
+            {
+                $match: {
+                    'assetMetadata.creators.formData.name': {
+                        $regex: new RegExp(`(^| )${name}`, 'i'),
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$assetMetadata.creators.formData.name',
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
+                    count: 1,
+                },
+            },
+            { $sort: { count: -1, collection: 1 } },
         ])
         .toArray();
 
@@ -93,6 +260,19 @@ export const updateAssets = async ({ id, asset }: UpdateAssetsParams) => {
     );
     return result;
 };
+
+export const findAssetsByPath = ({
+    path,
+    query,
+    options,
+}: {
+    path: string;
+    query: Record<string, any>;
+    options?: FindOptions;
+}) =>
+    assets()
+        .find({ [path]: query }, options)
+        .toArray();
 
 export const findAssetsCodeZipByPath = async ({ path }: { path: string }) => {
     const result = await assets().findOne({

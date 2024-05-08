@@ -1,3 +1,4 @@
+import { Sort } from 'mongodb';
 import { Assets, AssetsDocument } from './schema';
 import { ObjectId } from '../../../services';
 
@@ -13,14 +14,28 @@ export interface FindAssetsParams {
 }
 
 export interface FindAssetsPaginatedParams {
-    query: Record<string, unknown>;
-    sort: any;
+    query: {
+        [key: string]: unknown;
+        _id?: { $in: string[] | ObjectId[] };
+    };
+    sort: Sort;
     skip: number;
     limit: number;
 }
 
 export interface FindAssetsTagsParams {
     query: Record<string, unknown>;
+}
+export interface FindAssetsByCreatorName {
+    name: string;
+}
+
+export interface FindAssetsCollectionsParams {
+    name: string;
+}
+
+export interface FindAssetsSubjectsParams {
+    name: string;
 }
 export interface CountAssetsParams {
     query: Record<string, unknown>;

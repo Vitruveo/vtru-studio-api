@@ -7,6 +7,7 @@ import {
     InsertManyResult,
     UpdateResult,
     DeleteResult,
+    FindOptions,
 } from 'mongodb';
 import { MONGO_DATABASE, MONGO_URL } from '../../constants';
 import { captureException } from '../sentry';
@@ -53,4 +54,5 @@ export {
     InsertManyResult,
     UpdateResult,
     DeleteResult,
+    FindOptions,
 };

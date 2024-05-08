@@ -10,18 +10,15 @@ import {
     STUDIO_PRIVATE_KEY,
     TESTNET,
     TESTNET_RPC,
-} from '../../constants';
-import { retry } from '../../utils';
-import { captureException } from '../sentry';
+} from '../../../constants';
+import { retry } from '../../../utils';
+import { captureException } from '../../sentry';
 
 const logger = debug('services:contract');
 
 const isTestNet = TESTNET === 'true';
 const rpc = isTestNet ? TESTNET_RPC : MAINNET_RPC;
 const config = isTestNet ? testConfig : prodConfig;
-const explorer = isTestNet
-    ? 'https://test-explorer.vitruveo.xyz/'
-    : 'https://explorer.vitruveo.xyz/';
 
 export const delay = async ({ time }: { time: number }) =>
     new Promise((resolve) => {
@@ -30,7 +27,7 @@ export const delay = async ({ time }: { time: number }) =>
         }, time);
     });
 
-export const createContract = async ({
+export const createConsign = async ({
     header,
     creator,
     licenses,
@@ -64,8 +61,7 @@ export const createContract = async ({
 
         let assetId = -1;
         const response = {
-            explorer: '',
-            tx: '',
+            transactionHash: '',
             assetId,
         };
         // Get the event that was logged.
@@ -85,8 +81,7 @@ export const createContract = async ({
                     assetId = Number(latest.topics[1]);
                 }
 
-                response.explorer = `${explorer}tx/${latest?.transactionHash}`;
-                response.tx = latest?.transactionHash;
+                response.transactionHash = latest?.transactionHash;
                 response.assetId = assetId;
             }
         }
