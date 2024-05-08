@@ -447,6 +447,9 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
         const url = `${ASSET_STORAGE_URL}/${path}`;
         const parsedPath = parse(path);
 
+        // create temp dir
+        await fs.mkdir(ASSET_TEMP_DIR, { recursive: true });
+
         const filename = join(
             ASSET_TEMP_DIR,
             `${tempFilename()}${parsedPath.ext}`
