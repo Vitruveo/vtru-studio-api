@@ -19,6 +19,11 @@ uniqueExecution({
                     .watch([], { fullDocument: 'updateLookup' });
 
                 changeStream.on('change', (change) => {
+                    logger(
+                        'Change in assets: %O',
+                        JSON.stringify(change, null, 2)
+                    );
+
                     if (change.operationType === 'delete') {
                         // dispatch queue to remove asset from rss
                         sendToExchangeRSS(
