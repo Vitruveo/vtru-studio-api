@@ -19,11 +19,6 @@ uniqueExecution({
                     .watch([], { fullDocument: 'updateLookup' });
 
                 changeStream.on('change', (change) => {
-                    logger(
-                        'Change in assets: %O',
-                        JSON.stringify(change, null, 2)
-                    );
-
                     if (change.operationType === 'delete') {
                         // dispatch queue to remove asset from rss
                         sendToExchangeRSS(
@@ -34,7 +29,10 @@ uniqueExecution({
                         );
                     }
 
-                    if (change.operationType === 'replace') {
+                    if (
+                        change.operationType === 'replace' ||
+                        change.operationType === 'update'
+                    ) {
                         // check consign artwork status
                         if (
                             change.fullDocumentBeforeChange?.consignArtwork
