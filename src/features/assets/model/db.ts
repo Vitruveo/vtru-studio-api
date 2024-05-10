@@ -135,7 +135,11 @@ export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
             },
             {
                 $group: {
-                    _id: '$assetMetadata.taxonomy.formData.collections',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.collections',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },
@@ -163,7 +167,11 @@ export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
             },
             {
                 $group: {
-                    _id: '$assetMetadata.taxonomy.formData.subject',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.subject',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },
@@ -185,7 +193,11 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
             { $unwind: '$assetMetadata.taxonomy.formData.tags' },
             {
                 $group: {
-                    _id: '$assetMetadata.taxonomy.formData.tags',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.tags',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },
@@ -213,7 +225,11 @@ export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
             },
             {
                 $group: {
-                    _id: '$assetMetadata.creators.formData.name',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.creators.formData.name',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },
