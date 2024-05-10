@@ -17,6 +17,7 @@ import type {
     FindAssetsByCreatorName,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
+import { conditionsToShowAssets } from '../controller/public';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
@@ -48,13 +49,13 @@ export const findAssetsPaginated = async ({
                     'licenses.nft.availableLicenses': {
                         $ifNull: ['$licenses.nft.availableLicenses', 1],
                     },
-                }
+                },
             },
             {
                 $skip: skip,
             },
             {
-                $limit: limit
+                $limit: limit,
             },
             {
                 $sort: {
@@ -207,6 +208,7 @@ export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
                     'assetMetadata.creators.formData.name': {
                         $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
+                    ...conditionsToShowAssets,
                 },
             },
             {
