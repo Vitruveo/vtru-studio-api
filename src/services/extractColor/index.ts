@@ -8,7 +8,7 @@ interface HandleExtractColorParams {
     filename: string;
 }
 
-export const handleExtractColor = ({ filename }: HandleExtractColorParams) =>
+export const handleExtractColor = ({ filename }: HandleExtractColorParams): Promise<number[][]> =>
     new Promise((resolve, reject) => {
         getPixels(filename, async (error, pixels) => {
             if (error) {
@@ -21,7 +21,8 @@ export const handleExtractColor = ({ filename }: HandleExtractColorParams) =>
             const height = width;
 
             const response = await extractColors({ data, width, height });
+            const colors = response.map((item) => [item.red, item.green, item.blue]);
 
-            resolve(response.map((item) => item.hex));
+            resolve(colors);
         });
     });
