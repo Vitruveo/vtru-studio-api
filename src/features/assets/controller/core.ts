@@ -464,18 +464,25 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
 
         const sharp = await import('sharp');
 
-        // resize image  down
-        const buffer = await sharp.default(filename).resize(100).toBuffer();
+        // resize image  down and transform image jpeg
+        const buffer = await sharp
+            .default(filename)
+            .resize(100)
+            .jpeg({ quality: 80 })
+            .toBuffer();
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: file resized\n\n`);
 
-        await fs.writeFile(filename, buffer);
+        const newFilename = join(ASSET_TEMP_DIR, `${tempFilename()}.jpeg`);
+        files[newFilename] = newFilename;
+
+        await fs.writeFile(newFilename, buffer);
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: file writed\n\n`);
 
-        const colors = await handleExtractColor({ filename });
+        const colors = await handleExtractColor({ filename: newFilename });
 
         res.write(`event: extract_color_success\n`);
         res.write(`id: ${nanoid()}\n`);

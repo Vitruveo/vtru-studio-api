@@ -10,6 +10,19 @@ import {
     ResponseAssetsPaginated,
 } from './types';
 
+// this is used to filter assets that are not ready to be shown
+export const conditionsToShowAssets = {
+    'consignArtwork.status': 'active',
+    'contractExplorer.explorer': {
+        $exists: true,
+    },
+    'licenses.nft.added': true,
+    'formats.preview.path': {
+        $exists: true,
+        $ne: null,
+    },
+};
+
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
@@ -23,7 +36,7 @@ route.get('/search', async (req, res) => {
             minPrice,
             maxPrice,
             name,
-            sort
+            sort,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -38,18 +51,13 @@ route.get('/search', async (req, res) => {
             return;
         }
 
-        query['consignArtwork.status'] = 'active';
-        query['contractExplorer.explorer'] = {
-            $exists: true,
-        };
-        query['licenses.nft.added'] = true;
-        query['formats.preview.path'] = {
-            $exists: true,
-            $ne: null,
+        const parsedQuery = {
+            ...query,
+            ...conditionsToShowAssets,
         };
 
         if (maxPrice && minPrice) {
-            query.$and = [
+            parsedQuery.$and = [
                 {
                     $or: [
                         {
@@ -78,7 +86,7 @@ route.get('/search', async (req, res) => {
             ];
 
             if (name) {
-                query.$and.push({
+                parsedQuery.$and.push({
                     $or: [
                         {
                             'assetMetadata.context.formData.title': {
@@ -98,15 +106,15 @@ route.get('/search', async (req, res) => {
         }
 
         const maxAssetPrice = await model.findMaxPrice();
-        const total = await model.countAssets({ query });
+        const total = await model.countAssets({ query: parsedQuery });
         const totalPage = Math.ceil(total / limitNumber);
         const assets = await model.findAssetsPaginated({
-            query,
+            query: parsedQuery,
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
         });
-        const tags = await model.findAssetsTags({ query });
+        const tags = await model.findAssetsTags({ query: parsedQuery });
 
         res.json({
             code: 'vitruveo.studio.api.assets.search.success',

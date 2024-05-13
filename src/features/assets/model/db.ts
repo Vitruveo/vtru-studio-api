@@ -17,6 +17,7 @@ import type {
     FindAssetsByCreatorName,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
+import { conditionsToShowAssets } from '../controller/public';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
@@ -48,13 +49,13 @@ export const findAssetsPaginated = async ({
                     'licenses.nft.availableLicenses': {
                         $ifNull: ['$licenses.nft.availableLicenses', 1],
                     },
-                }
+                },
             },
             {
                 $skip: skip,
             },
             {
-                $limit: limit
+                $limit: limit,
             },
             {
                 $sort: {
@@ -134,7 +135,11 @@ export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
             },
             {
                 $group: {
-                    _id: '$assetMetadata.taxonomy.formData.collections',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.collections',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },
@@ -162,7 +167,11 @@ export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
             },
             {
                 $group: {
-                    _id: '$assetMetadata.taxonomy.formData.subject',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.subject',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },
@@ -184,7 +193,11 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
             { $unwind: '$assetMetadata.taxonomy.formData.tags' },
             {
                 $group: {
-                    _id: '$assetMetadata.taxonomy.formData.tags',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.tags',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },
@@ -207,11 +220,16 @@ export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
                     'assetMetadata.creators.formData.name': {
                         $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
+                    ...conditionsToShowAssets,
                 },
             },
             {
                 $group: {
-                    _id: '$assetMetadata.creators.formData.name',
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.creators.formData.name',
+                        },
+                    },
                     count: { $sum: 1 },
                 },
             },

@@ -221,6 +221,7 @@ route.post('/', async (req, res) => {
                     try {
                         const payload = JSON.stringify({
                             license: key,
+                            id: asset._id.toString(),
                             title: asset.assetMetadata.context.formData.title,
                             url: `${STORE_URL}/${
                                 creator.username
@@ -234,7 +235,7 @@ route.post('/', async (req, res) => {
                                     .description,
                         });
                         sendToExchangeRSS(payload, 'consign').then(() => {
-                            res.write(`event: rss_print\n`);
+                            res.write(`event: rss_${key}\n`);
                             res.write(`id: ${nanoid()}\n`);
                             res.write(`data: ${payload}\n\n`);
                         });
