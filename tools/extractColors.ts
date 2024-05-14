@@ -4,6 +4,7 @@
 
 import fs from 'fs/promises';
 import { join } from 'path';
+import { nanoid } from 'nanoid';
 import {
     AssetsDocument,
     COLLECTION_ASSETS,
@@ -28,12 +29,9 @@ const convertHEXtoRGB = (hex: string) => {
     ];
 };
 
-const updateAssetColors = async (
-    assetId: ObjectId | string,
-    colors: number[][]
-) => {
+const updateAssetColors = async (assetId: string, colors: number[][]) => {
     await assetsCollection().updateOne(
-        { _id: assetId },
+        { _id: new ObjectId(assetId) },
         { $set: { 'assetMetadata.context.formData.colors': colors } }
     );
 };
@@ -80,20 +78,30 @@ const bootstrap = async () => {
                         .jpeg({ quality: 80 })
                         .toBuffer();
 
-                    const resizedFilename = join(ASSET_TEMP_DIR, 'resized.jpg');
-                    fs.writeFile(resizedFilename, buffer);
+                    const resizedFilename = join(
+                        ASSET_TEMP_DIR,
+                        `${nanoid()}.jpg`
+                    );
+                    await fs.writeFile(resizedFilename, buffer);
 
                     console.log(`🌈 Extracting colors from asset ${asset._id}`);
                     const extractedColors = await handleExtractColor({
                         filename: resizedFilename,
                     });
-                    await updateAssetColors(asset._id, extractedColors);
+                    await updateAssetColors(
+                        asset._id.toString(),
+                        extractedColors
+                    );
 
                     await fs.unlink(resizedFilename).catch(() => {
-                        console.log(`🔴 Failed to unlink resized ${resizedFilename} from asset ${asset._id}`);
+                        console.log(
+                            `🔴 Failed to unlink resized ${resizedFilename} from asset ${asset._id}`
+                        );
                     });
                     await fs.unlink(filename).catch(() => {
-                        console.log(`🔴 Failed to unlink original image ${filename} from asset ${asset._id}`);
+                        console.log(
+                            `🔴 Failed to unlink original image ${filename} from asset ${asset._id}`
+                        );
                     });
                 } else {
                     console.log(
@@ -111,11 +119,13 @@ const bootstrap = async () => {
                     return color as number[];
                 });
 
+                // TODO: adicionar o extarct color para somar com as cores que ja tem
+
                 if (hasHEXColors) {
                     console.log(
                         `🔄 Updated asset ${asset._id} with RGB colors`
                     );
-                    await updateAssetColors(asset._id, rgbColors);
+                    await updateAssetColors(asset._id.toString(), rgbColors);
                 }
             }
             console.log(`✅ Asset ${asset._id} processed`);
