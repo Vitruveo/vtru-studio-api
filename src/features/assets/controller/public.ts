@@ -279,6 +279,7 @@ route.get('/:id', async (req, res) => {
             transaction: nanoid(),
             data: {
                 username: creator.username,
+                avatar: creator.profile.avatar,
             },
         } as APIResponse);
     } catch (error) {
