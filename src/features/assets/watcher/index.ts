@@ -5,6 +5,7 @@ import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
 import { captureException, getDb, ObjectId } from '../../../services';
 import { sendToExchangeRSS } from '../../../services/rss';
 import { exitWithDelay, retry } from '../../../utils';
+import { emitter } from '../emitter';
 
 const logger = debug('features:assets:watcher');
 
@@ -34,6 +35,27 @@ uniqueExecution({
                         change.operationType === 'replace' ||
                         change.operationType === 'update'
                     ) {
+                        // check if c2pa is finished
+                        if (change.fullDocument?.c2pa?.finishedAt) {
+                            emitter.emitterC2paSuccess(
+                                change.fullDocument.c2pa
+                            );
+                        }
+
+                        // check if ipfs is finished
+                        if (change.fullDocument?.ipfs?.finishedAt) {
+                            emitter.emitterIpfsSuccess(
+                                change.fullDocument.ipfs
+                            );
+                        }
+
+                        // check if consign is finished
+                        if (change.fullDocument?.contractExplorer?.finishedAt) {
+                            emitter.emitterConsignSuccess(
+                                change.fullDocument.contractExplorer
+                            );
+                        }
+
                         // check consign artwork status before is active and after is not active
                         if (
                             change.fullDocument?.consignArtwork?.status &&
@@ -72,7 +94,7 @@ uniqueExecution({
                             if (!creator) return;
 
                             await Promise.all(
-                                Object.entries(asset.licenses).map(
+                                Object.entries(asset?.licenses || {}).map(
                                     ([key, license]) => {
                                         if (license.added) {
                                             const payload = JSON.stringify({

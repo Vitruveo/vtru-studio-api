@@ -1,3 +1,4 @@
+import { uniqueExecution } from '@nsfilho/unique';
 import debug from 'debug';
 import {
     MongoClient,
@@ -26,6 +27,10 @@ const connect = async () => {
         logger(`Connecting to MongoDB: ${MONGO_URL}`);
         await client.connect();
         status.db = client.db(MONGO_DATABASE);
+
+        client.on('close', () => {
+            status.db = null;
+        });
     } catch (error) {
         logger('MongoDB connection error: %O', error);
         captureException(error);
@@ -37,14 +42,21 @@ const connect = async () => {
     }
 };
 
-connect();
-
 const getDb = () => {
     if (!status.db) {
         throw new Error('MongoDB not connected');
     }
     return status.db;
 };
+uniqueExecution({
+    name: __filename,
+    callback: () => connect(),
+    advanced: {
+        priority: 1,
+        delay: 0,
+        blockExecution: true,
+    },
+});
 
 export {
     client,

@@ -72,10 +72,9 @@ export const pushUserLoginHistory = async ({
     id,
     data,
 }: PushLoginHistoryParams) => {
-    const result = await users().updateOne(
-        { _id: new ObjectId(id) },
-        { $push: { 'login.loginHistory': data } }
-    );
+    const result = await users().updateOne({ _id: new ObjectId(id) }, {
+        $push: { 'login.loginHistory': data },
+    } as Record<string, unknown>);
     return result;
 };
 

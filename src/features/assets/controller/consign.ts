@@ -2,13 +2,17 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 
-import * as model from '../model';
-import * as modelCreator from '../../creators/model';
-import { createConsign } from '../../../services/web3/consign';
 import { captureException } from '../../../services';
 import { middleware } from '../../users';
-import { sendToExchangeRSS } from '../../../services/rss';
-import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
+
+import * as model from '../model';
+import {
+    C2PA_SUCCESS,
+    IPFS_SUCCESS,
+    CONSIGN_SUCCESS,
+    emitter,
+} from '../emitter';
+import { sendToExchangeConsign } from '../queue';
 
 const logger = debug('features:assets:controller:consign');
 const route = Router();
@@ -22,234 +26,68 @@ route.post('/', async (req, res) => {
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
-        res.write(`event: start_processing\n`);
-        res.write(`id: ${nanoid()}\n`);
-        res.write(`data: \n\n`);
-
-        const creator = await modelCreator.findCreatorById({ id: req.auth.id });
-
-        if (!creator) throw new Error('creator_not_found');
-
-        // TODO: Verificar se o creator tem walletDefault
-        // if (!creator.vault.transactionHash) throw new Error('vault_not_found');
-
-        res.write(`event: processing\n`);
-        res.write(`id: ${nanoid()}\n`);
-        res.write(`data: creator ${creator._id} is being processed\n\n`);
-
-        const asset = await model.findAssetCreatedBy({
-            id: creator._id.toString(),
-        });
-
-        if (!asset) throw new Error('asset_not_found');
-
-        if (asset.contractExplorer?.explorer) {
-            res.write(`event: consign_success\n`);
-            res.write(`id: ${nanoid()}\n`);
-            res.write(
-                `data: ${JSON.stringify({
-                    transactionHash: asset.contractExplorer.explorer,
-                    assetId: asset.assetRefId,
-                })}\n\n`
-            );
-
-            return;
-        }
-
-        res.write(`event: processing\n`);
-        res.write(`id: ${nanoid()}\n`);
-        res.write(`data: asset ${asset._id} is being processed\n\n`);
-
-        let creatorRefId = Date.now();
-        let assetRefId = Date.now();
-
-        if (asset?.assetRefId) {
-            assetRefId = asset.assetRefId;
-        }
-        if (creator?.creatorRefId) {
-            creatorRefId = creator.creatorRefId;
-        }
-
-        const licenses = [];
-
-        // TODO: todas as posições 0 do data sempre sera o available
-        // TODO: todas as posições 1 do data sempre sera o preço
-
-        const licenseNFT = {
-            id: 0,
-            licenseTypeId: 1,
-            data: [asset.licenses.nft.single.editionPrice * 100],
-            info: [
-                asset.licenses.nft.editionOption,
-                asset.licenses.nft.license,
-            ],
-        };
-
-        const licenseStream = {
-            id: 0,
-            licenseTypeId: 2,
-            data: [],
-            info: [],
-        };
-
-        const licenseRemix = {
-            id: 0,
-            licenseTypeId: 3,
-            data: [asset.licenses.remix.unitPrice * 100],
-            info: [],
-        };
-
-        const licensePrint = {
-            id: 0,
-            licenseTypeId: 4,
-            data: [asset.licenses.print.unitPrice * 100],
-            info: [],
-        };
-
-        if (asset.licenses.nft.added) {
-            licenses.push(licenseNFT);
-        }
-        if (asset.licenses.stream.added) {
-            licenses.push(licenseStream);
-        }
-        if (asset.licenses.remix.added) {
-            licenses.push(licenseRemix);
-        }
-        if (asset.licenses.print.added) {
-            licenses.push(licensePrint);
-        }
+        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+        if (!asset) throw new Error('Asset not found');
 
         if (
-            !creator.walletDefault &&
-            Array.isArray(creator.wallets) &&
-            creator.wallets.length > 0
+            !asset?.consignArtwork?.status ||
+            asset.consignArtwork.status !== 'processing'
         ) {
-            creator.walletDefault = creator.wallets[0].address;
+            await model.updateAssets({
+                id: asset._id,
+                asset: {
+                    'consignArtwork.status': 'processing',
+                },
+            });
+            const message = JSON.stringify(asset);
+            await sendToExchangeConsign(message);
         }
 
-        const params = {
-            header: {
-                refId: assetRefId,
-                agreeDateTime: Date.now(),
-                title: asset?.assetMetadata?.context?.formData?.title || '',
-                description:
-                    asset?.assetMetadata?.context?.formData?.description || '',
-                metadataRefId: Date.now(), // TODO: Implement metadata
-            },
-            creator: {
-                vault: creator.walletDefault,
-                refId: creatorRefId,
-                split: 10000,
-            },
-            licenses,
-            assetMedia: {
-                original: asset?.ipfs?.original || '',
-                display: asset?.ipfs?.display || '',
-                exhibition: asset?.ipfs?.exhibition || '',
-                preview: asset?.ipfs?.preview || '',
-                print: asset?.ipfs?.print || '',
-            },
-            auxiliaryMedia: {
-                arImage: asset?.ipfs?.arImage || '',
-                arVideo: asset?.ipfs?.arVideo || '',
-                btsImage: asset?.ipfs?.btsImage || '',
-                btsVideo: asset?.ipfs?.btsVideo || '',
-                codeZip: asset?.ipfs?.codeZip || '',
-            },
+        const sendEvent = (data: any, eventType: string) => {
+            res.write(`event: ${eventType}\n`);
+            res.write(`id: ${nanoid()}\n`);
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+            if (eventType === CONSIGN_SUCCESS) {
+                res.end();
+            }
         };
 
-        if (!params.creator.vault) {
-            res.write(`event: creator_wallet_not_found\n`);
-            res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${JSON.stringify(params.creator)}\n\n`);
-
-            throw new Error('creator_wallet_not_found');
+        // history
+        if (asset?.c2pa?.finishedAt) {
+            sendEvent(asset.c2pa, C2PA_SUCCESS);
+        }
+        if (asset?.ipfs?.finishedAt) {
+            sendEvent(asset.ipfs, IPFS_SUCCESS);
+        }
+        if (asset?.contractExplorer?.finishedAt) {
+            sendEvent(asset.contractExplorer, CONSIGN_SUCCESS);
         }
 
-        if (!params.assetMedia.original) {
-            res.write(`event: asset_media_not_found\n`);
-            res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${JSON.stringify(params.assetMedia)}\n\n`);
+        // live
+        const sendEventC2PA = (data: model.Assets['c2pa']) => {
+            sendEvent(data, C2PA_SUCCESS);
+        };
+        emitter.on(C2PA_SUCCESS, sendEventC2PA);
 
-            throw new Error('asset_media_not_found');
-        }
+        const sendEventIPFS = (data: model.Assets['ipfs']) => {
+            sendEvent(data, IPFS_SUCCESS);
+        };
+        emitter.on(IPFS_SUCCESS, sendEventIPFS);
 
-        res.write(`event: processing\n`);
-        res.write(`id: ${nanoid()}\n`);
-        res.write(`data: values are being processed\n\n`);
+        const sendEventConsign = (data: model.Assets['consignArtwork']) => {
+            sendEvent(data, CONSIGN_SUCCESS);
+        };
+        emitter.on(CONSIGN_SUCCESS, sendEventConsign);
 
-        const response = await createConsign(params);
-
-        if (!response.transactionHash) {
-            res.write(`event: consign_url_not_found\n`);
-            res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${response.transactionHash}\n\n`);
-
-            throw new Error('consign_url_not_found');
-        }
-
-        res.write(`event: processing\n`);
-        res.write(`id: ${nanoid()}\n`);
-        res.write(
-            `data: consign ${response.transactionHash} is being processed\n\n`
-        );
-
-        await model.updateAssets({
-            id: asset._id.toString(),
-            asset: {
-                'consignArtwork.status': 'active',
-                'consignArtwork.listing': new Date().toISOString(),
-                assetRefId,
-                contractExplorer: {
-                    explorer: response.transactionHash,
-                    tx: response.transactionHash,
-                    assetId: response.assetId,
-                    assetRefId,
-                    creatorRefId,
-                },
-            },
-        });
-
-        await modelCreator.updateCreator({
-            id: creator._id.toString(),
-            creator: { creatorRefId },
-        });
-
-        await Promise.all(
-            Object.entries(asset.licenses).map(([key, license]) => {
-                if (license.added) {
-                    try {
-                        const payload = JSON.stringify({
-                            license: key,
-                            id: asset._id.toString(),
-                            title: asset.assetMetadata.context.formData.title,
-                            url: `${STORE_URL}/${
-                                creator.username
-                            }/${asset._id.toString()}/${Date.now()}`,
-                            creator:
-                                asset.assetMetadata.creators.formData[0].name,
-                            image: `${ASSET_STORAGE_URL}/${asset.formats.preview?.path}`,
-                            description:
-                                asset?.mediaAuxiliary?.description ||
-                                asset.assetMetadata.context.formData
-                                    .description,
-                        });
-                        sendToExchangeRSS(payload, 'consign').then(() => {
-                            res.write(`event: rss_${key}\n`);
-                            res.write(`id: ${nanoid()}\n`);
-                            res.write(`data: ${payload}\n\n`);
-                        });
-                    } catch (error) {
-                        logger(`RSS ${key} failed: %O`, error);
-                    }
-                }
-                return license;
-            })
-        );
-
-        res.write(`event: consign_success\n`);
-        res.write(`id: ${nanoid()}\n`);
-        res.write(`data: ${JSON.stringify(response)}\n\n`);
+        const removeListeners = () => {
+            emitter.off(C2PA_SUCCESS, sendEventC2PA);
+            emitter.off(IPFS_SUCCESS, sendEventIPFS);
+            emitter.off(CONSIGN_SUCCESS, sendEventConsign);
+        };
+        res.on('close', removeListeners);
+        res.on('error', removeListeners);
+        res.on('finish', removeListeners);
     } catch (error) {
         logger('Consign failed: %O', error);
         captureException(error);
@@ -257,7 +95,7 @@ route.post('/', async (req, res) => {
         res.write(`event: consign_error\n`);
         res.write(`id: ${nanoid()}\n`);
         res.write(`data: ${error}\n\n`);
-    } finally {
+
         res.end();
     }
 });

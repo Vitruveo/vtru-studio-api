@@ -105,7 +105,7 @@ export const AssetsSchema = z.object({
                 editionPrice: z.number(),
             }),
             editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
-            availableLicenses: z.number()
+            availableLicenses: z.number(),
         }),
         stream: z.object({
             version: z.string(),
@@ -150,41 +150,53 @@ export const AssetsSchema = z.object({
     contract: z.boolean().default(false),
     consignArtwork: z
         .object({
-            status: z.enum(['draft', 'preview', 'active', 'hidden', 'locked']),
+            status: z
+                .enum([
+                    'draft',
+                    'preview',
+                    'active',
+                    'hidden',
+                    'locked',
+                    'processing',
+                ])
+                .default('draft'),
             listing: z.string().nullable().default(null),
             wallet: z.string().nullable().default(null),
+            finishedAt: z.date().nullable().default(null),
         })
-        .default({
-            status: 'draft',
-            listing: null,
-            wallet: null,
-        }),
-    c2pa: z.object({
-        finishedAt: z.date().nullable().default(null),
-    }),
-    contractExplorer: z.object({
-        explorer: z.string().nullable().default(null),
-        tx: z.string().nullable().default(null),
-        assetId: z.number().nullable().default(null),
-        assetRefId: z.number().nullable().default(null),
-        creatorRefId: z.number().nullable().default(null),
-        finishedAt: z.date().nullable().default(null),
-    }),
-    ipfs: z.object({
-        // Main
-        original: z.string(),
-        display: z.string(),
-        exhibition: z.string(),
-        preview: z.string(),
-        print: z.string(),
-        // Auxiliary
-        arImage: z.string(),
-        arVideo: z.string(),
-        btsImage: z.string(),
-        btsVideo: z.string(),
-        codeZip: z.string(),
-        finishedAt: z.date().nullable().default(null),
-    }),
+        .default({}),
+    c2pa: z
+        .object({
+            finishedAt: z.date().nullable().default(null),
+        })
+        .default({}),
+    contractExplorer: z
+        .object({
+            explorer: z.string().nullable().default(null),
+            tx: z.string().nullable().default(null),
+            assetId: z.number().nullable().default(null),
+            assetRefId: z.number().nullable().default(null),
+            creatorRefId: z.number().nullable().default(null),
+            finishedAt: z.date().nullable().default(null),
+        })
+        .default({}),
+    ipfs: z
+        .object({
+            // Main
+            original: z.string().nullable().default(null),
+            display: z.string().nullable().default(null),
+            exhibition: z.string().nullable().default(null),
+            preview: z.string().nullable().default(null),
+            print: z.string().nullable().default(null),
+            // Auxiliary
+            arImage: z.string().nullable().default(null),
+            arVideo: z.string().nullable().default(null),
+            btsImage: z.string().nullable().default(null),
+            btsVideo: z.string().nullable().default(null),
+            codeZip: z.string().nullable().default(null),
+            finishedAt: z.date().nullable().default(null),
+        })
+        .default({}),
     framework: z
         .object({
             createdAt: z.date().default(new Date()),
