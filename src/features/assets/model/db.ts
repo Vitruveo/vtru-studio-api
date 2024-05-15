@@ -52,16 +52,16 @@ export const findAssetsPaginated = async ({
                 },
             },
             {
-                $skip: skip,
-            },
-            {
-                $limit: limit,
-            },
-            {
                 $sort: {
                     'licenses.nft.availableLicenses': -1,
                     'consignArtwork.listing': -1,
                 },
+            },
+            {
+                $skip: skip,
+            },
+            {
+                $limit: limit,
             },
         ])
         .toArray();
