@@ -60,6 +60,7 @@ export const findAssetsPaginated = async ({
             {
                 $sort: {
                     'licenses.nft.availableLicenses': -1,
+                    'contractExplorer.finishedAt': -1,
                 },
             },
         ])
