@@ -21,6 +21,8 @@ export interface FindAssetsPaginatedParams {
     sort: Sort;
     skip: number;
     limit: number;
+    colors?: number[][];
+    precision: number;
 }
 
 export interface FindAssetsTagsParams {
@@ -37,9 +39,8 @@ export interface FindAssetsCollectionsParams {
 export interface FindAssetsSubjectsParams {
     name: string;
 }
-export interface CountAssetsParams {
-    query: Record<string, unknown>;
-}
+export interface CountAssetsParams
+    extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
 
 export interface FindAssetsByIdParams {
     id: string | ObjectId;

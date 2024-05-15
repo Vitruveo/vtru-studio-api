@@ -28,39 +28,35 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
     if (roleSuperAdmin) {
         const roleId = roleSuperAdmin._id.toString();
 
-        await db.collection(COLLECTION_USERS).insertOne({
-            name: 'Super Admin Vitruveo',
-            login: {
-                email: 'technology@vitruveo.xyz',
-                codeHash: null,
-                loginHistory: [],
-            },
-            profile: {
-                avatar: null,
-                phone: null,
-                language: null,
-                location: null,
-            },
-            roles: [roleId],
-            framework: defaultFramework,
-        });
+        const createSuperAdmin = async (name: string, email: string) => {
+            const user = await db.collection(COLLECTION_USERS).findOne({
+                'login.email': email,
+            });
 
-        await db.collection(COLLECTION_USERS).insertOne({
-            name: 'Super Admin Jbtec',
-            login: {
-                email: 'tecnologia@jbtec.com.br',
-                codeHash: null,
-                loginHistory: [],
-            },
-            profile: {
-                avatar: null,
-                phone: null,
-                language: null,
-                location: null,
-            },
-            roles: [roleId],
-            framework: defaultFramework,
-        });
+            if (!user) {
+                await db.collection(COLLECTION_USERS).insertOne({
+                    name,
+                    login: {
+                        email,
+                        codeHash: null,
+                        loginHistory: [],
+                    },
+                    profile: {
+                        avatar: null,
+                        phone: null,
+                        language: null,
+                        location: null,
+                    },
+                    roles: [roleId],
+                    framework: defaultFramework,
+                });
+            }
+        };
+
+        await Promise.all([
+            createSuperAdmin('Super Admin Vitruveo', 'technology@vitruveo.xyz'),
+            createSuperAdmin('Super Admin Jbtec', 'tecnologia@jbtec.com.br'),
+        ]);
     }
 };
 
