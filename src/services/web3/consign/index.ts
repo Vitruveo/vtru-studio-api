@@ -104,7 +104,19 @@ export const createConsign = async ({
                     );
                 } catch (error) {
                     // send sentry
-                    captureException(error);
+                    captureException(
+                        {
+                            message: 'Error on addLicense',
+                            params: {
+                                assetId,
+                                license: licenses[i],
+                            },
+                            error,
+                        },
+                        {
+                            tags: { scope: 'add_license_error' },
+                        }
+                    );
                     // logger
                     logger('Error on addLicense:', error);
                 }
@@ -115,7 +127,22 @@ export const createConsign = async ({
 
         return response;
     } catch (error) {
-        console.log('error on create contract:', error);
-        throw new Error('Error on create contract');
+        captureException(
+            {
+                message: 'Error on create consign',
+                params: {
+                    header,
+                    creator,
+                    licenses,
+                    assetMedia,
+                    auxiliaryMedia,
+                },
+                error,
+            },
+            {
+                tags: { scope: 'create_consign_error' },
+            }
+        );
+        throw new Error(`Error on create consign: ${error}`);
     }
 };
