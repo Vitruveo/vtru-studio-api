@@ -274,45 +274,51 @@ route.get('/validation', async (req, res) => {
 
         const finalAsset = schemaAssetValidation.parse(asset);
 
-        const files = await list({ bucket: ASSET_STORAGE_NAME });
+        try {
+            const files = await list({ bucket: ASSET_STORAGE_NAME });
 
-        const medias: string[] = [
-            'original',
-            'display',
-            'preview',
-            'exhibition',
-        ];
+            const medias: string[] = [
+                'original',
+                'display',
+                'preview',
+                'exhibition',
+            ];
 
-        medias.forEach((media) => {
-            const current = media as keyof typeof finalAsset.formats;
-            if (!files.includes(finalAsset.formats[current]!.path))
-                throw new Error(`${media} media not found on S3`);
-        });
-
-        if (finalAsset.licenses.print.added) {
-            if (
-                !finalAsset.formats.print ||
-                !finalAsset.formats.print.path ||
-                !files.includes(finalAsset.formats.print.path)
-            )
-                throw new Error('Print media not found on S3');
-            medias.push('print');
-        }
-
-        if (finalAsset.mediaAuxiliary) {
-            // check all mediaAuxiliary
-            const auxiliaries = Object.keys(finalAsset.mediaAuxiliary.formats);
-
-            auxiliaries.forEach((media) => {
-                const current =
-                    media as keyof typeof finalAsset.mediaAuxiliary.formats;
-                const mediaAuxiliary =
-                    finalAsset.mediaAuxiliary!.formats[current];
-                if (!mediaAuxiliary) return;
-                if (!files.includes(mediaAuxiliary.path))
+            medias.forEach((media) => {
+                const current = media as keyof typeof finalAsset.formats;
+                if (!files.includes(finalAsset.formats[current]!.path))
                     throw new Error(`${media} media not found on S3`);
-                medias.push(media);
             });
+
+            if (finalAsset.licenses.print.added) {
+                if (
+                    !finalAsset.formats.print ||
+                    !finalAsset.formats.print.path ||
+                    !files.includes(finalAsset.formats.print.path)
+                )
+                    throw new Error('Print media not found on S3');
+                medias.push('print');
+            }
+
+            if (finalAsset.mediaAuxiliary) {
+                // check all mediaAuxiliary
+                const auxiliaries = Object.keys(
+                    finalAsset.mediaAuxiliary.formats
+                );
+
+                auxiliaries.forEach((media) => {
+                    const current =
+                        media as keyof typeof finalAsset.mediaAuxiliary.formats;
+                    const mediaAuxiliary =
+                        finalAsset.mediaAuxiliary!.formats[current];
+                    if (!mediaAuxiliary) return;
+                    if (!files.includes(mediaAuxiliary.path))
+                        throw new Error(`${media} media not found on S3`);
+                    medias.push(media);
+                });
+            }
+        } catch (error) {
+            logger('Consign validation failed: %O', error);
         }
 
         return res.json({
