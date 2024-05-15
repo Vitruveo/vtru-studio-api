@@ -6,10 +6,11 @@ export interface QueryPaginatedParams {
     page: number;
     limit: number;
     sort: Sort;
-    minPrice: number;
-    maxPrice: number;
+    minPrice: string;
+    maxPrice: string;
     name?: string;
     showOnlyAvailableArts?: boolean;
+    precision?: string;
 }
 
 export interface QueryCollectionParams {

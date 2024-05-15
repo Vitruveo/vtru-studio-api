@@ -34,9 +34,61 @@ const updateAssetColors = async (assetId: string, colors: number[][]) => {
         { _id: new ObjectId(assetId) },
         { $set: { 'assetMetadata.context.formData.colors': colors } }
     );
+    console.log(`🔄 Updated colors for asset ${assetId}`);
 };
 
 const isImage = (filename: string) => /\.(jpe?g|png|gif|bmp)$/i.test(filename);
+
+const getColorsFromAsset = async (asset: AssetsDocument, s3: string[]) => {
+    const image = asset.formats?.original?.path;
+
+    if (image && isImage(image) && s3.includes(image)) {
+        const filename = join(ASSET_TEMP_DIR, image);
+
+        await download({
+            bucket: ASSET_STORAGE_NAME,
+            fileName: image,
+            key: image,
+        });
+
+        const sharp = await import('sharp');
+        console.log(`📏 Resizing asset ${asset._id}`);
+
+        // Resize image to 100x100
+        const buffer = await sharp
+            .default(filename)
+            .resize(100)
+            .jpeg({ quality: 80 })
+            .toBuffer();
+
+        const resizedFilename = join(ASSET_TEMP_DIR, `${nanoid()}.jpg`);
+        await fs.writeFile(resizedFilename, buffer);
+
+        console.log(`🌈 Extracting colors from asset ${asset._id}`);
+        const extractedColors = await handleExtractColor({
+            filename: resizedFilename,
+        });
+
+        await fs.unlink(resizedFilename).catch(() => {
+            console.log(
+                `🔴 Failed to unlink resized ${resizedFilename} from asset ${asset._id}`
+            );
+        });
+        await fs.unlink(filename).catch(() => {
+            console.log(
+                `🔴 Failed to unlink original image ${filename} from asset ${asset._id}`
+            );
+        });
+
+        return extractedColors;
+    }
+
+    console.log(
+        `🚫 File not found in S3 or missing original format. Skipping color extraction.`
+    );
+
+    return undefined;
+};
 
 const bootstrap = async () => {
     try {
@@ -51,82 +103,38 @@ const bootstrap = async () => {
                 ?.colors || []) as (string | number[])[];
 
             if (!assetColors.length) {
-                console.log(
-                    `🎨 No colors found for asset ${asset._id}. Starting color extraction.`
-                );
+                console.log(`🚫 No colors found in asset ${asset._id}.`);
+                const extractedColors = await getColorsFromAsset(asset, s3);
 
-                const image = asset.formats?.original?.path;
-
-                if (image && isImage(image) && s3.includes(image)) {
-                    // Download image from S3
-                    console.log(`📥 Downloading asset ${asset._id} from S3`);
-                    const filename = join(ASSET_TEMP_DIR, image);
-
-                    await download({
-                        bucket: ASSET_STORAGE_NAME,
-                        fileName: image,
-                        key: image,
-                    });
-
-                    const sharp = await import('sharp');
-                    console.log(`📏 Resizing asset ${asset._id}`);
-
-                    // Resize image to 100x100
-                    const buffer = await sharp
-                        .default(filename)
-                        .resize(100)
-                        .jpeg({ quality: 80 })
-                        .toBuffer();
-
-                    const resizedFilename = join(
-                        ASSET_TEMP_DIR,
-                        `${nanoid()}.jpg`
-                    );
-                    await fs.writeFile(resizedFilename, buffer);
-
-                    console.log(`🌈 Extracting colors from asset ${asset._id}`);
-                    const extractedColors = await handleExtractColor({
-                        filename: resizedFilename,
-                    });
+                if (extractedColors) {
                     await updateAssetColors(
                         asset._id.toString(),
                         extractedColors
                     );
-
-                    await fs.unlink(resizedFilename).catch(() => {
-                        console.log(
-                            `🔴 Failed to unlink resized ${resizedFilename} from asset ${asset._id}`
-                        );
-                    });
-                    await fs.unlink(filename).catch(() => {
-                        console.log(
-                            `🔴 Failed to unlink original image ${filename} from asset ${asset._id}`
-                        );
-                    });
-                } else {
-                    console.log(
-                        `🚫 File not found in S3 or missing original format. Skipping color extraction.`
-                    );
                 }
             } else {
-                // Converting HEX colors to RGB
+                console.log(`🔄 Processing colors from asset ${asset._id}`);
                 let hasHEXColors = false;
-                const rgbColors = assetColors.map((color) => {
-                    if (typeof color === 'string' && color.startsWith('#')) {
-                        hasHEXColors = true;
-                        return convertHEXtoRGB(color);
-                    }
-                    return color as number[];
-                });
 
-                // TODO: adicionar o extarct color para somar com as cores que ja tem
+                const convertedColors = assetColors.map((value) => {
+                    if (typeof value === 'string' && value.startsWith('#')) {
+                        hasHEXColors = true;
+                        return convertHEXtoRGB(value);
+                    }
+                    return value as number[];
+                });
 
                 if (hasHEXColors) {
                     console.log(
-                        `🔄 Updated asset ${asset._id} with RGB colors`
+                        `🔄 Converted hex colors from asset ${asset._id} with RGB colors`
                     );
-                    await updateAssetColors(asset._id.toString(), rgbColors);
                 }
+
+                const extractedColors = await getColorsFromAsset(asset, s3);
+                await updateAssetColors(asset._id.toString(), [
+                    ...convertedColors,
+                    ...(extractedColors ?? []),
+                ]);
             }
             console.log(`✅ Asset ${asset._id} processed`);
         }

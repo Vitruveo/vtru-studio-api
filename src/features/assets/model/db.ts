@@ -18,6 +18,7 @@ import type {
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { conditionsToShowAssets } from '../controller/public';
+import { buildFilterColorsQuery, defaultFilterColors } from '../utils/color';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
@@ -27,43 +28,56 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
     return result;
 };
 
-// recebendo _ids para filtrar os assets por _id e retornar os assets paginados
-export const findAssetsPaginated = async ({
+export const findAssetsPaginated = ({
     query,
     skip,
     limit,
+    colors,
+    precision,
 }: FindAssetsPaginatedParams) => {
-    const parsedQuery = { ...query };
-
-    if (parsedQuery._id && parsedQuery._id?.$in) {
-        parsedQuery._id.$in = parsedQuery._id.$in.map((id) => new ObjectId(id));
-    }
-
-    return assets()
-        .aggregate([
-            {
-                $match: query,
-            },
-            {
-                $addFields: {
-                    'licenses.nft.availableLicenses': {
-                        $ifNull: ['$licenses.nft.availableLicenses', 1],
+    const aggregate = [
+        {
+            $match: query,
+        },
+        {
+            $addFields: {
+                'licenses.nft.availableLicenses': {
+                    $ifNull: ['$licenses.nft.availableLicenses', 1],
+                },
+                exists: {
+                    $anyElementTrue: {
+                        $map: {
+                            input: '$assetMetadata.context.formData.colors',
+                            as: 'colors',
+                            in: {
+                                $or: colors?.length
+                                    ? buildFilterColorsQuery(colors, precision)
+                                    : defaultFilterColors,
+                            },
+                        },
                     },
                 },
             },
-            {
-                $skip: skip,
+        },
+        {
+            $match: {
+                exists: true,
             },
-            {
-                $limit: limit,
+        },
+        {
+            $skip: skip,
+        },
+        {
+            $limit: limit,
+        },
+        {
+            $sort: {
+                'licenses.nft.availableLicenses': -1,
             },
-            {
-                $sort: {
-                    'licenses.nft.availableLicenses': -1,
-                },
-            },
-        ])
-        .toArray();
+        },
+    ];
+
+    return assets().aggregate(aggregate).toArray();
 };
 
 export const findMaxPrice = () =>
@@ -119,8 +133,51 @@ export const findMaxPrice = () =>
         .toArray()
         .then((result) => (result.length > 0 ? result[0].maxPrice : null));
 
-export const countAssets = async ({ query }: CountAssetsParams) =>
-    assets().countDocuments(query);
+export const countAssets = async ({
+    query,
+    colors,
+    precision,
+}: CountAssetsParams) => {
+    const aggregate = [
+        {
+            $match: query,
+        },
+        {
+            $addFields: {
+                'licenses.nft.availableLicenses': {
+                    $ifNull: ['$licenses.nft.availableLicenses', 1],
+                },
+                exists: {
+                    $anyElementTrue: {
+                        $map: {
+                            input: '$assetMetadata.context.formData.colors',
+                            as: 'colors',
+                            in: {
+                                $or: colors?.length
+                                    ? buildFilterColorsQuery(colors, precision)
+                                    : defaultFilterColors,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        {
+            $match: {
+                exists: true,
+            },
+        },
+        {
+            $group: {
+                _id: null,
+                count: { $sum: 1 },
+            },
+        },
+    ];
+    return assets().aggregate(aggregate).toArray() as Promise<
+        [{ count: number }]
+    >;
+};
 
 export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
     assets()

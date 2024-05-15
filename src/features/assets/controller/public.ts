@@ -37,6 +37,7 @@ route.get('/search', async (req, res) => {
             maxPrice,
             name,
             sort,
+            precision = '0.7',
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -105,15 +106,40 @@ route.get('/search', async (req, res) => {
             }
         }
 
+        let filterColors: number[][] = [];
+
+        if (query['assetMetadata.context.formData.colors']?.$in) {
+            const colors = query['assetMetadata.context.formData.colors']
+                .$in as string[][];
+
+            filterColors = colors.map((color) =>
+                color.map((rgb) => parseInt(rgb, 10))
+            );
+
+            delete parsedQuery['assetMetadata.context.formData.colors'];
+        }
+
         const maxAssetPrice = await model.findMaxPrice();
-        const total = await model.countAssets({ query: parsedQuery });
+
+        const result = await model.countAssets({
+            query: parsedQuery,
+            colors: filterColors,
+            precision: Number(precision),
+        });
+
+        const total = result[0].count;
+
         const totalPage = Math.ceil(total / limitNumber);
+
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
+            colors: filterColors,
+            precision: Number(precision),
         });
+
         const tags = await model.findAssetsTags({ query: parsedQuery });
 
         res.json({
