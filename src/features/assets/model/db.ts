@@ -15,6 +15,7 @@ import type {
     FindAssetsCollectionsParams,
     FindAssetsSubjectsParams,
     FindAssetsByCreatorName,
+    UpdateManyAssetsStatusParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { conditionsToShowAssets } from '../controller/public';
@@ -338,6 +339,17 @@ export const updateAssets = async ({ id, asset }: UpdateAssetsParams) => {
     const result = await assets().updateOne(
         { _id: new ObjectId(id) },
         { $set: asset }
+    );
+    return result;
+};
+
+export const updateManyAssetsStatus = async ({
+    ids,
+    status,
+}: UpdateManyAssetsStatusParams) => {
+    const result = await assets().updateMany(
+        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+        { $set: { 'consignArtwork.status': status } }
     );
     return result;
 };
