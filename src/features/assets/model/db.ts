@@ -66,8 +66,9 @@ export const findAssetsPaginated = ({
         },
         {
             $sort: {
+                'consignArtwork.status': 1,
                 'licenses.nft.availableLicenses': -1,
-                'consignArtwork.listing': -1
+                'consignArtwork.listing': 1,
             },
         },
         {
@@ -176,7 +177,7 @@ export const countAssets = async ({
         },
     ];
     return assets().aggregate(aggregate).toArray() as Promise<
-        [{ count: number }]
+        [{ count?: number }]
     >;
 };
 

@@ -4,8 +4,7 @@ import { ObjectId } from '../../../services';
 export const COLLECTION_ASSETS = 'assets';
 
 const RGBSchema = z.array(z.number());
-const HEXSchema = z.string();
-const ColorSchema = z.union([RGBSchema, HEXSchema]); // TODO: CHANGE TO z.array(z.array(z.number())) AFTER MIGRATION IS DONE
+export const ColorsSchema = z.array(RGBSchema);
 
 export const AssetsSchema = z.object({
     assetRefId: z.number().nullable().default(null),
@@ -136,7 +135,7 @@ export const AssetsSchema = z.object({
                 longDescription: z.string(),
                 moods: z.array(z.string()),
                 tags: z.array(z.string()),
-                colors: z.array(ColorSchema),
+                colors: ColorsSchema,
             }),
         }),
         creators: z

@@ -3,14 +3,15 @@ import { model } from '..';
 
 export interface QueryPaginatedParams {
     query: Record<string, unknown>;
-    page: number;
-    limit: number;
+    page: string;
+    limit: string;
     sort: Sort;
     minPrice: string;
     maxPrice: string;
     name?: string;
     showOnlyAvailableArts?: boolean;
     precision?: string;
+    showAdditionalAssets: string;
 }
 
 export interface QueryCollectionParams {

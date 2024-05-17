@@ -38,10 +38,12 @@ route.get('/search', async (req, res) => {
             name,
             sort,
             precision = '0.7',
+            showAdditionalAssets,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
+        const showAdditionalAssetsValue = showAdditionalAssets === 'true';
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -56,6 +58,30 @@ route.get('/search', async (req, res) => {
             ...query,
             ...conditionsToShowAssets,
         };
+
+        if (showAdditionalAssetsValue) {
+            delete parsedQuery['consignArtwork.status'];
+
+            if (parsedQuery.$or) {
+                parsedQuery.$or.push(
+                    {
+                        'consignArtwork.status': 'active',
+                    },
+                    {
+                        'consignArtwork.status': 'blocked',
+                    }
+                );
+            } else {
+                parsedQuery.$or = [
+                    {
+                        'consignArtwork.status': 'active',
+                    },
+                    {
+                        'consignArtwork.status': 'blocked',
+                    },
+                ];
+            }
+        }
 
         if (maxPrice && minPrice) {
             parsedQuery.$and = [
@@ -127,7 +153,7 @@ route.get('/search', async (req, res) => {
             precision: Number(precision),
         });
 
-        const total = result[0].count;
+        const total = result[0]?.count ?? 0;
 
         const totalPage = Math.ceil(total / limitNumber);
 

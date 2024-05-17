@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ColorsSchema } from '../model';
 
 export const schemaValidationForCreate = z.object({
     domain: z.string().default(''),
@@ -222,7 +223,7 @@ export const schemaAssetMetadata = z.object({
                     longDescription: z.string().or(z.null()),
                     culture: z.string().or(z.null()),
                     mood: z.array(z.string().or(z.null())),
-                    colors: z.array(z.string()).or(z.null()),
+                    colors: ColorsSchema.or(z.null()),
                     copyright: z.string().or(z.null()),
                     orientation: z.string().or(z.null()),
                 })
