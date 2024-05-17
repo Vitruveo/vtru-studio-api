@@ -55,6 +55,11 @@ export interface UpdateAssetsParams {
     asset: Assets | { [key: string]: unknown };
 }
 
+export interface UpdateManyAssetsStatusParams {
+    ids: string[] | ObjectId[];
+    status: string;
+}
+
 export interface DeleteAssetsParams {
     id: string | ObjectId;
 }
