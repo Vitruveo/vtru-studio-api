@@ -7,13 +7,8 @@ import * as modelCreator from '../../creators/model';
 import { middleware } from '../../users';
 import { createConsign } from '../../../services/web3/consign';
 import { APIResponse, captureException } from '../../../services';
-import { list } from '../../../services/aws';
 import { sendToExchangeRSS } from '../../../services/rss';
-import {
-    ASSET_STORAGE_NAME,
-    ASSET_STORAGE_URL,
-    STORE_URL,
-} from '../../../constants';
+import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
 import { schemaAssetValidation } from './schemaValidate';
 
 const logger = debug('features:assets:controller:consign');
@@ -272,54 +267,7 @@ route.get('/validation', async (req, res) => {
     try {
         const asset = await model.findAssetCreatedBy({ id: req.auth.id });
 
-        const finalAsset = schemaAssetValidation.parse(asset);
-
-        try {
-            const files = await list({ bucket: ASSET_STORAGE_NAME });
-
-            const medias: string[] = [
-                'original',
-                'display',
-                'preview',
-                'exhibition',
-            ];
-
-            medias.forEach((media) => {
-                const current = media as keyof typeof finalAsset.formats;
-                if (!files.includes(finalAsset.formats[current]!.path))
-                    throw new Error(`${media} media not found on S3`);
-            });
-
-            if (finalAsset.licenses.print.added) {
-                if (
-                    !finalAsset.formats.print ||
-                    !finalAsset.formats.print.path ||
-                    !files.includes(finalAsset.formats.print.path)
-                )
-                    throw new Error('Print media not found on S3');
-                medias.push('print');
-            }
-
-            if (finalAsset.mediaAuxiliary) {
-                // check all mediaAuxiliary
-                const auxiliaries = Object.keys(
-                    finalAsset.mediaAuxiliary.formats
-                );
-
-                auxiliaries.forEach((media) => {
-                    const current =
-                        media as keyof typeof finalAsset.mediaAuxiliary.formats;
-                    const mediaAuxiliary =
-                        finalAsset.mediaAuxiliary!.formats[current];
-                    if (!mediaAuxiliary) return;
-                    if (!files.includes(mediaAuxiliary.path))
-                        throw new Error(`${media} media not found on S3`);
-                    medias.push(media);
-                });
-            }
-        } catch (error) {
-            logger('Consign validation failed: %O', error);
-        }
+        schemaAssetValidation.parse(asset);
 
         return res.json({
             code: 'vitruveo.studio.api.assets.consign.validation.success',
