@@ -22,6 +22,7 @@ import {
     schemaValidationForDeleteFile,
     schemaValidationForVideoGallery,
     schemaValidationForUpdate,
+    schemaAssetUpdateManyStatus,
 } from './schemas';
 
 export const validateBodyForCreate = async (
@@ -87,6 +88,34 @@ export const validateBodyForUpdate = async (
     }
 };
 
+export const validateBodyForUpdateMany = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'PUT') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateMany.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaAssetUpdateStatus.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateMany.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
 export const validateBodyForVideoGallery = async (
     req: Request,
     res: Response,
@@ -126,6 +155,24 @@ export const validateBodyForUpdateStatus = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForUpdateStatus.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateManyStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.body = schemaAssetUpdateManyStatus.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateManyStatus.failed',
             message: '',
             transaction: nanoid(),
             args: error,

@@ -55,6 +55,11 @@ export const schemaAssetUpdateStatus = z.object({
     status: z.enum(['active', 'blocked']),
 });
 
+export const schemaAssetUpdateManyStatus = z.object({
+    status: z.enum(['active', 'blocked']),
+    ids: z.array(z.string()),
+});
+
 export const schemaValidationForVideoGallery = z.object({
     artworks: z.array(z.string()).max(15),
     title: z.string().default(''),
