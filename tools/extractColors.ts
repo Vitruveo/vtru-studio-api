@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-restricted-syntax */
 /* Disable eslint for this file because it's a migration script */
-
+import 'dotenv/config';
 import fs from 'fs/promises';
 import { join } from 'path';
 import { nanoid } from 'nanoid';

@@ -5,7 +5,13 @@ import { Router } from 'express';
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { middleware } from '../../users';
-import { createConsign } from '../../../services/web3/consign';
+import {
+    createConsign,
+    createVault,
+    transformCreateVaultResult,
+    // createVault,
+    // transformCreateVaultResult,
+} from '../../../services/web3/consign';
 import { APIResponse, captureException } from '../../../services';
 import { list } from '../../../services/aws';
 import { sendToExchangeRSS } from '../../../services/rss';
@@ -15,6 +21,7 @@ import {
     STORE_URL,
 } from '../../../constants';
 import { schemaAssetValidation } from './schemaValidate';
+import { CreateContractParams } from '../../../services/web3/consign/types';
 
 const logger = debug('features:assets:controller:consign');
 const route = Router();
@@ -35,9 +42,6 @@ route.post('/', async (req, res) => {
         const creator = await modelCreator.findCreatorById({ id: req.auth.id });
 
         if (!creator) throw new Error('creator_not_found');
-
-        // TODO: Verificar se o creator tem walletDefault
-        // if (!creator.vault.transactionHash) throw new Error('vault_not_found');
 
         res.write(`event: processing\n`);
         res.write(`id: ${nanoid()}\n`);
@@ -133,35 +137,119 @@ route.post('/', async (req, res) => {
             creator.walletDefault = creator.wallets[0].address;
         }
 
-        const params = {
+        if (!creator?.vault?.vaultAddress) {
+            console.log('creating vault');
+
+            const result: any = await createVault({
+                vaultKey: `${creator._id.toString()}_${Math.random().toString()}`,
+                vaultName: `${creator.username}'s Vault`,
+                vaultSymbol: creator.username ?? 'unknown user',
+                wallets: [creator.walletDefault as `x0${string}`],
+            });
+
+            console.log('result', result);
+
+            const parsed = transformCreateVaultResult(result);
+
+            console.log('parsed', parsed);
+
+            creator.vault.vaultAddress = parsed.vaultAddress;
+        }
+
+        const params: CreateContractParams = {
+            assetKey: asset._id.toString(),
             header: {
-                refId: assetRefId,
-                agreeDateTime: Date.now(),
                 title: asset?.assetMetadata?.context?.formData?.title || '',
                 description:
                     asset?.assetMetadata?.context?.formData?.description || '',
-                metadataRefId: Date.now(), // TODO: Implement metadata
+                metadataRefId: Date.now(),
+                metadataXRefId: Date.now().toString(),
+                tokenUri: 'https://www.vitruveo.xyz',
+                status: 2,
             },
             creator: {
-                vault: creator.walletDefault,
                 refId: creatorRefId,
-                split: 10000,
+                xRefId: creatorRefId.toString(),
+                vault: creator.vault.vaultAddress!,
+                split: 9000,
             },
-            licenses,
-            assetMedia: {
-                original: asset?.ipfs?.original || '',
-                display: asset?.ipfs?.display || '',
-                exhibition: asset?.ipfs?.exhibition || '',
-                preview: asset?.ipfs?.preview || '',
-                print: asset?.ipfs?.print || '',
+            collaborator1: {
+                refId: 0,
+                xRefId: '',
+                vault: '0x0000000000000000000000000000000000000000',
+                split: 0,
             },
-            auxiliaryMedia: {
-                arImage: asset?.ipfs?.arImage || '',
-                arVideo: asset?.ipfs?.arVideo || '',
-                btsImage: asset?.ipfs?.btsImage || '',
-                btsVideo: asset?.ipfs?.btsVideo || '',
-                codeZip: asset?.ipfs?.codeZip || '',
+            collaborator2: {
+                refId: 0,
+                xRefId: '',
+                vault: '0x0000000000000000000000000000000000000000',
+                split: 0,
             },
+            license1: {
+                id: 0,
+                licenseTypeId: 1, // 1=NFT, 2=STREAM, 3=REMIX, 4=PRINT
+                editions: 1,
+                editionCents: 15000,
+                discountEditions: 0,
+                discountBasisPoints: 0,
+                discountMaxBasisPoints: 0,
+                available: 10,
+                licensees: [],
+            },
+            license2: {
+                id: 0,
+                licenseTypeId: 2,
+                editions: 0,
+                editionCents: 0,
+                discountEditions: 0,
+                discountBasisPoints: 0,
+                discountMaxBasisPoints: 0,
+                available: 0,
+                licensees: [],
+            },
+            license3: {
+                id: 0,
+                licenseTypeId: 3,
+                editions: 10000,
+                editionCents: 500,
+                discountEditions: 0,
+                discountBasisPoints: 0,
+                discountMaxBasisPoints: 0,
+                available: 10,
+                licensees: [],
+            },
+            license4: {
+                id: 0,
+                licenseTypeId: 0,
+                editions: 0,
+                editionCents: 0,
+                discountEditions: 0,
+                discountBasisPoints: 0,
+                discountMaxBasisPoints: 0,
+                available: 0,
+                licensees: [],
+            },
+            media: Object.entries({
+                original: asset.ipfs.original!,
+                display: asset.ipfs.display!,
+                exhibition: asset.ipfs.exhibition!,
+                preview: asset.ipfs.preview!,
+                print: asset?.ipfs?.print,
+                arImage: asset?.ipfs?.arImage,
+                arVideo: asset?.ipfs?.arVideo,
+                btsImage: asset?.ipfs?.btsImage,
+                btsVideo: asset?.ipfs?.btsVideo,
+                codeZip: asset?.ipfs?.codeZip,
+            }).reduce(
+                (acc, cur) => {
+                    const [key, value] = cur;
+                    if (value) {
+                        return { ...acc, [key]: value };
+                    }
+                    return acc;
+                },
+                {} as CreateContractParams['media']
+            ),
         };
 
         if (!params.creator.vault) {
@@ -172,10 +260,10 @@ route.post('/', async (req, res) => {
             throw new Error('creator_wallet_not_found');
         }
 
-        if (!params.assetMedia.original) {
+        if (!Object.keys(params.media).length) {
             res.write(`event: asset_media_not_found\n`);
             res.write(`id: ${nanoid()}\n`);
-            res.write(`data: ${JSON.stringify(params.assetMedia)}\n\n`);
+            res.write(`data: ${JSON.stringify(params.media)}\n\n`);
 
             throw new Error('asset_media_not_found');
         }

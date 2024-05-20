@@ -68,12 +68,13 @@ export const CreatorSchema = z.object({
     vault: z
         .object({
             transactionHash: z.string().nullable().default(null),
-            createdAt: z.date().nullable().default(null),
+            explorerUrl: z.string().nullable().default(null),
+            contractAddress: z.string().nullable().default(null),
+            blockNumber: z.number().default(0),
+            vaultAddress: z.string().nullable().default(null),
+            createdAt: z.date().default(new Date()),
         })
-        .default({
-            transactionHash: null,
-            createdAt: null,
-        }),
+        .default({}),
     videoGallery: z
         .array(
             z.object({

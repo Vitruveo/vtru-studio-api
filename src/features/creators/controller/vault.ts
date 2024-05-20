@@ -26,7 +26,13 @@ route.post('/', async (req, res) => {
 
         // save vault to creator
         const response = {
-            transactionHash: nanoid(),
+            transactionHash:
+                '0x78e63a3e0831891eef1ad408bfbb3a0baf23e21e02e44d4c35bff6089f04b9e1',
+            explorerUrl:
+                'https://test-explorer.vitruveo.xyz/tx/0x78e63a3e0831891eef1ad408bfbb3a0baf23e21e02e44d4c35bff6089f04b9e1',
+            contractAddress: '0x49ef867a1E9A71992003d89822414d6eddE2D810',
+            blockNumber: 3539700,
+            vaultAddress: '0x498BA3104AB3e8eFd28f74e0Ff07e401BFc6c087',
             createdAt: new Date(),
         };
 

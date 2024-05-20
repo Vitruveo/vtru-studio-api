@@ -1,63 +1,136 @@
 /* eslint-disable no-await-in-loop */
-import debug from 'debug';
 import { JsonRpcProvider, Wallet, Contract } from 'ethers';
 
-import testConfig from './config/testConfig.json';
-import prodConfig from './config/prodConfig.json';
-import type { CreateContractParams, CreateContractResponse } from './types';
+import schema from './config/contracts.json';
+
+import type {
+    CreateContractParams,
+    CreateContractResponse,
+    CreateVaultOptions,
+} from './types';
 import {
     MAINNET_RPC,
     STUDIO_PRIVATE_KEY,
     TESTNET,
     TESTNET_RPC,
 } from '../../../constants';
-import { retry } from '../../../utils';
-import { captureException } from '../../sentry';
-
-const logger = debug('services:contract');
 
 const isTestNet = TESTNET === 'true';
 const rpc = isTestNet ? TESTNET_RPC : MAINNET_RPC;
-const config = isTestNet ? testConfig : prodConfig;
+const provider = new JsonRpcProvider(rpc);
+const signer = new Wallet(STUDIO_PRIVATE_KEY, provider);
 
-export const delay = async ({ time }: { time: number }) =>
+const getContractAddress = (name: keyof typeof schema) =>
+    schema[name][isTestNet ? 'testnet' : 'mainnet'];
+
+const creatorVaultFactory = new Contract(
+    getContractAddress('creatorVaultFactory'),
+    schema.creatorVaultFactory.abi,
+    signer
+);
+
+const mediaRegistry = new Contract(
+    getContractAddress('mediaRegistry'),
+    schema.mediaRegistry.abi,
+    signer
+);
+
+const assetRegistry = new Contract(
+    getContractAddress('assetRegistry'),
+    schema.assetRegistry.abi,
+    signer
+);
+
+const delay = async ({ time }: { time: number }) =>
     new Promise((resolve) => {
         setTimeout(() => {
             resolve(true);
         }, time);
     });
 
+export const createVault = ({
+    vaultKey,
+    vaultName,
+    vaultSymbol,
+    wallets,
+}: CreateVaultOptions) =>
+    new Promise((resolve, reject) => {
+        const receiveEvent = (...args: any[]) => {
+            console.log('args:', args);
+
+            if (typeof args[0] === 'object' && args[0].hash) {
+                creatorVaultFactory.off('VaultCreated', receiveEvent);
+                resolve(args[2]);
+            }
+        };
+        creatorVaultFactory.on('VaultCreated', receiveEvent);
+        signer
+            .getNonce()
+            .then((nonce) =>
+                creatorVaultFactory.createVault(
+                    vaultKey,
+                    vaultName,
+                    vaultSymbol,
+                    wallets,
+                    { nonce }
+                )
+            )
+            .catch((error) => {
+                console.log('error on create vault:', error);
+
+                reject(error);
+            });
+    });
+
+export const transformCreateVaultResult = (info: any) => ({
+    contractAddress: info.log.address,
+    transactionHash: info.log.transactionHash,
+    explorerUrl: `https://test-explorer.vitruveo.xyz/tx/${info.log.transactionHash}`,
+    blockNumber: info.log.blockNumber,
+    vaultAddress: info.args[1],
+    createdAt: new Date(),
+});
+
 export const createConsign = async ({
+    assetKey,
     header,
     creator,
-    licenses,
-    assetMedia,
-    auxiliaryMedia,
+    collaborator1,
+    collaborator2,
+    license1,
+    license2,
+    license3,
+    license4,
+    media,
 }: CreateContractParams): Promise<CreateContractResponse> => {
     try {
-        const provider = new JsonRpcProvider(rpc);
-        const signer = new Wallet(STUDIO_PRIVATE_KEY, provider);
-        const contract = new Contract(
-            config.contractAddress,
-            config.abi,
-            signer
-        );
+        const nonce = await signer.getNonce();
 
-        await retry(
-            () =>
-                contract.consign(
-                    header,
-                    creator, // Only one supported due to Solidity. Call function addCreator() to add more
-                    licenses[0], // Only one supported due to Solidity. Call function addLicense() to add more
-                    assetMedia,
-                    auxiliaryMedia,
-                    { value: 0 } // Optional if sending funds to payable function
-                ),
-            10,
-            1000
+        await assetRegistry.consign(
+            assetKey,
+            header,
+            creator,
+            collaborator1,
+            collaborator2,
+            license1,
+            license2,
+            license3,
+            license4,
+            { nonce }
         );
 
         await delay({ time: 10_000 });
+
+        const keys = Object.keys(media);
+        const values = Object.values(media);
+
+        const mediaNonce = await signer.getNonce();
+
+        await mediaRegistry.addMediaBatch(assetKey, keys, values, {
+            nonce: mediaNonce,
+        });
+
+        await delay({ time: 5_000 });
 
         let assetId = -1;
         const response = {
@@ -65,10 +138,14 @@ export const createConsign = async ({
             assetId,
         };
         // Get the event that was logged.
-        const assetLog = contract.filters.AssetConsigned(null, creator.vault);
+        const assetLog = assetRegistry.filters.AssetConsigned(
+            null,
+            creator.vault,
+            null
+        );
 
         if (assetLog) {
-            const events = await contract.queryFilter(assetLog);
+            const events = await assetRegistry.queryFilter(assetLog);
 
             if (Array.isArray(events) && events.length > 0) {
                 const latest = events[events.length - 1];
@@ -83,33 +160,6 @@ export const createConsign = async ({
 
                 response.transactionHash = latest?.transactionHash;
                 response.assetId = assetId;
-            }
-        }
-
-        await delay({ time: 10_000 });
-
-        // Add extra licenses
-        if (licenses.length > 1 && assetId > 0) {
-            for (let i = 1; i < licenses.length; i += 1) {
-                try {
-                    await retry(
-                        () =>
-                            contract.addLicense(
-                                assetId,
-                                licenses[i],
-                                { value: 0 } // Optional if sending funds to payable function
-                            ),
-                        10,
-                        1000
-                    );
-                } catch (error) {
-                    // send sentry
-                    captureException(error);
-                    // logger
-                    logger('Error on addLicense:', error);
-                }
-
-                await delay({ time: 5_000 });
             }
         }
 
