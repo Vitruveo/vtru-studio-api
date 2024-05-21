@@ -434,3 +434,54 @@ export const removeUploadedMediaKeys = async ({
     );
     return result;
 };
+
+export const findAssetsCarousel = () =>
+    assets().aggregate([
+        {
+            $addFields: {
+                createdBy: {
+                    $toObjectId: '$framework.createdBy',
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'createdBy',
+                foreignField: '_id',
+                as: 'creatorInformation',
+            },
+        },
+        {
+            $unwind: '$creatorInformation',
+        },
+        {
+            $match: {
+                'consignArtwork.status': 'active',
+                'contractExplorer.explorer': {
+                    $exists: true,
+                },
+                'licenses.nft.added': true,
+                'formats.display.path': {
+                    $exists: true,
+                    $ne: null,
+                },
+                creatorInformation: {
+                    $exists: true,
+                },
+            },
+        },
+        {
+            $project: {
+                asset: {
+                    image: '$formats.display.path',
+                    title: '$assetMetadata.context.formData.title',
+                    description: '$assetMetadata.context.formData.description',
+                },
+                creator: {
+                    avatar: '$creatorInformation.profile.avatar',
+                    username: '$creatorInformation.username',
+                },
+            },
+        },
+    ]).toArray();
