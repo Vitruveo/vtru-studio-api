@@ -5,6 +5,7 @@ import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
 import {
+    CarouselResponse,
     QueryCollectionParams,
     QueryPaginatedParams,
     ResponseAssetsPaginated,
@@ -219,7 +220,7 @@ route.get('/carousel', async (req, res) => {
             message: 'Reader carousel success',
             transaction: nanoid(),
             data: assets,
-        } as APIResponse<model.AssetsDocument[]>);
+        } as APIResponse<CarouselResponse[]>);
     } catch (error) {
         logger('Reader carousel failed: %O', error);
         res.status(500).json({

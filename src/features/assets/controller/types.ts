@@ -42,3 +42,16 @@ export interface ResponseCreateContract {
     tx: string;
     assetId: number;
 }
+
+export interface CarouselResponse {
+    _id: string;
+    asset: {
+        image?: string;
+        title: string;
+        description: string;
+    },
+    user: {
+        avatar?: string;
+        username: string;
+    }
+}
