@@ -61,7 +61,6 @@ route.get('/search', async (req, res) => {
 
         if (showAdditionalAssetsValue) {
             delete parsedQuery['consignArtwork.status'];
-
             if (parsedQuery.$or) {
                 parsedQuery.$or.push(
                     {
