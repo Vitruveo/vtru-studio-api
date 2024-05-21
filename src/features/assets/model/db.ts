@@ -45,10 +45,18 @@ export const findAssetsPaginated = ({
                 'licenses.nft.availableLicenses': {
                     $ifNull: ['$licenses.nft.availableLicenses', 1],
                 },
+                'assetMetadata.context.formData.colors': {
+                    $ifNull: ['$assetMetadata.context.formData.colors', []],
+                },
                 exists: {
                     $anyElementTrue: {
                         $map: {
-                            input: '$assetMetadata.context.formData.colors',
+                            input: {
+                                $ifNull: [
+                                    '$assetMetadata.context.formData.colors',
+                                    [],
+                                ],
+                            },
                             as: 'colors',
                             in: {
                                 $or: colors?.length
@@ -150,10 +158,18 @@ export const countAssets = async ({
                 'licenses.nft.availableLicenses': {
                     $ifNull: ['$licenses.nft.availableLicenses', 1],
                 },
+                'assetMetadata.context.formData.colors': {
+                    $ifNull: ['$assetMetadata.context.formData.colors', []],
+                },
                 exists: {
                     $anyElementTrue: {
                         $map: {
-                            input: '$assetMetadata.context.formData.colors',
+                            input: {
+                                $ifNull: [
+                                    '$assetMetadata.context.formData.colors',
+                                    [],
+                                ],
+                            },
                             as: 'colors',
                             in: {
                                 $or: colors?.length
