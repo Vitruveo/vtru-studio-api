@@ -221,7 +221,17 @@ export const validateBodyForUpdateStep = async (
                 break;
 
             case 'contract':
-                req.body = schemaContract.parse(payload);
+                schemaContract.parse(payload);
+                req.body = {
+                    terms: {
+                        isOriginal: payload.isOriginal,
+                        generatedArtworkAI: payload.generatedArtworkAI,
+                        notMintedOtherBlockchain:
+                            payload.notMintedOtherBlockchain,
+                        contract: payload.contract,
+                    },
+                    framework: payload.framework,
+                };
                 break;
             case 'publish':
                 req.body = schemaPublish.parse(payload);
