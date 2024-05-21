@@ -55,4 +55,5 @@ export {
     UpdateResult,
     DeleteResult,
     FindOptions,
+    connect
 };

@@ -3,6 +3,9 @@ import { ObjectId } from '../../../services';
 
 export const COLLECTION_ASSETS = 'assets';
 
+const RGBSchema = z.array(z.number());
+export const ColorsSchema = z.array(RGBSchema);
+
 export const AssetsSchema = z.object({
     assetRefId: z.number().nullable().default(null),
     uploadedMediaKeys: z.array(z.string()).default([]),
@@ -105,7 +108,7 @@ export const AssetsSchema = z.object({
                 editionPrice: z.number(),
             }),
             editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
-            availableLicenses: z.number()
+            availableLicenses: z.number(),
         }),
         stream: z.object({
             version: z.string(),
@@ -132,6 +135,7 @@ export const AssetsSchema = z.object({
                 longDescription: z.string(),
                 moods: z.array(z.string()),
                 tags: z.array(z.string()),
+                colors: ColorsSchema,
             }),
         }),
         creators: z

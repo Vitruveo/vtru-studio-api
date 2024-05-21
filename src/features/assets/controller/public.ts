@@ -37,10 +37,13 @@ route.get('/search', async (req, res) => {
             maxPrice,
             name,
             sort,
+            precision = '0.7',
+            showAdditionalAssets,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
+        const showAdditionalAssetsValue = showAdditionalAssets === 'true';
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -55,6 +58,30 @@ route.get('/search', async (req, res) => {
             ...query,
             ...conditionsToShowAssets,
         };
+
+        if (showAdditionalAssetsValue) {
+            delete parsedQuery['consignArtwork.status'];
+
+            if (parsedQuery.$or) {
+                parsedQuery.$or.push(
+                    {
+                        'consignArtwork.status': 'active',
+                    },
+                    {
+                        'consignArtwork.status': 'blocked',
+                    }
+                );
+            } else {
+                parsedQuery.$or = [
+                    {
+                        'consignArtwork.status': 'active',
+                    },
+                    {
+                        'consignArtwork.status': 'blocked',
+                    },
+                ];
+            }
+        }
 
         if (maxPrice && minPrice) {
             parsedQuery.$and = [
@@ -105,15 +132,40 @@ route.get('/search', async (req, res) => {
             }
         }
 
+        let filterColors: number[][] = [];
+
+        if (query['assetMetadata.context.formData.colors']?.$in) {
+            const colors = query['assetMetadata.context.formData.colors']
+                .$in as string[][];
+
+            filterColors = colors.map((color) =>
+                color.map((rgb) => parseInt(rgb, 10))
+            );
+
+            delete parsedQuery['assetMetadata.context.formData.colors'];
+        }
+
         const maxAssetPrice = await model.findMaxPrice();
-        const total = await model.countAssets({ query: parsedQuery });
+
+        const result = await model.countAssets({
+            query: parsedQuery,
+            colors: filterColors,
+            precision: Number(precision),
+        });
+
+        const total = result[0]?.count ?? 0;
+
         const totalPage = Math.ceil(total / limitNumber);
+
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
             sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
+            colors: filterColors,
+            precision: Number(precision),
         });
+
         const tags = await model.findAssetsTags({ query: parsedQuery });
 
         res.json({
@@ -279,6 +331,7 @@ route.get('/:id', async (req, res) => {
             transaction: nanoid(),
             data: {
                 username: creator.username,
+                avatar: creator.profile.avatar,
             },
         } as APIResponse);
     } catch (error) {

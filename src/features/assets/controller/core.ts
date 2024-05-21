@@ -21,6 +21,7 @@ import {
     validateBodyForCreate,
     validateBodyForDeleteFile,
     validateBodyForUpdate,
+    validateBodyForUpdateManyStatus,
     validateBodyForUpdateStatus,
     validateBodyForUpdateStep,
 } from './rules';
@@ -156,6 +157,40 @@ route.post('/', validateBodyForCreate, async (req, res) => {
         } as APIResponse);
     }
 });
+
+route.put(
+    '/status',
+    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    validateBodyForUpdateManyStatus,
+    async (req, res) => {
+        const body = req.body as {
+            ids: string[];
+            status: string;
+        };
+
+        try {
+            const result = await model.updateManyAssetsStatus({
+                ids: body.ids,
+                status: body.status,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.assets.updateStatus.success',
+                message: 'Update status success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult>);
+        } catch (error) {
+            logger('Update status assets failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.updateStatus.failed',
+                message: `Update status failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
 
 route.put(
     '/:id/status',

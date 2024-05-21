@@ -4,11 +4,12 @@ import { Router } from 'express';
 
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
-import { createConsign } from '../../../services/web3/consign';
-import { captureException } from '../../../services';
 import { middleware } from '../../users';
+import { createConsign } from '../../../services/web3/consign';
+import { APIResponse, captureException } from '../../../services';
 import { sendToExchangeRSS } from '../../../services/rss';
 import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
+import { schemaAssetValidation } from './schemaValidate';
 
 const logger = debug('features:assets:controller:consign');
 const route = Router();
@@ -259,6 +260,38 @@ route.post('/', async (req, res) => {
         res.write(`data: ${error}\n\n`);
     } finally {
         res.end();
+    }
+});
+
+route.get('/validation', async (req, res) => {
+    try {
+        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+
+        schemaAssetValidation.parse(asset);
+
+        return res.json({
+            code: 'vitruveo.studio.api.assets.consign.validation.success',
+            message: 'Consign validation success',
+            transaction: nanoid(),
+            data: true,
+        } as APIResponse<boolean>);
+    } catch (error) {
+        logger('Consign validation failed: %O', error);
+        captureException(
+            {
+                message: 'Consign validation failed',
+                error: error instanceof Error ? error.message : error,
+                creator: req.auth.id,
+            },
+            { tags: { scope: 'consign' } }
+        );
+
+        return res.status(400).json({
+            code: 'vitruveo.studio.api.assets.consign.validation.error',
+            message: 'Consign validation error',
+            transaction: nanoid(),
+            args: error instanceof Error ? error.message : error,
+        } as APIResponse);
     }
 });
 

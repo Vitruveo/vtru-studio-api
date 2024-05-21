@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ColorsSchema } from '../model';
 
 export const schemaValidationForCreate = z.object({
     domain: z.string().default(''),
@@ -52,6 +53,11 @@ export const schemaValidationForUpdate = z.object({
 
 export const schemaAssetUpdateStatus = z.object({
     status: z.enum(['active', 'blocked']),
+});
+
+export const schemaAssetUpdateManyStatus = z.object({
+    status: z.enum(['active', 'blocked']),
+    ids: z.array(z.string()),
 });
 
 export const schemaValidationForVideoGallery = z.object({
@@ -222,7 +228,7 @@ export const schemaAssetMetadata = z.object({
                     longDescription: z.string().or(z.null()),
                     culture: z.string().or(z.null()),
                     mood: z.array(z.string().or(z.null())),
-                    colors: z.array(z.string()).or(z.null()),
+                    colors: ColorsSchema.or(z.null()),
                     copyright: z.string().or(z.null()),
                     orientation: z.string().or(z.null()),
                 })
