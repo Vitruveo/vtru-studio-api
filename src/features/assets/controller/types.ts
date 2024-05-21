@@ -50,7 +50,7 @@ export interface CarouselResponse {
         title: string;
         description: string;
     },
-    user: {
+    creator: {
         avatar?: string;
         username: string;
     }

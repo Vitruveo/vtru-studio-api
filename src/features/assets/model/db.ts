@@ -478,7 +478,7 @@ export const findAssetsCarousel = () =>
                     title: '$assetMetadata.context.formData.title',
                     description: '$assetMetadata.context.formData.description',
                 },
-                user: {
+                creator: {
                     avatar: '$creatorInformation.profile.avatar',
                     username: '$creatorInformation.username',
                 },
