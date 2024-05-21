@@ -193,6 +193,27 @@ route.get('/search', async (req, res) => {
     }
 });
 
+route.get('/carousel', async (req, res) => {
+    try {
+        const assets = await model.findAssetsCarousel();
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.carousel.success',
+            message: 'Reader carousel success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader carousel failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.carousel.failed',
+            message: `Reader carousel failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/collections', async (req, res) => {
     try {
         const { name } = req.query as unknown as QueryCollectionParams;
