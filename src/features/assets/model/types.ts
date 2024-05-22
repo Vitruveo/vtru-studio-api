@@ -79,3 +79,10 @@ export interface RemoveUploadedMediaKeysParams {
     id: string | ObjectId;
     mediaKeys: string[];
 }
+
+export interface BuildSearchByPatternParams {
+    unwind: string;
+    match: string;
+    searchFor: string;
+    trim: string;
+}
