@@ -165,12 +165,7 @@ export const countAssets = async ({
                         $map: {
                             input: {
                                 $ifNull: [
-                                    {
-                                        $ifNull: [
-                                            '$assetMetadata.context.formData.colors',
-                                            [],
-                                        ],
-                                    },
+                                    '$assetMetadata.context.formData.colors',
                                     [],
                                 ],
                             },
