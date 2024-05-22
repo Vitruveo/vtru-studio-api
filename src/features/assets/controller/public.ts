@@ -25,6 +25,9 @@ export const conditionsToShowAssets = {
 
 const logger = debug('features:assets:controller:public');
 const route = Router();
+// converts strings to regex for search case insensitive to fix duplicates
+const createRegexMap = (array: string[]) =>
+    array.map((item) => new RegExp(`^\\s*${item}\\s*$`, 'i'));
 
 // TODO: ALTERAR COMPLETAMENTE FORMA DE BUSCA DE ASSETS E FILTRAR
 route.get('/search', async (req, res) => {
@@ -155,6 +158,21 @@ route.get('/search', async (req, res) => {
         const total = result[0]?.count ?? 0;
 
         const totalPage = Math.ceil(total / limitNumber);
+
+        if (parsedQuery?.['assetMetadata.taxonomy.formData.subject']?.$in) {
+            parsedQuery['assetMetadata.taxonomy.formData.subject'].$in =
+                createRegexMap(
+                    parsedQuery['assetMetadata.taxonomy.formData.subject'].$in
+                );
+        }
+
+        if (parsedQuery?.['assetMetadata.taxonomy.formData.collections']?.$in) {
+            parsedQuery['assetMetadata.taxonomy.formData.collections'].$in =
+                createRegexMap(
+                    parsedQuery['assetMetadata.taxonomy.formData.collections']
+                        .$in
+                );
+        }
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
