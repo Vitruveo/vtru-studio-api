@@ -53,12 +53,7 @@ export const findAssetsPaginated = ({
                         $map: {
                             input: {
                                 $ifNull: [
-                                    {
-                                $ifNull: [
                                     '$assetMetadata.context.formData.colors',
-                                    [],
-                                ],
-                            },
                                     [],
                                 ],
                             },
@@ -92,7 +87,6 @@ export const findAssetsPaginated = ({
             $limit: limit,
         },
     ];
-
     return assets().aggregate(aggregate).toArray();
 };
 
@@ -172,11 +166,11 @@ export const countAssets = async ({
                             input: {
                                 $ifNull: [
                                     {
-                                $ifNull: [
-                                    '$assetMetadata.context.formData.colors',
-                                    [],
-                                ],
-                            },
+                                        $ifNull: [
+                                            '$assetMetadata.context.formData.colors',
+                                            [],
+                                        ],
+                                    },
                                     [],
                                 ],
                             },
