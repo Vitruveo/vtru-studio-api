@@ -18,8 +18,8 @@ import type {
     UpdateManyAssetsStatusParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
-import { conditionsToShowAssets } from '../controller/public';
 import { buildFilterColorsQuery, defaultFilterColors } from '../utils/color';
+import { buildSearchByPatternAggregate } from '../utils/builders';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 
@@ -200,66 +200,26 @@ export const countAssets = async ({
 
 export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
     assets()
-        .aggregate([
-            { $unwind: '$assetMetadata.taxonomy.formData.collections' },
-            {
-                $match: {
-                    'assetMetadata.taxonomy.formData.collections': {
-                        $regex: new RegExp(`(^| )${name}`, 'i'),
-                    },
-                },
-            },
-            {
-                $group: {
-                    _id: {
-                        $trim: {
-                            input: '$assetMetadata.taxonomy.formData.collections',
-                        },
-                    },
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    collection: '$_id',
-                    count: 1,
-                },
-            },
-            { $sort: { count: -1, collection: 1 } },
-        ])
+        .aggregate(
+            buildSearchByPatternAggregate({
+                unwind: '$assetMetadata.taxonomy.formData.collections',
+                match: 'assetMetadata.taxonomy.formData.collections',
+                searchFor: name,
+                trim: '$assetMetadata.taxonomy.formData.collections',
+            })
+        )
         .toArray();
 
 export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
     assets()
-        .aggregate([
-            { $unwind: '$assetMetadata.taxonomy.formData.subject' },
-            {
-                $match: {
-                    'assetMetadata.taxonomy.formData.subject': {
-                        $regex: new RegExp(`(^| )${name}`, 'i'),
-                    },
-                },
-            },
-            {
-                $group: {
-                    _id: {
-                        $trim: {
-                            input: '$assetMetadata.taxonomy.formData.subject',
-                        },
-                    },
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    subject: '$_id',
-                    count: 1,
-                },
-            },
-            { $sort: { count: -1, subject: 1 } },
-        ])
+        .aggregate(
+            buildSearchByPatternAggregate({
+                unwind: '$assetMetadata.taxonomy.formData.subject',
+                match: 'assetMetadata.taxonomy.formData.subject',
+                searchFor: name,
+                trim: '$assetMetadata.taxonomy.formData.subject',
+            })
+        )
         .toArray();
 
 export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
@@ -289,35 +249,14 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
 
 export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
     assets()
-        .aggregate([
-            { $unwind: '$assetMetadata.creators.formData' },
-            {
-                $match: {
-                    'assetMetadata.creators.formData.name': {
-                        $regex: new RegExp(`(^| )${name}`, 'i'),
-                    },
-                    ...conditionsToShowAssets,
-                },
-            },
-            {
-                $group: {
-                    _id: {
-                        $trim: {
-                            input: '$assetMetadata.creators.formData.name',
-                        },
-                    },
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    collection: '$_id',
-                    count: 1,
-                },
-            },
-            { $sort: { count: -1, collection: 1 } },
-        ])
+        .aggregate(
+            buildSearchByPatternAggregate({
+                unwind: '$assetMetadata.creators.formData',
+                match: 'assetMetadata.creators.formData.name',
+                searchFor: name,
+                trim: '$assetMetadata.creators.formData.name',
+            })
+        )
         .toArray();
 
 // return a stream of assets from database
@@ -436,57 +375,60 @@ export const removeUploadedMediaKeys = async ({
 };
 
 export const findAssetsCarousel = () =>
-    assets().aggregate([
-        {
-            $addFields: {
-                createdBy: {
-                    $toObjectId: '$framework.createdBy',
+    assets()
+        .aggregate([
+            {
+                $addFields: {
+                    createdBy: {
+                        $toObjectId: '$framework.createdBy',
+                    },
                 },
             },
-        },
-        {
-            $lookup: {
-                from: 'creators',
-                localField: 'createdBy',
-                foreignField: '_id',
-                as: 'creatorInformation',
-            },
-        },
-        {
-            $unwind: '$creatorInformation',
-        },
-        {
-            $match: {
-                'consignArtwork.status': 'active',
-                'contractExplorer.explorer': {
-                    $exists: true,
-                },
-                'licenses.nft.added': true,
-                'formats.display.path': {
-                    $exists: true,
-                    $ne: null,
-                },
-                creatorInformation: {
-                    $exists: true,
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'createdBy',
+                    foreignField: '_id',
+                    as: 'creatorInformation',
                 },
             },
-        },
-        {
-            $sort: {
-                'consignArtwork.listing': 1,
-            }
-        },
-        {
-            $project: {
-                asset: {
-                    image: '$formats.display.path',
-                    title: '$assetMetadata.context.formData.title',
-                    description: '$assetMetadata.context.formData.description',
-                },
-                creator: {
-                    avatar: '$creatorInformation.profile.avatar',
-                    username: '$creatorInformation.username',
+            {
+                $unwind: '$creatorInformation',
+            },
+            {
+                $match: {
+                    'consignArtwork.status': 'active',
+                    'contractExplorer.explorer': {
+                        $exists: true,
+                    },
+                    'licenses.nft.added': true,
+                    'formats.display.path': {
+                        $exists: true,
+                        $ne: null,
+                    },
+                    creatorInformation: {
+                        $exists: true,
+                    },
                 },
             },
-        },
-    ]).toArray();
+            {
+                $sort: {
+                    'consignArtwork.listing': 1,
+                },
+            },
+            {
+                $project: {
+                    asset: {
+                        image: '$formats.display.path',
+                        title: '$assetMetadata.context.formData.title',
+                        description:
+                            '$assetMetadata.context.formData.description',
+                    },
+                    creator: {
+                        avatar: '$creatorInformation.profile.avatar',
+                        username: '$creatorInformation.username',
+                    },
+                },
+            },
+        ])
+        .toArray();
