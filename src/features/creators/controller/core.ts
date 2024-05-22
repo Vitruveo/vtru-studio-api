@@ -161,6 +161,8 @@ route.put(
                 await createAssets({ asset: initialAsset.asset });
             }
 
+            delete req.body.creators;
+
             const result = await model.updateCreator({
                 id: req.params.id,
                 creator: req.body,
