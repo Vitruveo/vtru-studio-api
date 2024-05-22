@@ -28,7 +28,11 @@ import {
     validateQueries,
 } from '../../common/rules';
 import { updateRecordFramework } from '../../common/record';
-import { createAssets, findAssetCreatedBy } from '../../assets/model';
+import {
+    createAssets,
+    findAssetCreatedBy,
+    updateAssets,
+} from '../../assets/model';
 import generateInitialAsset from '../utils/generateInitialAsset';
 
 const logger = debug('features:creators:controller');
@@ -139,8 +143,18 @@ route.put(
                 id: req.params.id,
             });
 
-            if (!assetByCreator) {
+            if (assetByCreator) {
+                assetByCreator.assetMetadata.creators.formData.length = 0;
+                assetByCreator.assetMetadata.creators.formData.push(
+                    req.body.creators
+                );
+                await updateAssets({
+                    id: assetByCreator._id,
+                    asset: assetByCreator,
+                });
+            } else {
                 const initialAsset = generateInitialAsset();
+                initialAsset.asset.framework.createdBy = req.params.id;
                 initialAsset.asset.assetMetadata.creators.formData.push(
                     req.body.creators
                 );
