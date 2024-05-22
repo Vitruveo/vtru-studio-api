@@ -472,6 +472,11 @@ export const findAssetsCarousel = () =>
             },
         },
         {
+            $sort: {
+                'consignArtwork.listing': 1,
+            }
+        },
+        {
             $project: {
                 asset: {
                     image: '$formats.display.path',
