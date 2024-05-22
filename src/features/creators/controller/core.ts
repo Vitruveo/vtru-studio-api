@@ -144,20 +144,17 @@ route.put(
             });
 
             if (assetByCreator) {
-                assetByCreator.assetMetadata.creators.formData.length = 0;
-                assetByCreator.assetMetadata.creators.formData.push(
-                    req.body.creators
-                );
                 await updateAssets({
                     id: assetByCreator._id,
-                    asset: assetByCreator,
+                    asset: {
+                        'assetMetadata.creator.formData': req.body.creators,
+                    },
                 });
             } else {
                 const initialAsset = generateInitialAsset();
                 initialAsset.asset.framework.createdBy = req.params.id;
-                initialAsset.asset.assetMetadata.creators.formData.push(
-                    req.body.creators
-                );
+                initialAsset.asset.assetMetadata.creators.formData =
+                    req.body.creators;
                 await createAssets({ asset: initialAsset.asset });
             }
 
