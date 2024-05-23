@@ -32,22 +32,20 @@ export const schemaValidationForPut = z.object({
         updatedAt: z.string().nullable(),
         updatedBy: z.string().nullable(),
     }),
-    creators: z.array(
-        z
-            .object({
-                name: z.string().or(z.null()),
-                roles: z.array(z.string().or(z.null())),
-                bio: z.string().or(z.null()),
-                birthDate: z.string().or(z.null()),
-                birthLocation: z.string().or(z.null()),
-                nationality: z.string().or(z.null()),
-                residence: z.string().or(z.null()),
-                ethnicity: z.string().or(z.null()),
-                gender: z.string().or(z.null()),
-                profileUrl: z.string().or(z.null()),
-            })
-            .partial()
-    ),
+    creators: z
+        .object({
+            name: z.string().or(z.null()),
+            roles: z.array(z.string().or(z.null())),
+            bio: z.string().or(z.null()),
+            birthDate: z.string().or(z.null()),
+            birthLocation: z.string().or(z.null()),
+            nationality: z.string().or(z.null()),
+            residence: z.string().or(z.null()),
+            ethnicity: z.string().or(z.null()),
+            gender: z.string().or(z.null()),
+            profileUrl: z.string().or(z.null()),
+        })
+        .partial(),
 });
 export const schemaValidationForAddEmail = z.object({
     email: z.string().email(),
