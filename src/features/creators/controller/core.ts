@@ -147,7 +147,7 @@ route.put(
                 await updateAssets({
                     id: assetByCreator._id,
                     asset: {
-                        'assetMetadata.creator.formData': req.body.creators,
+                        'assetMetadata.creators.formData': req.body.creators,
                     },
                 });
             } else {
