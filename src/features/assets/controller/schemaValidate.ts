@@ -192,16 +192,20 @@ const AssetFormatsSchema = z
         { message: 'All formats must have a path.' }
     );
 
+const TermsSchema = z.object({
+    contract: z.boolean(),
+    generatedArtworkAI: z.boolean(),
+    isOriginal: z.boolean(),
+    notMintedOtherBlockchain: z.boolean(),
+});
+
 export const schemaAssetValidation = z.object({
     _id: ObjectId,
     status: z.string(),
     framework: FrameworkSchema,
     assetMetadata: AssetMetadataSchema,
     licenses: LicensesSchema,
-    contract: z.boolean(),
-    generatedArtworkAI: z.boolean(),
-    isOriginal: z.boolean(),
-    notMintedOtherBlockchain: z.boolean(),
+    terms: TermsSchema,
     uploadedMediaKeys: z.array(z.string()),
     formats: AssetFormatsSchema,
     mediaAuxiliary: MediaAuxiliarySchema.optional(),
