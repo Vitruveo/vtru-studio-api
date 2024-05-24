@@ -105,7 +105,11 @@ route.get('/:id', async (req, res) => {
             return;
         }
 
-        if (!['active', 'hidden'].includes(asset.consignArtwork.status)) {
+        if (
+            !['active', 'hidden', 'blocked'].includes(
+                asset.consignArtwork.status
+            )
+        ) {
             res.status(401).json({
                 code: 'vitruveo.studio.api.admin.assets.store.unauthorized',
                 message: 'Unauthorized access',
