@@ -33,10 +33,6 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
                 element?.assetMetadata?.taxonomy?.formData?.tags
             );
 
-        // taxonomy -> formData -> arenabled
-        if (!element?.assetMetadata?.taxonomy?.formData?.arenabled)
-            element.assetMetadata.taxonomy.formData.arenabled = 'no';
-
         // taxonomy -> formData -> collections
         if (
             Array.isArray(
