@@ -28,6 +28,12 @@ import {
     validateQueries,
 } from '../../common/rules';
 import { updateRecordFramework } from '../../common/record';
+import {
+    createAssets,
+    findAssetCreatedBy,
+    updateAssets,
+} from '../../assets/model';
+import generateInitialAsset from '../utils/generateInitialAsset';
 
 const logger = debug('features:creators:controller');
 const route = Router();
@@ -133,6 +139,27 @@ route.put(
     validateBodyForPut,
     async (req, res) => {
         try {
+            const assetByCreator = await findAssetCreatedBy({
+                id: req.params.id,
+            });
+
+            if (assetByCreator) {
+                await updateAssets({
+                    id: assetByCreator._id,
+                    asset: {
+                        'assetMetadata.creators.formData': req.body.creators,
+                    },
+                });
+            } else {
+                const initialAsset = generateInitialAsset();
+                initialAsset.asset.framework.createdBy = req.params.id;
+                initialAsset.asset.assetMetadata.creators.formData =
+                    req.body.creators;
+                await createAssets({ asset: initialAsset.asset });
+            }
+
+            delete req.body.creators;
+
             const result = await model.updateCreator({
                 id: req.params.id,
                 creator: req.body,

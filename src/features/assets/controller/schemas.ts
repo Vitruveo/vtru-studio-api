@@ -252,7 +252,7 @@ export const schemaAssetMetadata = z.object({
                 })
                 .partial(),
         }),
-        creators: z.object({
+        /*         creators: z.object({
             formData: z.array(
                 z
                     .object({
@@ -269,7 +269,7 @@ export const schemaAssetMetadata = z.object({
                     })
                     .partial()
             ),
-        }),
+        }), */
         provenance: z.object({
             formData: z
                 .object({
