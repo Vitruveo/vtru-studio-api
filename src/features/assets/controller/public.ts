@@ -5,6 +5,7 @@ import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
 import {
+    CarouselResponse,
     QueryCollectionParams,
     QueryPaginatedParams,
     ResponseAssetsPaginated,
@@ -187,6 +188,27 @@ route.get('/search', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.search.failed',
             message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/carousel', async (req, res) => {
+    try {
+        const assets = await model.findAssetsCarousel();
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.carousel.success',
+            message: 'Reader carousel success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<CarouselResponse[]>);
+    } catch (error) {
+        logger('Reader carousel failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.carousel.failed',
+            message: `Reader carousel failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
