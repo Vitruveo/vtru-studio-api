@@ -125,7 +125,7 @@ route.get('/:id', async (req, res) => {
             data: {
                 ...asset,
                 vault: {
-                    transactionhash: creator.vault.transactionHash,
+                    transactionhash: creator?.vault?.transactionHash ?? null,
                 },
             },
         } as APIResponse<model.AssetsDocument>);
