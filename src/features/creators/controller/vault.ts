@@ -27,6 +27,7 @@ route.post('/', async (req, res) => {
         // save vault to creator
         const response = {
             transactionHash: nanoid(),
+            vaultAddress: '',
             createdAt: new Date(),
         };
 
