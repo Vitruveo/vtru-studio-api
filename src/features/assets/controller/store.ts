@@ -122,7 +122,12 @@ route.get('/:id', async (req, res) => {
             code: 'vitruveo.studio.api.assets.store.success',
             message: 'Store asset success',
             transaction: nanoid(),
-            data: asset,
+            data: {
+                ...asset,
+                vault: {
+                    transactionhash: creator.vault.transactionHash,
+                },
+            },
         } as APIResponse<model.AssetsDocument>);
     } catch (error) {
         logger('store asset failed: %O', error);
