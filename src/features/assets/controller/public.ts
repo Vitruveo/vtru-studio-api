@@ -10,6 +10,7 @@ import {
     QueryPaginatedParams,
     ResponseAssetsPaginated,
 } from './types';
+import { FindAssetsCarouselParams } from '../model/types';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -195,8 +196,11 @@ route.get('/search', async (req, res) => {
 });
 
 route.get('/carousel', async (req, res) => {
+
+    const { layout } = req.query as FindAssetsCarouselParams;
+
     try {
-        const assets = await model.findAssetsCarousel();
+        const assets = await model.findAssetsCarousel({ layout });
 
         res.json({
             code: 'vitruveo.studio.api.assets.carousel.success',
