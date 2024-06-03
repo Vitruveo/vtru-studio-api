@@ -7,6 +7,7 @@ import { validateQueries } from '../../common/rules';
 import { APIResponse, InsertOneResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { RequestConsignProps } from './types';
+import { Query } from '../../common/types';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
@@ -37,7 +38,44 @@ route.post('/', validateQueries, async (req, res) => {
         logger('Create request consign failed: %O', error);
         res.status(500).json({
             code: 'vitruveo.studio.api.requestConsign.failed',
-            message: `Request Consign failed: ${error}`,
+            message: `Create request Consign failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/', validateQueries, async (req, res) => {
+    try {
+        const { query }: { query: Query } = req;
+
+        const requestConsigns = await model.findRequestConsigns({
+            query: { limit: query.limit },
+            sort: query.sort
+                ? { [query.sort.field]: query.sort.order }
+                : { name: 1 },
+            skip: query.skip || 0,
+        });
+
+        res.set('Content-Type', 'text/event-stream');
+        res.set('Cache-Control', 'no-cache');
+        res.set('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        requestConsigns
+            .on('data', (doc) => {
+                res.write('event: creator_list\n');
+                res.write(`id: ${doc._id}\n`);
+                res.write(`data: ${JSON.stringify(doc)}\n\n`);
+            })
+            .on('end', () => {
+                res.end();
+            });
+    } catch (error) {
+        logger('Find request consign failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Find request consign failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
