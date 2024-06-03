@@ -1,9 +1,10 @@
 import debug from 'debug';
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
+import * as model from '../model';
 import { middleware } from '../../users';
 import { validateQueries } from '../../common/rules';
-import { APIResponse } from '../../../services';
+import { APIResponse, InsertOneResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { RequestConsignProps } from './types';
 
@@ -18,13 +19,20 @@ route.post('/', validateQueries, async (req, res) => {
         const asset = await findAssetCreatedBy({ id });
 
         const requestConsign: RequestConsignProps = {
-            asset: asset?._id!,
+            asset: asset?._id.toString()!,
             creator: id,
             when: new Date(),
             status: 'pending',
         };
 
-        res.json({ message: requestConsign });
+        const result = await model.createRequestConsign({ requestConsign });
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Create request consign success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<InsertOneResult<model.RequestConsignDocument>>);
     } catch (error) {
         logger('Create request consign failed: %O', error);
         res.status(500).json({
