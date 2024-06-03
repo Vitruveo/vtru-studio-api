@@ -4,15 +4,27 @@ import { nanoid } from 'nanoid';
 import { middleware } from '../../users';
 import { validateQueries } from '../../common/rules';
 import { APIResponse } from '../../../services';
+import { findAssetCreatedBy } from '../../assets/model';
+import { RequestConsignProps } from './types';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', validateQueries, async (req, res) => {
+route.post('/', validateQueries, async (req, res) => {
     try {
-        res.json({ message: 'Hello World' });
+        const { id } = req.auth;
+        const asset = await findAssetCreatedBy({ id });
+
+        const requestConsign: RequestConsignProps = {
+            asset: asset?._id!,
+            creator: id,
+            when: new Date(),
+            status: 'pending',
+        };
+
+        res.json({ message: requestConsign });
     } catch (error) {
         logger('Create request consign failed: %O', error);
         res.status(500).json({
