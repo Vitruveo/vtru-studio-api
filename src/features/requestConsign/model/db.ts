@@ -11,7 +11,7 @@ import {
     FindRequestConsignByIdParams,
     FindRequestConsignsByIdsParams,
     FindRequestConsignsParams,
-    UpdateRequestConsignParams,
+    UpdateRequestConsignStatusParams,
 } from './types';
 
 const requestConsigns = () =>
@@ -64,9 +64,13 @@ export const findRequestConsignsByCreator = ({
 
 export const updateRequestConsign = ({
     id,
-    requestConsign,
-}: UpdateRequestConsignParams) =>
+    requestConsignStatus,
+}: UpdateRequestConsignStatusParams) =>
     requestConsigns().updateOne(
         { _id: new ObjectId(id) },
-        { $set: requestConsign }
+        {
+            $set: {
+                status: requestConsignStatus,
+            },
+        }
     );

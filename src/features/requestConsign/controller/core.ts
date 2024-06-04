@@ -118,9 +118,7 @@ route.patch('/:id', validateBodyForPatch, async (req, res) => {
 
         const result = await model.updateRequestConsign({
             id,
-            requestConsign: {
-                status,
-            },
+            requestConsignStatus: status,
         });
 
         res.json({

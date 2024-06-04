@@ -1,4 +1,4 @@
-import { RequestConsign } from './schema';
+import { RequestConsign, Status } from './schema';
 
 export interface CreateRequestConsignParams {
     requestConsign: RequestConsign;
@@ -27,7 +27,7 @@ export interface FindOneRequestConsignByCreatorParams {
     creator: string;
 }
 
-export interface UpdateRequestConsignParams {
+export interface UpdateRequestConsignStatusParams {
     id: string;
-    requestConsign: Partial<RequestConsign>;
+    requestConsignStatus: Status;
 }
