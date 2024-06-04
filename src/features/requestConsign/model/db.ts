@@ -2,6 +2,7 @@ import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from './schema';
 import { getDb, ObjectId } from '../../../services/mongo';
 import {
     CreateRequestConsignParams,
+    FindOneRequestConsignByCreatorParams,
     FindOneRequestConsignParams,
     FindRequestConsignByIdParams,
     FindRequestConsignsByIdsParams,
@@ -71,6 +72,16 @@ export const findOneRequestConsign = async ({
 }: FindOneRequestConsignParams) => {
     const result =
         await requestConsigns().findOne<RequestConsignDocument>(query);
+    return result;
+};
+
+export const findRequestConsignsByCreator = async ({
+    creator,
+}: FindOneRequestConsignByCreatorParams) => {
+    const result = requestConsigns().findOne<RequestConsignDocument>({
+        creator,
+    });
+
     return result;
 };
 

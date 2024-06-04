@@ -23,6 +23,10 @@ export interface FindOneRequestConsignParams {
     query: any;
 }
 
+export interface FindOneRequestConsignByCreatorParams {
+    creator: string;
+}
+
 export interface UpdateRequestConsignParams {
     id: string;
     requestConsign: RequestConsign;

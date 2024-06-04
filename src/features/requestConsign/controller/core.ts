@@ -18,8 +18,12 @@ route.use(middleware.checkAuth);
 route.post('/', async (req, res) => {
     try {
         const { id } = req.auth;
-        const asset = await findAssetCreatedBy({ id });
+        const alreadyExists = await model.findRequestConsignsByCreator({
+            creator: id,
+        });
+        if (alreadyExists) throw new Error('requestConsign_already_exists');
 
+        const asset = await findAssetCreatedBy({ id });
         const requestConsign: RequestConsignProps = {
             asset: asset?._id.toString()!,
             creator: id,
