@@ -25,3 +25,4 @@ app.use(features.assets.controller.router);
 app.use(features.allowList.controller.router);
 app.use(features.waitingList.controller.router);
 app.use(features.upload.controller.router);
+app.use(features.requestConsign.controller.router);
