@@ -71,7 +71,7 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
 
 route.get(
     '/',
-    needsToBeOwner({ permissions: ['asset:admin'] }),
+    needsToBeOwner({ permissions: ['asset:admin', 'asset:reader'] }),
     validateQueries,
     async (req, res) => {
         try {

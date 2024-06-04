@@ -24,7 +24,7 @@ route.use(middleware.checkAuth);
 
 route.get(
     '/',
-    needsToBeOwner({ permissions: ['user:admin'] }),
+    needsToBeOwner({ permissions: ['user:admin', 'user:reader'] }),
     validateQueries,
     async (req, res) => {
         try {
@@ -95,28 +95,33 @@ route.get('/:id', validateParamsId, async (req, res) => {
     }
 });
 
-route.post('/', validateBodyForCreate, async (req, res) => {
-    try {
-        const result = await model.createUser({
-            user: req.body,
-        });
+route.post(
+    '/',
+    needsToBeOwner({ permissions: ['user:admin'] }),
+    validateBodyForCreate,
+    async (req, res) => {
+        try {
+            const result = await model.createUser({
+                user: req.body,
+            });
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.users.create.success',
-            message: 'Create success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<InsertOneResult<model.UserDocument>>);
-    } catch (error) {
-        logger('Create user failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.users.create.failed',
-            message: `Create failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.users.create.success',
+                message: 'Create success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<InsertOneResult<model.UserDocument>>);
+        } catch (error) {
+            logger('Create user failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.users.create.failed',
+                message: `Create failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.put(
     '/:id',

@@ -34,42 +34,47 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', validateQueries, async (req, res) => {
-    try {
-        const { query }: { query: Query } = req;
+route.get(
+    '/',
+    needsToBeOwner({ permissions: ['creator:admin', 'creator:reader'] }),
+    validateQueries,
+    async (req, res) => {
+        try {
+            const { query }: { query: Query } = req;
 
-        const creators = await model.findCreators({
-            query: { limit: query.limit },
-            sort: query.sort
-                ? { [query.sort.field]: query.sort.order }
-                : { name: 1 },
-            skip: query.skip || 0,
-        });
-
-        res.set('Content-Type', 'text/event-stream');
-        res.set('Cache-Control', 'no-cache');
-        res.set('Connection', 'keep-alive');
-        res.flushHeaders();
-
-        creators
-            .on('data', (doc) => {
-                res.write('event: creator_list\n');
-                res.write(`id: ${doc._id}\n`);
-                res.write(`data: ${JSON.stringify(doc)}\n\n`);
-            })
-            .on('end', () => {
-                res.end();
+            const creators = await model.findCreators({
+                query: { limit: query.limit },
+                sort: query.sort
+                    ? { [query.sort.field]: query.sort.order }
+                    : { name: 1 },
+                skip: query.skip || 0,
             });
-    } catch (error) {
-        logger('Reader all creators failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.creators.reader.all.failed',
-            message: `Reader all failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+
+            res.set('Content-Type', 'text/event-stream');
+            res.set('Cache-Control', 'no-cache');
+            res.set('Connection', 'keep-alive');
+            res.flushHeaders();
+
+            creators
+                .on('data', (doc) => {
+                    res.write('event: creator_list\n');
+                    res.write(`id: ${doc._id}\n`);
+                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
+                })
+                .on('end', () => {
+                    res.end();
+                });
+        } catch (error) {
+            logger('Reader all creators failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.creators.reader.all.failed',
+                message: `Reader all failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.get('/:id', validateParamsId, async (req, res) => {
     try {

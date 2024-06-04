@@ -9,6 +9,7 @@ import type {
     DeleteWaitingListParams,
     AddAttemptWaitingListParams,
     CheckEmailExistParams,
+    FindWaitingListParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -29,9 +30,17 @@ export const addMultipleToWaitingList = async (
     return result;
 };
 
-export const getWaitingList = async () => {
-    const result = await waitingList().find().toArray();
-    return result;
+export const findWaitingList = async ({
+    query,
+    sort,
+    skip,
+    limit,
+}: FindWaitingListParams) => {
+    let result = waitingList().find(query).sort(sort).skip(skip);
+
+    if (limit) result = result.limit(limit);
+
+    return result.stream();
 };
 
 export const updateWaitingList = async ({

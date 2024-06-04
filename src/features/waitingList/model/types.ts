@@ -5,6 +5,12 @@ export interface AddToWaitingListParams {
     newWaiting: WaitingListDocument;
 }
 
+export interface FindWaitingListParams {
+    query: any;
+    sort: any;
+    skip: number;
+    limit?: number;
+}
 export interface UpdateWaitingListParams {
     id: string | ObjectId;
     waitingItem: WaitingListDocument;

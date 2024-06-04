@@ -16,6 +16,7 @@ import {
     validateBodyForUpdate,
 } from './rules';
 import { needsToBeOwner, validateParamsId } from '../../common/rules';
+import { Query } from '../../common/types';
 
 const logger = debug('features:waitingList:controller');
 const route = Router();
@@ -24,19 +25,37 @@ route.use(middleware.checkAuth);
 
 route.get(
     '/',
-    needsToBeOwner({ permissions: ['waiting-list:admin'] }),
+    needsToBeOwner({
+        permissions: ['waiting-list:admin', 'waiting-list:reader'],
+    }),
     async (req, res) => {
         try {
-            const waitingList = await model.getWaitingList();
+            const { query }: { query: Query } = req;
 
-            res.json({
-                code: 'vitruveo.studio.api.admin.waitingList.reader.all.success',
-                message: 'Reader all success',
-                transaction: nanoid(),
-                data: waitingList,
-            } as APIResponse<model.WaitingListDocument[]>);
+            const waitingList = await model.findWaitingList({
+                query: { limit: query.limit },
+                sort: query.sort
+                    ? { [query.sort.field]: query.sort.order }
+                    : { name: 1 },
+                skip: query.skip || 0,
+            });
+
+            res.set('Content-Type', 'text/event-stream');
+            res.set('Cache-Control', 'no-cache');
+            res.set('Connection', 'keep-alive');
+            res.flushHeaders();
+
+            waitingList
+                .on('data', (doc) => {
+                    res.write('event: waiting_list\n');
+                    res.write(`id: ${doc._id}\n`);
+                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
+                })
+                .on('end', () => {
+                    res.end();
+                });
         } catch (error) {
-            logger('Reader all waitingList failed: %O', error);
+            logger('Failed to read all waitingList: %O', error);
             res.status(500).json({
                 code: 'vitruveo.studio.api.admin.waitingList.reader.all.failed',
                 message: `Reader all failed: ${error}`,

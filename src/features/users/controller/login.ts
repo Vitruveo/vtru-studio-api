@@ -94,6 +94,7 @@ route.post('/otpConfirm', async (req, res) => {
             data: {
                 user,
                 token,
+                permissions,
             },
         } as APIResponse<LoginAnswer>);
     } catch (error) {
