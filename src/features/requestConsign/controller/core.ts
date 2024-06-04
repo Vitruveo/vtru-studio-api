@@ -99,9 +99,6 @@ route.patch('/:id', validateBodyForPatch, async (req, res) => {
         const result = await model.updateRequestConsign({
             id,
             requestConsign: {
-                asset: requestConsign.asset,
-                creator: requestConsign.creator,
-                when: requestConsign.when,
                 status,
             },
         });

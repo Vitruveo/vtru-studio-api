@@ -29,5 +29,5 @@ export interface FindOneRequestConsignByCreatorParams {
 
 export interface UpdateRequestConsignParams {
     id: string;
-    requestConsign: RequestConsign;
+    requestConsign: Partial<RequestConsign>;
 }
