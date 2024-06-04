@@ -17,7 +17,7 @@ import {
 const requestConsigns = () =>
     getDb().collection<RequestConsign>(COLLECTION_REQUEST_CONSIGNS);
 
-export const createRequestConsign = async ({
+export const createRequestConsign = ({
     requestConsign,
 }: CreateRequestConsignParams) => requestConsigns().insertOne(requestConsign);
 
