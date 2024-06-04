@@ -65,7 +65,7 @@ route.post('/', async (req, res) => {
 
 route.get(
     '/',
-    needsToBeOwner({ permissions: ['moderator'] }),
+    needsToBeOwner({ permissions: ['moderator:admin', 'moderator:reader'] }),
     validateQueries,
     async (req, res) => {
         try {
@@ -107,7 +107,7 @@ route.get(
 
 route.patch(
     '/:id',
-    needsToBeOwner({ permissions: ['moderator'] }),
+    needsToBeOwner({ permissions: ['moderator:admin', 'moderator:reader'] }),
     validateBodyForPatch,
     async (req, res) => {
         try {
