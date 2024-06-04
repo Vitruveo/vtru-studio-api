@@ -1,4 +1,8 @@
-import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from './schema';
+import {
+    COLLECTION_REQUEST_CONSIGNS,
+    RequestConsignDocument,
+    RequestConsign,
+} from './schema';
 import { getDb, ObjectId } from '../../../services/mongo';
 import {
     CreateRequestConsignParams,
@@ -10,27 +14,14 @@ import {
     UpdateRequestConsignParams,
 } from './types';
 
-const requestConsigns = () => getDb().collection(COLLECTION_REQUEST_CONSIGNS);
+const requestConsigns = () =>
+    getDb().collection<RequestConsign>(COLLECTION_REQUEST_CONSIGNS);
 
 export const createRequestConsign = async ({
     requestConsign,
-}: CreateRequestConsignParams) => {
-    try {
-        try {
-            const result = await requestConsigns().insertOne(requestConsign);
+}: CreateRequestConsignParams) => requestConsigns().insertOne(requestConsign);
 
-            return result;
-        } catch (mongodbError) {
-            // return mongodb error
-            return mongodbError;
-        }
-    } catch (zodError) {
-        // return zod error
-        return zodError;
-    }
-};
-
-export const findRequestConsigns = async ({
+export const findRequestConsigns = ({
     query,
     skip,
     sort,
@@ -42,56 +33,40 @@ export const findRequestConsigns = async ({
     return result.stream();
 };
 
-export const findRequestConsignsByIds = async ({
+export const findRequestConsignsByIds = ({
     ids,
-}: FindRequestConsignsByIdsParams) => {
-    const result = await requestConsigns().find(
-        {
-            _id: {
-                $in: ids.map((id) => new ObjectId(id)),
+}: FindRequestConsignsByIdsParams) =>
+    requestConsigns()
+        .find(
+            {
+                _id: {
+                    $in: ids.map((id) => new ObjectId(id)),
+                },
             },
-        },
-        { projection: { key: 1 } }
-    );
+            { projection: { key: 1 } }
+        )
+        .toArray();
 
-    return result.toArray();
-};
-
-export const findRequestConsignsById = async ({
-    id,
-}: FindRequestConsignByIdParams) => {
-    const result = await requestConsigns().findOne({
+export const findRequestConsignsById = ({ id }: FindRequestConsignByIdParams) =>
+    requestConsigns().findOne({
         _id: new ObjectId(id),
     });
 
-    return result;
-};
+export const findOneRequestConsign = ({ query }: FindOneRequestConsignParams) =>
+    requestConsigns().findOne<RequestConsignDocument>(query);
 
-export const findOneRequestConsign = async ({
-    query,
-}: FindOneRequestConsignParams) => {
-    const result =
-        await requestConsigns().findOne<RequestConsignDocument>(query);
-    return result;
-};
-
-export const findRequestConsignsByCreator = async ({
+export const findRequestConsignsByCreator = ({
     creator,
-}: FindOneRequestConsignByCreatorParams) => {
-    const result = requestConsigns().findOne<RequestConsignDocument>({
+}: FindOneRequestConsignByCreatorParams) =>
+    requestConsigns().findOne<RequestConsignDocument>({
         creator,
     });
 
-    return result;
-};
-
-export const updateRequestConsign = async ({
+export const updateRequestConsign = ({
     id,
     requestConsign,
-}: UpdateRequestConsignParams) => {
-    const result = await requestConsigns().updateOne(
+}: UpdateRequestConsignParams) =>
+    requestConsigns().updateOne(
         { _id: new ObjectId(id) },
         { $set: requestConsign }
     );
-    return result;
-};

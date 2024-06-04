@@ -85,7 +85,7 @@ route.get('/', validateQueries, async (req, res) => {
 
         requestConsigns
             .on('data', (doc) => {
-                res.write('event: creator_list\n');
+                res.write('event: request_consigns_list\n');
                 res.write(`id: ${doc._id}\n`);
                 res.write(`data: ${JSON.stringify(doc)}\n\n`);
             })
