@@ -21,11 +21,27 @@ route.post('/', async (req, res) => {
         const alreadyExists = await model.findRequestConsignsByCreator({
             creator: id,
         });
-        if (alreadyExists) throw new Error('requestConsign_already_exists');
+        if (alreadyExists) {
+            res.status(409).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign already exists',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
 
         const asset = await findAssetCreatedBy({ id });
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
         const requestConsign: RequestConsignProps = {
-            asset: asset?._id.toString()!,
+            asset: asset._id.toString(),
             creator: id,
             when: new Date(),
             status: 'pending',
@@ -94,7 +110,14 @@ route.patch('/:id', validateBodyForPatch, async (req, res) => {
 
         const requestConsign = await model.findRequestConsignsById({ id });
 
-        if (!requestConsign) throw new Error('requestConsign_not_found');
+        if (!requestConsign) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
 
         const result = await model.updateRequestConsign({
             id,
