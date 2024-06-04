@@ -6,7 +6,6 @@ import { middleware } from '../../users';
 import { validateQueries } from '../../common/rules';
 import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
-import { RequestConsignProps } from './types';
 import { Query } from '../../common/types';
 import { validateBodyForPatch } from './rules';
 
@@ -40,12 +39,10 @@ route.post('/', async (req, res) => {
             return;
         }
 
-        const requestConsign: RequestConsignProps = {
+        const requestConsign = model.RequestConsignSchema.parse({
             asset: asset._id.toString(),
             creator: id,
-            when: new Date(),
-            status: 'pending',
-        };
+        });
 
         const result = await model.createRequestConsign({ requestConsign });
 
