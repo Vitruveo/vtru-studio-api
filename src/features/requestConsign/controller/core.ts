@@ -4,17 +4,18 @@ import { nanoid } from 'nanoid';
 import * as model from '../model';
 import { middleware } from '../../users';
 import { validateQueries } from '../../common/rules';
-import { APIResponse, InsertOneResult } from '../../../services';
+import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { RequestConsignProps } from './types';
 import { Query } from '../../common/types';
+import { validateBodyForPatch } from './rules';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.post('/', validateQueries, async (req, res) => {
+route.post('/', async (req, res) => {
     try {
         const { id } = req.auth;
         const asset = await findAssetCreatedBy({ id });
@@ -76,6 +77,42 @@ route.get('/', validateQueries, async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.requestConsign.failed',
             message: `Find request consign failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.patch('/:id', validateBodyForPatch, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const requestConsign = await model.findRequestConsignsById({ id });
+
+        if (!requestConsign) throw new Error('requestConsign_not_found');
+
+        const result = await model.updateRequestConsign({
+            id,
+            requestConsign: {
+                asset: requestConsign.asset,
+                creator: requestConsign.creator,
+                when: requestConsign.when,
+                status,
+            },
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Update request consign success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult<model.RequestConsignDocument>>);
+    } catch (error) {
+        logger('Update request consign failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Update request consign failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
