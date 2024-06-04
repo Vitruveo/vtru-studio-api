@@ -22,30 +22,34 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', needsToBeOwner({ permissions: ['admin'] }), async (req, res) => {
-    try {
-        const allowList = await model.getAllowList();
+route.get(
+    '/',
+    needsToBeOwner({ permissions: ['allow-list:admin'] }),
+    async (req, res) => {
+        try {
+            const allowList = await model.getAllowList();
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.allowList.reader.all.success',
-            message: 'Reader all success',
-            transaction: nanoid(),
-            data: allowList,
-        } as APIResponse<model.AllowListDocument[]>);
-    } catch (error) {
-        logger('Reader all allowList failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.allowList.reader.all.failed',
-            message: `Reader all failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.allowList.reader.all.success',
+                message: 'Reader all success',
+                transaction: nanoid(),
+                data: allowList,
+            } as APIResponse<model.AllowListDocument[]>);
+        } catch (error) {
+            logger('Reader all allowList failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.allowList.reader.all.failed',
+                message: `Reader all failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.post(
     '/',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['allow-list:admin'] }),
     validateBodyForCreate,
     async (req, res) => {
         try {
@@ -73,7 +77,7 @@ route.post(
 
 route.put(
     '/:id',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['allow-list:admin'] }),
     validateParamsId,
     validateBodyForUpdate,
     async (req, res) => {
@@ -103,7 +107,7 @@ route.put(
 
 route.delete(
     '/:id',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['allow-list:admin'] }),
     validateParamsId,
     async (req, res) => {
         try {
@@ -129,7 +133,7 @@ route.delete(
 
 route.post(
     '/multiple',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['allow-list:admin'] }),
     validateBodyForCreateMultiple,
     async (req, res) => {
         try {

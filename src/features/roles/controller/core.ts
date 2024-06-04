@@ -22,100 +22,115 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', validateQueries, async (req, res) => {
-    try {
-        const { query }: { query: Query } = req;
+route.get(
+    '/',
+    needsToBeOwner({ permissions: ['role:admin'] }),
+    validateQueries,
+    async (req, res) => {
+        try {
+            const { query }: { query: Query } = req;
 
-        const roles = await model.findRoles({
-            query: { limit: query.limit },
-            sort: query.sort
-                ? { [query.sort.field]: query.sort.order }
-                : { name: 1 },
-            skip: query.skip || 0,
-        });
-
-        res.set('Content-Type', 'text/event-stream');
-        res.set('Cache-Control', 'no-cache');
-        res.set('Connection', 'keep-alive');
-        res.flushHeaders();
-
-        roles
-            .on('data', (doc) => {
-                res.write('event: role_list\n');
-                res.write(`id: ${doc._id}\n`);
-                res.write(`data: ${JSON.stringify(doc)}\n\n`);
-            })
-            .on('end', () => {
-                res.end();
+            const roles = await model.findRoles({
+                query: { limit: query.limit },
+                sort: query.sort
+                    ? { [query.sort.field]: query.sort.order }
+                    : { name: 1 },
+                skip: query.skip || 0,
             });
-    } catch (error) {
-        logger('Reader all role failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.roles.reader.all.failed',
-            message: `Reader all failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        });
+
+            res.set('Content-Type', 'text/event-stream');
+            res.set('Cache-Control', 'no-cache');
+            res.set('Connection', 'keep-alive');
+            res.flushHeaders();
+
+            roles
+                .on('data', (doc) => {
+                    res.write('event: role_list\n');
+                    res.write(`id: ${doc._id}\n`);
+                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
+                })
+                .on('end', () => {
+                    res.end();
+                });
+        } catch (error) {
+            logger('Reader all role failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.roles.reader.all.failed',
+                message: `Reader all failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            });
+        }
     }
-});
+);
 
-route.get('/:id', validateParamsId, async (req, res) => {
-    try {
-        const role = await model.findRoleById({ id: req.params.id });
+route.get(
+    '/:id',
+    needsToBeOwner({ permissions: ['role:admin'] }),
+    validateParamsId,
+    async (req, res) => {
+        try {
+            const role = await model.findRoleById({ id: req.params.id });
 
-        if (!role) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.admin.roles.reader.one.not.found',
-                message: 'Reader one not found',
+            if (!role) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.admin.roles.reader.one.not.found',
+                    message: 'Reader one not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.roles.reader.one.success',
+                message: 'Reader one success',
+                transaction: nanoid(),
+                data: role,
+            } as APIResponse<model.RoleDocument>);
+        } catch (error) {
+            logger('Reader one role failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.roles.reader.one.failed',
+                message: `Reader one failed: ${error}`,
+                args: error,
                 transaction: nanoid(),
             } as APIResponse);
-            return;
         }
-
-        res.json({
-            code: 'vitruveo.studio.api.admin.roles.reader.one.success',
-            message: 'Reader one success',
-            transaction: nanoid(),
-            data: role,
-        } as APIResponse<model.RoleDocument>);
-    } catch (error) {
-        logger('Reader one role failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.roles.reader.one.failed',
-            message: `Reader one failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
     }
-});
+);
 
-route.post('/', validateBodyForCreate, async (req, res) => {
-    try {
-        const result = await model.createRole({
-            role: req.body,
-        });
+route.post(
+    '/',
+    needsToBeOwner({ permissions: ['role:admin'] }),
+    validateBodyForCreate,
+    async (req, res) => {
+        try {
+            const result = await model.createRole({
+                role: req.body,
+            });
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.roles.create.success',
-            message: 'Create success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<InsertOneResult<model.RoleDocument>>);
-    } catch (error) {
-        logger('create role failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.roles.create.failed',
-            message: `Create failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.roles.create.success',
+                message: 'Create success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<InsertOneResult<model.RoleDocument>>);
+        } catch (error) {
+            logger('create role failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.roles.create.failed',
+                message: `Create failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.put(
     '/:id',
     validateParamsId,
-    needsToBeOwner({ permissions: ['roles:admin', 'roles:editor'] }),
+    needsToBeOwner({ permissions: ['role:admin'] }),
     validateBodyForUpdate,
     async (req, res) => {
         try {
@@ -145,7 +160,7 @@ route.put(
 route.delete(
     '/:id',
     validateParamsId,
-    needsToBeOwner({ permissions: ['roles:admin', 'roles:editor'] }),
+    needsToBeOwner({ permissions: ['role:admin'] }),
     async (req, res) => {
         try {
             const result = await model.deleteRole({ id: req.params.id });

@@ -13,7 +13,7 @@ export interface FindRolesParams {
 }
 
 export interface FindRolesReturnPermissionsParams {
-    query: any;
+    ids: string[];
 }
 
 export interface FindRoleByIdParams {

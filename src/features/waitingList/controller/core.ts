@@ -22,30 +22,34 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', needsToBeOwner({ permissions: ['admin'] }), async (req, res) => {
-    try {
-        const waitingList = await model.getWaitingList();
+route.get(
+    '/',
+    needsToBeOwner({ permissions: ['waiting-list:admin'] }),
+    async (req, res) => {
+        try {
+            const waitingList = await model.getWaitingList();
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.waitingList.reader.all.success',
-            message: 'Reader all success',
-            transaction: nanoid(),
-            data: waitingList,
-        } as APIResponse<model.WaitingListDocument[]>);
-    } catch (error) {
-        logger('Reader all waitingList failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.waitingList.reader.all.failed',
-            message: `Reader all failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            res.json({
+                code: 'vitruveo.studio.api.admin.waitingList.reader.all.success',
+                message: 'Reader all success',
+                transaction: nanoid(),
+                data: waitingList,
+            } as APIResponse<model.WaitingListDocument[]>);
+        } catch (error) {
+            logger('Reader all waitingList failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.waitingList.reader.all.failed',
+                message: `Reader all failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.post(
     '/',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['waiting-list:admin'] }),
     validateBodyForCreate,
     async (req, res) => {
         try {
@@ -73,7 +77,7 @@ route.post(
 
 route.put(
     '/:id',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['waiting-list:admin'] }),
     validateParamsId,
     validateBodyForUpdate,
     async (req, res) => {
@@ -103,7 +107,7 @@ route.put(
 
 route.delete(
     '/:id',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['waiting-list:admin'] }),
     validateParamsId,
     async (req, res) => {
         try {
@@ -129,7 +133,7 @@ route.delete(
 
 route.post(
     '/multiple',
-    needsToBeOwner({ permissions: ['admin'] }),
+    needsToBeOwner({ permissions: ['waiting-list:admin'] }),
     validateBodyForCreateMultiple,
     async (req, res) => {
         try {

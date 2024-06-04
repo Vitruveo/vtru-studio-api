@@ -129,7 +129,7 @@ route.post('/', validateBodyForCreate, async (req, res) => {
 route.put(
     '/:id',
     validateParamsId,
-    needsToBeOwner({ permissions: ['creator:admin', 'creator:editor'] }),
+    needsToBeOwner({ permissions: ['creator:admin'] }),
     validateBodyForPut,
     async (req, res) => {
         try {
@@ -159,7 +159,7 @@ route.put(
 route.delete(
     '/:id',
     validateParamsId,
-    needsToBeOwner({ permissions: ['creator:admin', 'creator:editor'] }),
+    needsToBeOwner({ permissions: ['creator:admin'] }),
     async (req, res) => {
         try {
             const result = await model.deleteCreator({ id: req.params.id });
@@ -264,7 +264,7 @@ route.get('/:email/email', validateParamsEmail, async (req, res) => {
 route.post(
     '/:id/email',
     validateParamsId,
-    needsToBeOwner({ permissions: ['creator:admin', 'creator:editor'] }),
+    needsToBeOwner({ permissions: ['creator:admin'] }),
     validateBodyForAddEmail,
     async (req, res) => {
         try {

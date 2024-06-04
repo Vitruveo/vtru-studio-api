@@ -21,6 +21,12 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
         },
     });
 
+    const userAlreadyExists = await db.collection(COLLECTION_USERS).findOne({
+        'login.email': admin.login.email,
+    });
+
+    if (userAlreadyExists) return;
+
     await db.collection(COLLECTION_USERS).insertOne(admin);
     await db
         .collection(COLLECTION_USERS)

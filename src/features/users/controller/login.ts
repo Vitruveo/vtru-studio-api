@@ -19,6 +19,7 @@ import { sendToExchangeMail } from '../../../services/mail';
 import { redis } from '../../../services/redis';
 import { otpConfirmSchema } from './schemas';
 import { validateBodyForLogin } from './rules';
+import { findRoleReturnPermissions } from '../../roles/model';
 
 export interface LoginAnswer {
     token: string;
@@ -68,22 +69,11 @@ route.post('/otpConfirm', async (req, res) => {
             data: loginHistory,
         });
 
-        const permissions = user.roles;
-
-        // if (permissions) {
-        //     const findPermissions = await findRoleReturnPermissions({
-        //         query: {
-        //             _id: {
-        //                 $in:
-        //                     user.roles?.map((item) => new ObjectId(item)) || [],
-        //             },
-        //         },
-        //     });
-        //     permissions = findPermissions.reduce(
-        //         (acc, item) => [...acc, ...item.permissions],
-        //         [] as string[]
-        //     );
-        // }
+        const permissions = user.roles
+            ? ((await findRoleReturnPermissions({
+                  ids: user.roles,
+              })) as unknown as string[])
+            : [];
 
         const payload = {
             id: user._id.toString(),

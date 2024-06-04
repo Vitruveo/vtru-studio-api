@@ -69,41 +69,46 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
     }
 });
 
-route.get('/', validateQueries, async (req, res) => {
-    try {
-        const { query }: { query: Query } = req;
-        const assets = await model.findAssets({
-            query: { limit: query.limit },
-            sort: query.sort
-                ? { [query.sort.field]: query.sort.order }
-                : { name: 1 },
-            skip: query.skip || 0,
-        });
-
-        res.set('Content-Type', 'text/event-stream');
-        res.set('Cache-Control', 'no-cache');
-        res.set('Connection', 'keep-alive');
-        res.flushHeaders();
-
-        assets
-            .on('data', (doc) => {
-                res.write('event: asset_list\n');
-                res.write(`id: ${doc._id}\n`);
-                res.write(`data: ${JSON.stringify(doc)}\n\n`);
-            })
-            .on('end', () => {
-                res.end();
+route.get(
+    '/',
+    needsToBeOwner({ permissions: ['asset:admin'] }),
+    validateQueries,
+    async (req, res) => {
+        try {
+            const { query }: { query: Query } = req;
+            const assets = await model.findAssets({
+                query: { limit: query.limit },
+                sort: query.sort
+                    ? { [query.sort.field]: query.sort.order }
+                    : { name: 1 },
+                skip: query.skip || 0,
             });
-    } catch (error) {
-        logger('Reader all assets failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.reader.all.failed',
-            message: `Reader all failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+
+            res.set('Content-Type', 'text/event-stream');
+            res.set('Cache-Control', 'no-cache');
+            res.set('Connection', 'keep-alive');
+            res.flushHeaders();
+
+            assets
+                .on('data', (doc) => {
+                    res.write('event: asset_list\n');
+                    res.write(`id: ${doc._id}\n`);
+                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
+                })
+                .on('end', () => {
+                    res.end();
+                });
+        } catch (error) {
+            logger('Reader all assets failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.reader.all.failed',
+                message: `Reader all failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.get('/:id', validateParamsId, async (req, res) => {
     try {
@@ -160,7 +165,7 @@ route.post('/', validateBodyForCreate, async (req, res) => {
 
 route.put(
     '/status',
-    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    needsToBeOwner({ permissions: ['asset:admin'] }),
     validateBodyForUpdateManyStatus,
     async (req, res) => {
         const body = req.body as {
@@ -194,7 +199,7 @@ route.put(
 
 route.put(
     '/:id/status',
-    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    needsToBeOwner({ permissions: ['asset:admin'] }),
     validateBodyForUpdateStatus,
     async (req, res) => {
         try {
@@ -237,7 +242,7 @@ route.put(
 route.put(
     '/:id',
     validateParamsId,
-    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    needsToBeOwner({ permissions: ['asset:admin'] }),
     validateBodyForUpdate,
     async (req, res) => {
         try {
@@ -267,7 +272,7 @@ route.put(
 route.delete(
     '/:id',
     validateParamsId,
-    needsToBeOwner({ permissions: ['assets:admin', 'assets:editor'] }),
+    needsToBeOwner({ permissions: ['asset:admin'] }),
     async (req, res) => {
         try {
             const result = await model.deleteAssets({ id: req.params.id });
