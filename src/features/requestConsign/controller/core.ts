@@ -9,6 +9,7 @@ import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { Query } from '../../common/types';
 import { validateBodyForPatch } from './rules';
+import emitter from '../../events';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
@@ -80,7 +81,7 @@ route.get(
         try {
             const { query }: { query: Query } = req;
 
-            const requestConsigns = await model.findRequestConsigns({
+            const requestConsigns = model.findRequestConsigns({
                 query: { limit: query.limit },
                 sort: query.sort
                     ? { [query.sort.field]: query.sort.order }
@@ -93,6 +94,27 @@ route.get(
             res.set('Connection', 'keep-alive');
             res.flushHeaders();
 
+            const sendEvent = (data: any, eventType: string) => {
+                const sendAll = [data].flat();
+                sendAll.forEach((item) => {
+                    res.write(`event: ${eventType}\n`);
+                    res.write(`id: ${nanoid()}\n`);
+                    res.write(`data: ${JSON.stringify(item)}\n\n`);
+                });
+                return !(res.closed || res.destroyed);
+            };
+
+            // live request consigns
+            const sendEventRequestConsigns = (
+                value: model.RequestConsignDocument
+            ) => sendEvent(value, 'createRequestConsign');
+
+            emitter.on('createRequestConsign', sendEventRequestConsigns);
+
+            const removeListeners = () => {
+                emitter.off('createRequestConsign', sendEventRequestConsigns);
+            };
+
             requestConsigns
                 .on('data', (doc) => {
                     res.write('event: request_consigns_list\n');
@@ -102,6 +124,9 @@ route.get(
                 .on('end', () => {
                     res.end();
                 });
+            res.on('close', removeListeners);
+            res.on('error', removeListeners);
+            res.on('finish', removeListeners);
         } catch (error) {
             logger('Find request consign failed: %O', error);
             res.status(500).json({
