@@ -27,7 +27,7 @@ export interface FindOneRequestConsignByCreatorParams {
     creator: string;
 }
 
-export interface UpdateRequestConsignStatusParams {
+export interface UpdateRequestConsignParams {
     id: string;
-    requestConsignStatus: Status;
+    requestConsign: Record<string, any>;
 }

@@ -121,7 +121,7 @@ route.patch(
     async (req, res) => {
         try {
             const { id } = req.params;
-            const { status } = req.body;
+            const { status, logs } = req.body;
 
             const requestConsign = await model.findRequestConsignsById({ id });
 
@@ -136,7 +136,10 @@ route.patch(
 
             const result = await model.updateRequestConsign({
                 id,
-                requestConsignStatus: status,
+                requestConsign: {
+                    status,
+                    ...(logs && { logs }),
+                },
             });
 
             if (status !== 'approved') {

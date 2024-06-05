@@ -5,4 +5,13 @@ export const schemaValidationForPatch = z.object({
     status: StatusSchema.refine((status) => status !== 'pending', {
         message: 'Status must not be pending',
     }),
+    logs: z
+        .array(
+            z.object({
+                status: z.string(),
+                message: z.string(),
+                when: z.string(),
+            })
+        )
+        .optional(),
 });

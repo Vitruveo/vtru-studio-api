@@ -11,6 +11,15 @@ export const RequestConsignSchema = z.object({
     creator: z.string(),
     when: z.date().default(() => new Date()),
     status: StatusSchema,
+    logs: z
+        .array(
+            z.object({
+                status: z.string(),
+                message: z.string(),
+                when: z.date(),
+            })
+        )
+        .default([]),
 });
 
 export type RequestConsign = z.infer<typeof RequestConsignSchema>;
