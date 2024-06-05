@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const COLLECTION_REQUEST_CONSIGNS = 'requestConsigns';
 
 export const StatusSchema = z
-    .enum(['pending', 'approved', 'rejected'])
+    .enum(['pending', 'approved', 'rejected', 'error', 'running'])
     .default('pending');
 
 export const RequestConsignSchema = z.object({

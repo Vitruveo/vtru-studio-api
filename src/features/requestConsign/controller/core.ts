@@ -2,6 +2,7 @@ import debug from 'debug';
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import * as model from '../model';
+import * as modelAssets from '../../assets/model';
 import { middleware } from '../../users';
 import { needsToBeOwner, validateQueries } from '../../common/rules';
 import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
@@ -45,6 +46,14 @@ route.post('/', async (req, res) => {
         });
 
         const result = await model.createRequestConsign({ requestConsign });
+        await modelAssets.updateAssets({
+            id: asset._id,
+            asset: {
+                consignArtwork: {
+                    status: 'pending',
+                },
+            },
+        });
 
         res.json({
             code: 'vitruveo.studio.api.requestConsign.success',
@@ -129,6 +138,15 @@ route.patch(
                 id,
                 requestConsignStatus: status,
             });
+
+            if (status !== 'approved') {
+                await modelAssets.updateAssets({
+                    id: requestConsign.asset.toString(),
+                    asset: {
+                        consignArtwork: { status },
+                    },
+                });
+            }
 
             res.json({
                 code: 'vitruveo.studio.api.requestConsign.success',

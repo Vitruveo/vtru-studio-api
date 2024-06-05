@@ -27,7 +27,54 @@ export const findRequestConsigns = ({
     sort,
     limit,
 }: FindRequestConsignsParams) => {
-    let result = requestConsigns().find(query, {}).sort(sort).skip(skip);
+    let result = requestConsigns().aggregate([
+        { $match: query },
+        {
+            $addFields: {
+                asset: { $toObjectId: '$asset' },
+                creator: { $toObjectId: '$creator' },
+            },
+        },
+        {
+            $lookup: {
+                from: 'assets',
+                localField: 'asset',
+                foreignField: '_id',
+                as: 'asset',
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'creator',
+                foreignField: '_id',
+                as: 'creator',
+            },
+        },
+        { $unwind: '$asset' },
+        { $unwind: '$creator' },
+        {
+            $project: {
+                _id: 1,
+                status: 1,
+                asset: {
+                    _id: 1,
+                    title: '$asset.assetMetadata.context.formData.title',
+                },
+                creator: {
+                    _id: 1,
+                    username: '$creator.username',
+                    emails: '$creator.emails',
+                },
+            },
+        },
+        {
+            $sort: sort,
+        },
+        {
+            $skip: skip,
+        },
+    ]);
     if (limit) result = result.limit(limit);
 
     return result.stream();
