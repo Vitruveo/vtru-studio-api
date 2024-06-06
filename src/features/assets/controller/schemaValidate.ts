@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ObjectId as MongoObjectId } from '../../../services';
+import { ObjectId as MongoObjectId } from '../../../services/mongo';
 
 const ObjectId = z.instanceof(MongoObjectId);
 const ISODate = z.date();
@@ -15,25 +15,73 @@ const FrameworkSchema = z.object({
 const FormDataSchema = z.object({
     title: z.string(),
     description: z.string(),
+    colors: z.array(z.array(z.number())).default([]),
+    culture: z.string(),
+    mood: z.array(z.string()),
+    orientation: z.string(),
 });
 
 const CreatorsSchema = z.object({
     name: z.string(),
+    roles: z.array(z.string()).default([]),
+    bio: z.string().optional(),
+    nationality: z.string().optional(),
+    residence: z.string().optional(),
+    ethnicity: z.string().optional(),
+    gender: z.string().optional(),
+    profileUrl: z.string().url().optional(),
+});
+
+const TaxonomySchema = z.object({
+    objectType: z.string(),
+    category: z.string(),
+    tags: z.array(z.string()).default([]),
+    collections: z.array(z.string()).default([]),
+    medium: z.array(z.string()).default([]),
+    style: z.array(z.string()).default([]),
+    subject: z.array(z.string()).default([]),
+    aiGeneration: z.string(),
+    arenabled: z.string().default('no'),
+    nudity: z.string(),
+});
+
+const ProvenanceSchema = z.object({
+    country: z.string().optional(),
+    blockchain: z.string().optional(),
+    exhibitions: z
+        .array(
+            z.object({
+                exhibitionName: z.string().optional(),
+                exhibitionUrl: z.string().url().optional(),
+            })
+        )
+        .default([]),
+    awards: z
+        .array(
+            z.object({
+                awardName: z.string().optional(),
+                awardUrl: z.string().url().optional(),
+            })
+        )
+        .default([]),
 });
 
 const AssetMetadataSchema = z.object({
-    isCompleted: z.boolean(),
+    isCompleted: z.boolean().default(false),
     context: z.object({
         formData: FormDataSchema,
     }),
-    creators: z.object({
-        formData: z.array(CreatorsSchema),
-    }),
-    taxonomy: z
+    creators: z
         .object({
-            arenable: z.boolean().default(false),
+            formData: z.array(CreatorsSchema).default([]),
         })
         .default({}),
+    taxonomy: z.object({
+        formData: TaxonomySchema,
+    }),
+    provenance: z.object({
+        formData: ProvenanceSchema,
+    }),
 });
 
 const NFTLicenseSchema = z
@@ -55,6 +103,7 @@ const NFTLicenseSchema = z
                 numberOfEditions: NumberInt,
                 totalPrice: NumberInt,
                 editionDiscount: z.boolean(),
+                availableLicenses: z.number().min(1).default(1),
             })
             .optional(),
         single: z
@@ -109,6 +158,7 @@ const PrintLicenseSchema = z
         version: z.string(),
         added: z.boolean(),
         unitPrice: NumberInt,
+        availableLicenses: z.number().min(1).default(1),
     })
     .refine(
         (value) => {
@@ -127,6 +177,7 @@ const RemixLicenseSchema = z
         version: z.string(),
         added: z.boolean(),
         unitPrice: NumberInt,
+        availableLicenses: z.number().min(1).default(1),
     })
     .refine(
         (value) => {
@@ -154,6 +205,10 @@ const LicensesSchema = z
         }
     );
 
+const OrientationSchema = z.enum(['landscape', 'portrait', 'square']);
+
+export type Orientation = z.infer<typeof OrientationSchema>;
+
 const FormatsSchema = z.object({
     name: z.string(),
     path: z.string(),
@@ -161,18 +216,27 @@ const FormatsSchema = z.object({
     size: NumberInt.nullable().optional(),
     width: NumberInt.optional(),
     height: NumberInt.optional(),
-    definition: z.string().optional(),
+    definition: OrientationSchema.optional(),
 });
 
 const MediaAuxiliarySchema = z.object({
     description: z.string().optional(),
-    formats: z.object({
-        arImage: FormatsSchema.nullable(),
-        arVideo: FormatsSchema.nullable(),
-        btsImage: FormatsSchema.nullable(),
-        btsVideo: FormatsSchema.nullable(),
-        codeZip: FormatsSchema.nullable(),
-    }),
+    formats: z
+        .object({
+            arImage: FormatsSchema.nullable(),
+            arVideo: FormatsSchema.nullable(),
+            btsImage: FormatsSchema.nullable(),
+            btsVideo: FormatsSchema.nullable(),
+            codeZip: FormatsSchema.nullable(),
+        })
+        .optional(),
+});
+
+const ConsignArtworkSchema = z.object({
+    status: z.string(),
+    listing: z.string().default(new Date().toISOString()),
+    tokenUri: z.string().optional(),
+    assetKey: z.string().optional(),
 });
 
 const AssetFormatsSchema = z
@@ -192,23 +256,69 @@ const AssetFormatsSchema = z
         { message: 'All formats must have a path.' }
     );
 
+const ContractExplorerSchemaOld = z
+    .object({
+        explorer: z.string().nullable().default(null),
+        tx: z.string().nullable().default(null),
+        assetId: z.number().nullable().default(null),
+        assetRefId: z.number().nullable().default(null),
+        creatorRefId: z.number().nullable().default(null),
+    })
+    .default({});
+
+const ContractExplorerSchemaNew = z
+    .object({
+        contractAddress: z.string().nullable().default(null),
+        transactionHash: z.string().nullable().default(null),
+        explorerUrl: z.string().url().nullable().default(null),
+        blockNumber: z.number().nullable().default(null),
+        licenses: z.array(z.number()).default([]),
+        createdAt: z.date().nullable().default(null),
+    })
+    .default({});
+
+const ContractExplorerSchema = ContractExplorerSchemaOld.and(
+    ContractExplorerSchemaNew
+);
+
+const MintExplorerSchema = z.object({
+    transactionHash: z.string().nullable().default(null),
+    explorerUrl: z.string().url().nullable().default(null),
+    address: z.string().nullable().default(null),
+    createdAt: z.date().nullable().default(null),
+});
+
+const IPFSSchema = z.record(z.string().nullable()).default({});
+
+const C2PASchema = z
+    .object({
+        finishedAt: z.date().optional().nullable().default(null),
+    })
+    .default({});
+
 const TermsSchema = z.object({
+    isOriginal: z.boolean(),
     contract: z.boolean(),
     generatedArtworkAI: z.boolean(),
-    isOriginal: z.boolean(),
     notMintedOtherBlockchain: z.boolean(),
 });
 
 export const schemaAssetValidation = z.object({
     _id: ObjectId,
-    status: z.string(),
-    framework: FrameworkSchema,
-    assetMetadata: AssetMetadataSchema,
-    licenses: LicensesSchema,
-    terms: TermsSchema,
-    uploadedMediaKeys: z.array(z.string()),
     formats: AssetFormatsSchema,
+    assetMetadata: AssetMetadataSchema,
     mediaAuxiliary: MediaAuxiliarySchema.optional(),
-});
+    licenses: LicensesSchema,
+    ipfs: IPFSSchema.optional(),
+    c2pa: C2PASchema.optional(),
+    terms: TermsSchema,
+    contractExplorer: ContractExplorerSchema,
+    consignArtwork: ConsignArtworkSchema.optional(),
+    mintExplorer: MintExplorerSchema.optional(),
+    framework: FrameworkSchema,
 
-export type SchemaAssetValidation = z.infer<typeof schemaAssetValidation>;
+    // repository of media keys
+    uploadedMediaKeys: z.array(z.string()),
+
+    status: z.string(),
+});
