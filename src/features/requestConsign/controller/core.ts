@@ -94,34 +94,27 @@ route.get(
             res.set('Connection', 'keep-alive');
             res.flushHeaders();
 
-            const sendEvent = (data: any, eventType: string) => {
-                const sendAll = [data].flat();
-                sendAll.forEach((item) => {
-                    res.write(`event: ${eventType}\n`);
-                    res.write(`id: ${nanoid()}\n`);
-                    res.write(`data: ${JSON.stringify(item)}\n\n`);
-                });
+            const sendEvent = (data: model.RequestConsignDocument) => {
+                res.write(`event: request_consign\n`);
+                res.write(`id: ${nanoid()}\n`);
+                res.write(`data: ${JSON.stringify(data)}\n\n`);
                 return !(res.closed || res.destroyed);
             };
 
-            requestConsigns
-                .on('data', (doc) => {
-                    res.write('event: request_consigns_list\n');
-                    res.write(`id: ${doc._id}\n`);
-                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
-                })
-                .on('end', () => {
-                    res.end();
-                });
+            // live
+            emitter.on('createRequestConsign', sendEvent);
 
-            const sendEventRequestConsigns = (
-                value: model.RequestConsignDocument
-            ) => sendEvent(value, 'createRequestConsign');
-
-            emitter.on('createRequestConsign', sendEventRequestConsigns);
+            // history
+            const requestConsignQueue = (
+                data: model.RequestConsignDocument[]
+            ) => {
+                data.forEach(sendEvent);
+            };
+            emitter.on('requestConsigns', requestConsignQueue);
 
             const removeListeners = () => {
-                emitter.off('createRequestConsign', sendEventRequestConsigns);
+                emitter.off('createRequestConsign', sendEvent);
+                emitter.off('requestConsigns', requestConsignQueue);
                 if (requestConsigns) {
                     requestConsigns.removeAllListeners('data');
                     requestConsigns.removeAllListeners('end');
@@ -131,6 +124,8 @@ route.get(
             res.on('close', removeListeners);
             res.on('error', removeListeners);
             res.on('finish', removeListeners);
+
+            emitter.emit('initial');
         } catch (error) {
             logger('Find request consign failed: %O', error);
             res.status(500).json({
