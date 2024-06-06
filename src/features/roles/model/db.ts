@@ -33,16 +33,34 @@ export const findRoles = async ({
 };
 
 export const findRoleReturnPermissions = async ({
-    query,
-}: FindRolesReturnPermissionsParams) => {
-    const result = await roles().find(query, {
-        projection: {
-            permissions: 1,
-        },
-    });
-
-    return result.toArray();
-};
+    ids,
+}: FindRolesReturnPermissionsParams) =>
+    roles()
+        .aggregate([
+            {
+                $match: {
+                    _id: {
+                        $in: ids.map((id) => new ObjectId(id)),
+                    },
+                },
+            },
+            {
+                $project: {
+                    permissions: 1,
+                },
+            },
+            {
+                $unwind: '$permissions',
+            },
+            {
+                $group: {
+                    _id: null,
+                    permissions: { $addToSet: '$permissions' },
+                },
+            },
+        ])
+        .toArray()
+        .then((res) => res[0]?.permissions || []);
 
 export const findRoleById = async ({ id }: FindRoleByIdParams) => {
     const result = await roles().findOne({ _id: new ObjectId(id) });

@@ -23,7 +23,10 @@ route.get('/:id', async (req, res) => {
             return;
         }
 
-        if (asset.framework.createdBy !== req.auth.id) {
+        if (
+            req.auth.type !== 'user' &&
+            asset.framework.createdBy !== req.auth.id
+        ) {
             res.status(401).json({
                 code: 'vitruveo.studio.api.admin.assets.preview.unauthorized',
                 message: 'Unauthorized access',

@@ -79,3 +79,7 @@ export interface RemoveUploadedMediaKeysParams {
     id: string | ObjectId;
     mediaKeys: string[];
 }
+
+export interface FindAssetsCarouselParams {
+    layout?: 'vertical' | 'horizontal';
+}

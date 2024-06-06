@@ -16,6 +16,7 @@ import type {
     FindAssetsSubjectsParams,
     FindAssetsByCreatorName,
     UpdateManyAssetsStatusParams,
+    FindAssetsCarouselParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { conditionsToShowAssets } from '../controller/public';
@@ -448,7 +449,7 @@ export const removeUploadedMediaKeys = async ({
     return result;
 };
 
-export const findAssetsCarousel = () =>
+export const findAssetsCarousel = ({ layout }: FindAssetsCarouselParams) =>
     assets()
         .aggregate([
             {
@@ -483,6 +484,7 @@ export const findAssetsCarousel = () =>
                     creatorInformation: {
                         $exists: true,
                     },
+                    'assetMetadata.context.formData.orientation': layout ?? 'horizontal',
                 },
             },
             {
