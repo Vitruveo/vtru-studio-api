@@ -9,7 +9,7 @@ import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { Query } from '../../common/types';
 import { validateBodyForPatch } from './rules';
-import emitter from '../../events';
+import { emitter } from '../emitter';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();

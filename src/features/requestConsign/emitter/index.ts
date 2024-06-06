@@ -1,5 +1,5 @@
 import { EventEmitter } from 'stream';
-import { RequestConsignDocument } from '../../requestConsign/model';
+import { RequestConsignDocument } from '../model';
 
 class Emitter extends EventEmitter {
     emitCreateRequestConsign = (value: RequestConsignDocument) => {

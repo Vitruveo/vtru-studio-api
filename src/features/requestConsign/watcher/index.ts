@@ -4,7 +4,7 @@ import debug from 'debug';
 import { exitWithDelay, retry } from '../../../utils';
 import { getDb } from '../../../services';
 import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from '../model';
-import emitter from '../../events';
+import { emitter } from '../emitter';
 
 const logger = debug('features:requestConsign:watcher');
 
