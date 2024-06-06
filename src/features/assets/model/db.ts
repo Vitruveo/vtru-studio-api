@@ -37,7 +37,6 @@ export const findAssetsPaginated = ({
     colors,
     precision,
 }: FindAssetsPaginatedParams) => {
-    
     const aggregate = [
         {
             $match: query,
@@ -85,7 +84,7 @@ export const findAssetsPaginated = ({
             $sort: {
                 'consignArtwork.status': 1,
                 'licenses.nft.availableLicenses': -1,
-                'consignArtwork.listing': 1,
+                'consignArtwork.listing': -1,
             },
         },
         {
@@ -484,7 +483,8 @@ export const findAssetsCarousel = ({ layout }: FindAssetsCarouselParams) =>
                     creatorInformation: {
                         $exists: true,
                     },
-                    'assetMetadata.context.formData.orientation': layout ?? 'horizontal',
+                    'assetMetadata.context.formData.orientation':
+                        layout ?? 'horizontal',
                 },
             },
             {
