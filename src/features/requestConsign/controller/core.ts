@@ -104,6 +104,15 @@ route.get(
                 return !(res.closed || res.destroyed);
             };
 
+            (async () => {
+                // eslint-disable-next-line no-restricted-syntax
+                for await (const requestConsign of requestConsigns) {
+                    if (!sendEvent(requestConsign, 'initialRequestConsigns')) {
+                        break;
+                    }
+                }
+            })();
+
             // live request consigns
             const sendEventRequestConsigns = (
                 value: model.RequestConsignDocument
@@ -115,15 +124,6 @@ route.get(
                 emitter.off('createRequestConsign', sendEventRequestConsigns);
             };
 
-            requestConsigns
-                .on('data', (doc) => {
-                    res.write('event: request_consigns_list\n');
-                    res.write(`id: ${doc._id}\n`);
-                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
-                })
-                .on('end', () => {
-                    res.end();
-                });
             res.on('close', removeListeners);
             res.on('error', removeListeners);
             res.on('finish', removeListeners);
