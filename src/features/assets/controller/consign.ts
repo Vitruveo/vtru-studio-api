@@ -1,6 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
+import { ZodError } from 'zod';
 
 import * as model from '../model';
 import * as modelCreator from '../../creators/model';
@@ -10,6 +11,7 @@ import { APIResponse, captureException } from '../../../services';
 import { sendToExchangeRSS } from '../../../services/rss';
 import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
 import { schemaAssetValidation } from './schemaValidate';
+import { formatErrorMessage } from '../../../utils';
 
 const logger = debug('features:assets:controller:consign');
 const route = Router();
@@ -290,7 +292,7 @@ route.get('/validation', async (req, res) => {
             code: 'vitruveo.studio.api.assets.consign.validation.error',
             message: 'Consign validation error',
             transaction: nanoid(),
-            args: error instanceof Error ? error.message : error,
+            args: error instanceof ZodError ? formatErrorMessage(error) : error,
         } as APIResponse);
     }
 });
