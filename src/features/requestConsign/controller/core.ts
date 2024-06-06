@@ -7,7 +7,6 @@ import { middleware } from '../../users';
 import { needsToBeOwner, validateQueries } from '../../common/rules';
 import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
-import { Query } from '../../common/types';
 import { validateBodyForPatch } from './rules';
 import { emitter } from '../emitter';
 
@@ -77,18 +76,8 @@ route.get(
     '/',
     needsToBeOwner({ permissions: ['moderator:admin', 'moderator:reader'] }),
     validateQueries,
-    async (req, res) => {
+    async (_req, res) => {
         try {
-            const { query }: { query: Query } = req;
-
-            const requestConsigns = model.findRequestConsigns({
-                query: { limit: query.limit },
-                sort: query.sort
-                    ? { [query.sort.field]: query.sort.order }
-                    : { name: 1 },
-                skip: query.skip || 0,
-            });
-
             res.set('Content-Type', 'text/event-stream');
             res.set('Cache-Control', 'no-cache');
             res.set('Connection', 'keep-alive');
@@ -110,15 +99,11 @@ route.get(
             ) => {
                 data.forEach(sendEvent);
             };
-            emitter.on('requestConsigns', requestConsignQueue);
+            emitter.once('requestConsigns', requestConsignQueue);
 
             const removeListeners = () => {
                 emitter.off('createRequestConsign', sendEvent);
                 emitter.off('requestConsigns', requestConsignQueue);
-                if (requestConsigns) {
-                    requestConsigns.removeAllListeners('data');
-                    requestConsigns.removeAllListeners('end');
-                }
             };
 
             res.on('close', removeListeners);
