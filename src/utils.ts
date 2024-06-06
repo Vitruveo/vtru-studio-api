@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import debug from 'debug';
+import { ZodError } from 'zod';
 
 const logger = debug('utils');
 
@@ -68,4 +69,15 @@ export const exitWithDelay = ({
     setTimeout(() => {
         process.exit(exitCode);
     }, timeout);
+};
+
+export const formatErrorMessage = (error: ZodError) => {
+    if (error.issues.length === 0) return 'No errors found.';
+
+    return error.issues
+        .map((err) => {
+            const path = err.path.join(' -> ');
+            return `Error: ${err.message} at ${path}.`;
+        })
+        .join('\n');
 };
