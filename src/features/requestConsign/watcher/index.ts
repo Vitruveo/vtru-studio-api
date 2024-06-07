@@ -82,7 +82,17 @@ uniqueExecution({
                     .watch([], { fullDocument: 'updateLookup' });
 
                 changeStream.on('change', async (change) => {
-                    // if (change.operationType === 'update') {}
+                    if (change.operationType === 'update') {
+                        if (!change.fullDocument) return;
+                        const requestUpdated = change.fullDocument;
+                        const index = status.data.findIndex(
+                            (element) =>
+                                element._id.toString() ===
+                                requestUpdated._id.toString()
+                        );
+                        if (index === -1) return;
+                        status.data[index].status = requestUpdated.status;
+                    }
 
                     if (change.operationType === 'insert') {
                         if (!change.fullDocument) return;
