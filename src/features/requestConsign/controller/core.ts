@@ -7,8 +7,8 @@ import { middleware } from '../../users';
 import { needsToBeOwner, validateQueries } from '../../common/rules';
 import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
-import { Query } from '../../common/types';
 import { validateBodyForPatch } from './rules';
+import { emitter } from '../emitter';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
@@ -76,32 +76,41 @@ route.get(
     '/',
     needsToBeOwner({ permissions: ['moderator:admin', 'moderator:reader'] }),
     validateQueries,
-    async (req, res) => {
+    async (_req, res) => {
         try {
-            const { query }: { query: Query } = req;
-
-            const requestConsigns = await model.findRequestConsigns({
-                query: { limit: query.limit },
-                sort: query.sort
-                    ? { [query.sort.field]: query.sort.order }
-                    : { name: 1 },
-                skip: query.skip || 0,
-            });
-
             res.set('Content-Type', 'text/event-stream');
             res.set('Cache-Control', 'no-cache');
             res.set('Connection', 'keep-alive');
             res.flushHeaders();
 
-            requestConsigns
-                .on('data', (doc) => {
-                    res.write('event: request_consigns_list\n');
-                    res.write(`id: ${doc._id}\n`);
-                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
-                })
-                .on('end', () => {
-                    res.end();
-                });
+            const sendEvent = (data: model.RequestConsignDocument) => {
+                res.write(`event: request_consign\n`);
+                res.write(`id: ${nanoid()}\n`);
+                res.write(`data: ${JSON.stringify(data)}\n\n`);
+                return !(res.closed || res.destroyed);
+            };
+
+            // live
+            emitter.on('createRequestConsign', sendEvent);
+
+            // history
+            const requestConsignQueue = (
+                data: model.RequestConsignDocument[]
+            ) => {
+                data.forEach(sendEvent);
+            };
+            emitter.once('requestConsigns', requestConsignQueue);
+
+            const removeListeners = () => {
+                emitter.off('createRequestConsign', sendEvent);
+                emitter.off('requestConsigns', requestConsignQueue);
+            };
+
+            res.on('close', removeListeners);
+            res.on('error', removeListeners);
+            res.on('finish', removeListeners);
+
+            emitter.emit('initial');
         } catch (error) {
             logger('Find request consign failed: %O', error);
             res.status(500).json({
