@@ -2,7 +2,7 @@ import { uniqueExecution } from '@nsfilho/unique';
 import { captureException } from '@sentry/node';
 import debug from 'debug';
 import { exitWithDelay, retry } from '../../../utils';
-import { getDb } from '../../../services';
+import { ObjectId, getDb } from '../../../services';
 import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from '../model';
 import { emitter } from '../emitter';
 
@@ -81,12 +81,68 @@ uniqueExecution({
                     )
                     .watch([], { fullDocument: 'updateLookup' });
 
-                changeStream.on('change', (change) => {
+                changeStream.on('change', async (change) => {
+                    // if (change.operationType === 'update') {}
+
                     if (change.operationType === 'insert') {
                         if (!change.fullDocument) return;
-                        status.data.push(change.fullDocument);
 
-                        emitter.emitCreateRequestConsign(change.fullDocument);
+                        const asset = await getDb()
+                            .collection('assets')
+                            .findOne(
+                                {
+                                    _id: new ObjectId(
+                                        change.fullDocument.asset
+                                    ),
+                                },
+                                {
+                                    projection: {
+                                        _id: 1,
+                                        'assetMetadata.context.formData.title': 1,
+                                    },
+                                }
+                            );
+                        const creator = await getDb()
+                            .collection('creators')
+                            .findOne(
+                                {
+                                    _id: new ObjectId(
+                                        change.fullDocument.creator
+                                    ),
+                                },
+                                {
+                                    projection: {
+                                        _id: 1,
+                                        username: 1,
+                                        emails: 1,
+                                    },
+                                }
+                            );
+
+                        if (!asset || !creator) return;
+
+                        const data = {
+                            _id: change.fullDocument._id,
+                            status: change.fullDocument.status,
+                            logs: change.fullDocument.logs,
+                            asset: {
+                                _id: asset._id,
+                                title: asset.assetMetadata.context.formData
+                                    .title,
+                            },
+                            creator: {
+                                _id: creator._id,
+                                username: creator.username,
+                                emails: creator.emails,
+                            },
+                        };
+
+                        status.data.push(
+                            data as unknown as RequestConsignDocument
+                        );
+                        emitter.emitCreateRequestConsign(
+                            data as unknown as RequestConsignDocument
+                        );
                     }
                 });
             },
