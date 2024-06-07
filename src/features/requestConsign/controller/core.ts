@@ -83,26 +83,41 @@ route.get(
             res.set('Connection', 'keep-alive');
             res.flushHeaders();
 
-            const sendEvent = (data: model.RequestConsignDocument) => {
-                res.write(`event: request_consign\n`);
+            const sendEvent = (
+                data: model.RequestConsignDocument,
+                eventType: string
+            ) => {
+                res.write(`event: ${eventType}\n`);
                 res.write(`id: ${nanoid()}\n`);
                 res.write(`data: ${JSON.stringify(data)}\n\n`);
                 return !(res.closed || res.destroyed);
             };
 
             // live
-            emitter.on('createRequestConsign', sendEvent);
+            const sendEventCreateRequestConsign = (
+                data: model.RequestConsignDocument
+            ) => sendEvent(data, 'create_request_consign');
+            emitter.on('createRequestConsign', sendEventCreateRequestConsign);
 
             // history
+            const sendEventRequestConsignHistory = (
+                data: model.RequestConsignDocument
+            ) => sendEvent(data, 'request_consign_history');
+
             const requestConsignQueue = (
                 data: model.RequestConsignDocument[]
             ) => {
-                data.forEach(sendEvent);
+                logger('Request consigns: %O', data);
+                data.forEach(sendEventRequestConsignHistory);
             };
+
             emitter.once('requestConsigns', requestConsignQueue);
 
             const removeListeners = () => {
-                emitter.off('createRequestConsign', sendEvent);
+                emitter.off(
+                    'createRequestConsign',
+                    sendEventCreateRequestConsign
+                );
                 emitter.off('requestConsigns', requestConsignQueue);
             };
 
