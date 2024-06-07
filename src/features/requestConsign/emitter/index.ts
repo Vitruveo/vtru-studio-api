@@ -7,7 +7,7 @@ class Emitter extends EventEmitter {
     };
 
     emitUpdateRequestConsignStatus = (value: RequestConsignDocument) => {
-        this.emit('emitUpdateRequestConsignStatus', value);
+        this.emit('updateRequestConsignStatus', value);
     };
 }
 

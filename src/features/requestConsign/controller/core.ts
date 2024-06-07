@@ -93,11 +93,20 @@ route.get(
                 return !(res.closed || res.destroyed);
             };
 
-            // live
+            // live create request consign
             const sendEventCreateRequestConsign = (
                 data: model.RequestConsignDocument
             ) => sendEvent(data, 'create_request_consign');
             emitter.on('createRequestConsign', sendEventCreateRequestConsign);
+
+            // live update request consign status
+            const sendEventUpdateRequestConsignStatus = (
+                data: model.RequestConsignDocument
+            ) => sendEvent(data, 'update_request_consign_status');
+            emitter.on(
+                'updateRequestConsignStatus',
+                sendEventUpdateRequestConsignStatus
+            );
 
             // history
             const sendEventRequestConsignHistory = (
