@@ -23,12 +23,53 @@ uniqueExecution({
             async () => {
                 logger('Watching changes in requestConsign');
 
-                const requestConsigns = await getDb()
+                const requestConsigns = (await getDb()
                     .collection<RequestConsignDocument>(
                         COLLECTION_REQUEST_CONSIGNS
                     )
-                    .find()
-                    .toArray();
+                    .aggregate([
+                        {
+                            $addFields: {
+                                asset: { $toObjectId: '$asset' },
+                                creator: { $toObjectId: '$creator' },
+                            },
+                        },
+                        {
+                            $lookup: {
+                                from: 'assets',
+                                localField: 'asset',
+                                foreignField: '_id',
+                                as: 'asset',
+                            },
+                        },
+                        {
+                            $lookup: {
+                                from: 'creators',
+                                localField: 'creator',
+                                foreignField: '_id',
+                                as: 'creator',
+                            },
+                        },
+                        { $unwind: '$asset' },
+                        { $unwind: '$creator' },
+                        {
+                            $project: {
+                                _id: 1,
+                                status: 1,
+                                logs: 1,
+                                asset: {
+                                    _id: 1,
+                                    title: '$asset.assetMetadata.context.formData.title',
+                                },
+                                creator: {
+                                    _id: 1,
+                                    username: '$creator.username',
+                                    emails: '$creator.emails',
+                                },
+                            },
+                        },
+                    ])
+                    .toArray()) as RequestConsignDocument[];
                 status.data = requestConsigns;
                 emitter.on('initial', () => {
                     emitter.emit('requestConsigns', status.data);
@@ -44,6 +85,7 @@ uniqueExecution({
                     if (change.operationType === 'insert') {
                         if (!change.fullDocument) return;
                         status.data.push(change.fullDocument);
+
                         emitter.emitCreateRequestConsign(change.fullDocument);
                     }
                 });
