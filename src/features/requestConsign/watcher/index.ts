@@ -92,6 +92,9 @@ uniqueExecution({
                         );
                         if (index === -1) return;
                         status.data[index].status = requestUpdated.status;
+                        emitter.emitUpdateRequestConsignStatus(
+                            status.data[index]
+                        );
                     }
 
                     if (change.operationType === 'insert') {
