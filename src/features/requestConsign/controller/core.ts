@@ -112,11 +112,11 @@ route.get(
             const sendEventRequestConsignHistory = (
                 data: model.RequestConsignDocument
             ) => sendEvent(data, 'request_consign_history');
+            emitter.emit('initial');
 
             const requestConsignQueue = (
                 data: model.RequestConsignDocument[]
             ) => {
-                logger('Request consigns: %O', data);
                 data.forEach(sendEventRequestConsignHistory);
             };
 
@@ -127,14 +127,15 @@ route.get(
                     'createRequestConsign',
                     sendEventCreateRequestConsign
                 );
-                emitter.off('requestConsigns', requestConsignQueue);
+                emitter.off(
+                    'updateRequestConsignStatus',
+                    sendEventUpdateRequestConsignStatus
+                );
             };
 
             res.on('close', removeListeners);
             res.on('error', removeListeners);
             res.on('finish', removeListeners);
-
-            emitter.emit('initial');
         } catch (error) {
             logger('Find request consign failed: %O', error);
             res.status(500).json({
