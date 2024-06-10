@@ -17,6 +17,7 @@ export * from './aws';
 export * from './videoGallery';
 export * from './avatar';
 export * from './store';
+export * from './consign';
 export * from './x';
 export * from './google';
 export * from './facebook';

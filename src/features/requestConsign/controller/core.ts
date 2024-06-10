@@ -3,12 +3,15 @@ import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import * as model from '../model';
 import * as modelAssets from '../../assets/model';
+import * as modelCreator from '../../creators/model';
 import { middleware } from '../../users';
 import { needsToBeOwner, validateQueries } from '../../common/rules';
 import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { validateBodyForPatch } from './rules';
 import { emitter } from '../emitter';
+import { sendToExchangeMail } from '../../../services/mail';
+import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
@@ -183,6 +186,27 @@ route.patch(
                         consignArtwork: { status },
                     },
                 });
+            }
+
+            if (status === 'rejected') {
+                const creator = await modelCreator.findCreatorById({
+                    id: requestConsign.creator,
+                });
+
+                if (
+                    creator &&
+                    Array.isArray(creator.emails) &&
+                    creator.emails.length > 0
+                ) {
+                    await sendToExchangeMail(
+                        JSON.stringify({
+                            template: MAIL_SENDGRID_TEMPLATE_CONSIGN,
+                            to: creator.emails[0].email,
+                            consignMessage:
+                                'Your art was not accepted by the moderators.',
+                        })
+                    );
+                }
             }
 
             res.json({
