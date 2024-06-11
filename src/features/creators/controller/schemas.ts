@@ -9,6 +9,7 @@ export const schemaValidationForPut = z.object({
     wallets: z.array(
         z.object({
             address: z.string(),
+            archived: z.boolean(),
         })
     ),
     emails: z
