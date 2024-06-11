@@ -153,8 +153,12 @@ export const updateAvatar = async ({ id, fileId }: UpdateAvatarParams) => {
 
 export const checkWalletExists = async ({
     address,
+    id,
 }: CheckWalletExistsParams) => {
-    const result = await creators().countDocuments({ wallets: { address } });
+    const result = await creators().countDocuments({
+        _id: { $ne: new ObjectId(id) },
+        wallets: { address },
+    });
     return !!result;
 };
 
