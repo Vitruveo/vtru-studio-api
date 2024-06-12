@@ -71,20 +71,39 @@ export const exitWithDelay = ({
     }, timeout);
 };
 
+export const formatPath = (value: (string | number)[]) =>
+    value
+        .reverse()
+        .filter((item) => item !== 'formData')
+        .map((item, index) => {
+            if (!Number.isNaN(Number(item))) {
+                const position = (Number(item) + 1).toString();
+                return `${position}º ${value[index + 2]}`;
+            }
+            return item;
+        });
+
 export const formatErrorMessage = (error: ZodError) => {
     if (error.issues.length === 0) return 'No errors found.';
 
     const formattedError = error.issues
         .map((err: ZodIssue) => {
-            const path = err.path.reverse().join(' ');
-            const message = err.message.replace(
-                /Expected (\w+), received (\w+)/,
-                (_match, _p1, p2) =>
-                    `Expected some information, received ${
-                        p2 === 'null' ? 'empty' : 'invalid information'
-                    }`
-            );
-            return `${message} at ${path}.`;
+            const path = formatPath(err.path);
+            let message;
+            if (err.code === 'invalid_type') {
+                message = err.message.replace(
+                    /Expected (\w+), received (\w+)/,
+                    (_match, _p1, p2) =>
+                        `Expected some information, received ${
+                            p2 === 'null' ? 'empty' : 'invalid information'
+                        }`
+                );
+            }
+            if (err.code === 'invalid_string') {
+                message = `Expected some information, received ${err.message}`;
+                return `${message} at ${path.join(' in ')}.`;
+            }
+            return `${message} at ${path.join(' ')}.`;
         })
         .join('\n');
     return `Error: Validation Error\n${formattedError}`;
