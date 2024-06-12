@@ -4,7 +4,7 @@ import debug from 'debug';
 import { exitWithDelay, retry } from '../../../utils';
 import { ObjectId, getDb } from '../../../services';
 import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from '../model';
-import { emitter } from '../emitter';
+import { emitter } from '../../events';
 
 const logger = debug('features:requestConsign:watcher');
 
@@ -71,8 +71,8 @@ uniqueExecution({
                     ])
                     .toArray()) as RequestConsignDocument[];
                 status.data = requestConsigns;
-                emitter.on('initial', () => {
-                    emitter.emit('requestConsigns', status.data);
+                emitter.on(emitter.INITIAL_REQUEST_CONSIGNS, () => {
+                    emitter.emit(emitter.LIST_REQUEST_CONSIGNS, status.data);
                 });
 
                 const changeStream = getDb()
@@ -82,6 +82,7 @@ uniqueExecution({
                     .watch([], { fullDocument: 'updateLookup' });
 
                 changeStream.on('change', async (change) => {
+                    // OPERATION TYPE: UPDATE REQUEST CONSIGN
                     if (change.operationType === 'update') {
                         if (!change.fullDocument) return;
                         const requestUpdated = change.fullDocument;
@@ -92,11 +93,10 @@ uniqueExecution({
                         );
                         if (index === -1) return;
                         status.data[index].status = requestUpdated.status;
-                        emitter.emitUpdateRequestConsignStatus(
-                            status.data[index]
-                        );
+                        emitter.emitUpdateRequestConsign(status.data[index]);
                     }
 
+                    // OPERATION TYPE: INSERT REQUEST CONSIGN
                     if (change.operationType === 'insert') {
                         if (!change.fullDocument) return;
 
@@ -155,6 +155,17 @@ uniqueExecution({
                         );
                         emitter.emitCreateRequestConsign(
                             data as unknown as RequestConsignDocument
+                        );
+                    }
+
+                    // OPERATION TYPE: DELETE REQUEST CONSIGN
+                    if (change.operationType === 'delete') {
+                        status.data = status.data.filter(
+                            (item) => item._id !== change.documentKey._id
+                        );
+
+                        emitter.emitDeleteRequestConsign(
+                            change.documentKey._id.toString()
                         );
                     }
                 });

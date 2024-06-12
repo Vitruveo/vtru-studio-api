@@ -11,7 +11,6 @@ import {
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import { Query } from '../../common/types';
 import {
     needsToBeOwner,
     validateParamsId,
@@ -68,47 +67,6 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
         } as APIResponse);
     }
 });
-
-route.get(
-    '/',
-    needsToBeOwner({ permissions: ['asset:admin', 'asset:reader'] }),
-    validateQueries,
-    async (req, res) => {
-        try {
-            const { query }: { query: Query } = req;
-            const assets = await model.findAssets({
-                query: { limit: query.limit },
-                sort: query.sort
-                    ? { [query.sort.field]: query.sort.order }
-                    : { name: 1 },
-                skip: query.skip || 0,
-            });
-
-            res.set('Content-Type', 'text/event-stream');
-            res.set('Cache-Control', 'no-cache');
-            res.set('Connection', 'keep-alive');
-            res.flushHeaders();
-
-            assets
-                .on('data', (doc) => {
-                    res.write('event: asset_list\n');
-                    res.write(`id: ${doc._id}\n`);
-                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
-                })
-                .on('end', () => {
-                    res.end();
-                });
-        } catch (error) {
-            logger('Reader all assets failed: %O', error);
-            res.status(500).json({
-                code: 'vitruveo.studio.api.admin.assets.reader.all.failed',
-                message: `Reader all failed: ${error}`,
-                args: error,
-                transaction: nanoid(),
-            } as APIResponse);
-        }
-    }
-);
 
 route.get('/:id', validateParamsId, async (req, res) => {
     try {

@@ -3,66 +3,19 @@ import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import * as model from '../model';
 import { middleware } from '../../users';
-import { Query } from '../../common/types';
 import {
     APIResponse,
     DeleteResult,
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import {
-    needsToBeOwner,
-    validateParamsId,
-    validateQueries,
-} from '../../common/rules';
+import { needsToBeOwner, validateParamsId } from '../../common/rules';
 import { validateBodyForCreate, validateBodyForUpdate } from './rules';
 
 const logger = debug('features:roles:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
-
-route.get(
-    '/',
-    needsToBeOwner({ permissions: ['role:admin'] }),
-    validateQueries,
-    async (req, res) => {
-        try {
-            const { query }: { query: Query } = req;
-
-            const roles = await model.findRoles({
-                query: { limit: query.limit },
-                sort: query.sort
-                    ? { [query.sort.field]: query.sort.order }
-                    : { name: 1 },
-                skip: query.skip || 0,
-            });
-
-            res.set('Content-Type', 'text/event-stream');
-            res.set('Cache-Control', 'no-cache');
-            res.set('Connection', 'keep-alive');
-            res.flushHeaders();
-
-            roles
-                .on('data', (doc) => {
-                    res.write('event: role_list\n');
-                    res.write(`id: ${doc._id}\n`);
-                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
-                })
-                .on('end', () => {
-                    res.end();
-                });
-        } catch (error) {
-            logger('Reader all role failed: %O', error);
-            res.status(500).json({
-                code: 'vitruveo.studio.api.admin.roles.reader.all.failed',
-                message: `Reader all failed: ${error}`,
-                args: error,
-                transaction: nanoid(),
-            });
-        }
-    }
-);
 
 route.get(
     '/:id',
