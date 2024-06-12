@@ -76,6 +76,7 @@ export interface UpdateAvatarParams {
 
 export interface CheckWalletExistsParams {
     address: string;
+    id: string;
 }
 
 export interface AddVideoToGalleryParams {

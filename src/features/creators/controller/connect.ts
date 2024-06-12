@@ -10,6 +10,7 @@ import { CreatorDocument, checkWalletExists } from '../model';
 import { validateBodyForRequestConnect } from './rules';
 import { keyRedisRequest } from '../utils/keyRedisRequest';
 import { authenticateSignature } from '../middleware/authenticateSignature';
+import { middleware } from '../../users';
 
 export interface LoginAnswer {
     token: string;
@@ -18,6 +19,8 @@ export interface LoginAnswer {
 
 const logger = debug('features:creators:controller:connect');
 const route = Router();
+
+route.use(middleware.checkAuth);
 
 route.post('/request', validateBodyForRequestConnect, async (req, res) => {
     try {
@@ -48,7 +51,8 @@ ${uuidv4()}`;
 route.post('/verify', authenticateSignature, async (req, res) => {
     try {
         const { wallet } = req.body;
-        const walletExists = await checkWalletExists({ address: wallet });
+        const { id } = req.auth;
+        const walletExists = await checkWalletExists({ address: wallet, id });
 
         if (walletExists) {
             res.status(400).json({

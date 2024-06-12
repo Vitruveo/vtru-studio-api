@@ -138,6 +138,31 @@ route.put(
     validateBodyForPut,
     async (req, res) => {
         try {
+            const creator = await model.findCreatorById({ id: req.params.id });
+
+            if (!creator) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.admin.creators.update.not.found',
+                    message: `Update failed: creator not found`,
+                    args: [],
+                    transaction: nanoid(),
+                } as APIResponse);
+
+                return;
+            }
+
+            // Add archived wallets
+            creator.wallets.forEach((item) => {
+                if (
+                    !req.body.wallets.some(
+                        (wallet: model.CreatorDocument['wallets'][0]) =>
+                            wallet.address === item.address
+                    )
+                ) {
+                    req.body.wallets.push({ ...item, archived: true });
+                }
+            });
+
             const result = await model.updateCreator({
                 id: req.params.id,
                 creator: req.body,
