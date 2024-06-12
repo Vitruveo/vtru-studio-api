@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import debug from 'debug';
-import { ZodError } from 'zod';
+import { ZodError, ZodIssue } from 'zod';
 
 const logger = debug('utils');
 
@@ -74,10 +74,18 @@ export const exitWithDelay = ({
 export const formatErrorMessage = (error: ZodError) => {
     if (error.issues.length === 0) return 'No errors found.';
 
-    return error.issues
-        .map((err) => {
-            const path = err.path.join(' -> ');
-            return `Error: ${err.message} at ${path}.`;
+    const formattedError = error.issues
+        .map((err: ZodIssue) => {
+            const path = err.path.reverse().join(' ');
+            const message = err.message.replace(
+                /Expected (\w+), received (\w+)/,
+                (_match, _p1, p2) =>
+                    `Expected some information, received ${
+                        p2 === 'null' ? 'empty' : 'invalid information'
+                    }`
+            );
+            return `${message} at ${path}.`;
         })
         .join('\n');
+    return `Error: Validation Error\n${formattedError}`;
 };
