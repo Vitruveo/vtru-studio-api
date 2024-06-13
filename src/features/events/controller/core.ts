@@ -31,9 +31,7 @@ route.get('/', async (_req, res) => {
         };
 
         listDataEvents.forEach((eventType) =>
-            emitter.once(eventType, (data: any[]) =>
-                data.forEach((item) => sendEvent(item, eventType))
-            )
+            emitter.once(eventType, (data: any[]) => sendEvent(data, eventType))
         );
 
         createdEvents.forEach((eventType) =>
