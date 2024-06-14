@@ -6,6 +6,7 @@ import {
 import { getDb, ObjectId } from '../../../services/mongo';
 import {
     CreateRequestConsignParams,
+    DeleteRequestConsignByIdParams,
     FindOneRequestConsignByCreatorParams,
     FindOneRequestConsignParams,
     FindRequestConsignByIdParams,
@@ -118,3 +119,8 @@ export const updateRequestConsign = ({
         { _id: new ObjectId(id) },
         { $set: requestConsign }
     );
+
+export const deleteRequestConsign = ({ id }: DeleteRequestConsignByIdParams) =>
+    requestConsigns().deleteOne({
+        _id: new ObjectId(id),
+    });

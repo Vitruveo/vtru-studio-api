@@ -6,7 +6,12 @@ import * as modelAssets from '../../assets/model';
 import * as modelCreator from '../../creators/model';
 import { middleware } from '../../users';
 import { needsToBeOwner, validateQueries } from '../../common/rules';
-import { APIResponse, InsertOneResult, UpdateResult } from '../../../services';
+import {
+    APIResponse,
+    DeleteResult,
+    InsertOneResult,
+    UpdateResult,
+} from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { validateBodyForPatch } from './rules';
 import { emitter } from '../emitter';
@@ -226,5 +231,51 @@ route.patch(
         }
     }
 );
+
+route.delete('/', async (req, res) => {
+    try {
+        const { id } = req.auth;
+
+        const exists = await model.findRequestConsignsByCreator({
+            creator: id,
+        });
+        if (!exists) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const requestConsignStatus = exists.status;
+        if (requestConsignStatus !== 'pending') {
+            res.status(409).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign cannot be canceled',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const result = await model.deleteRequestConsign({
+            id: exists._id,
+        });
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Delete request consign success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<DeleteResult>);
+    } catch (error) {
+        logger('Delete request consign failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Delete request consign failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 export { route };
