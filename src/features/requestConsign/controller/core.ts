@@ -5,7 +5,7 @@ import * as model from '../model';
 import * as modelAssets from '../../assets/model';
 import * as modelCreator from '../../creators/model';
 import { middleware } from '../../users';
-import { needsToBeOwner, validateQueries } from '../../common/rules';
+import { needsToBeOwner } from '../../common/rules';
 import {
     APIResponse,
     DeleteResult,
@@ -14,7 +14,6 @@ import {
 } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
 import { validateBodyForPatch } from './rules';
-import { emitter } from '../emitter';
 import { sendToExchangeMail } from '../../../services/mail';
 import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
 
@@ -79,82 +78,6 @@ route.post('/', async (req, res) => {
         } as APIResponse);
     }
 });
-
-route.get(
-    '/',
-    needsToBeOwner({ permissions: ['moderator:admin', 'moderator:reader'] }),
-    validateQueries,
-    async (_req, res) => {
-        try {
-            res.set('Content-Type', 'text/event-stream');
-            res.set('Cache-Control', 'no-cache');
-            res.set('Connection', 'keep-alive');
-            res.flushHeaders();
-
-            const sendEvent = (
-                data: model.RequestConsignDocument,
-                eventType: string
-            ) => {
-                res.write(`event: ${eventType}\n`);
-                res.write(`id: ${nanoid()}\n`);
-                res.write(`data: ${JSON.stringify(data)}\n\n`);
-                return !(res.closed || res.destroyed);
-            };
-
-            // live create request consign
-            const sendEventCreateRequestConsign = (
-                data: model.RequestConsignDocument
-            ) => sendEvent(data, 'create_request_consign');
-            emitter.on('createRequestConsign', sendEventCreateRequestConsign);
-
-            // live update request consign status
-            const sendEventUpdateRequestConsignStatus = (
-                data: model.RequestConsignDocument
-            ) => sendEvent(data, 'update_request_consign_status');
-            emitter.on(
-                'updateRequestConsignStatus',
-                sendEventUpdateRequestConsignStatus
-            );
-
-            // history
-            const sendEventRequestConsignHistory = (
-                data: model.RequestConsignDocument
-            ) => sendEvent(data, 'request_consign_history');
-            emitter.emit('initial');
-
-            const requestConsignQueue = (
-                data: model.RequestConsignDocument[]
-            ) => {
-                data.forEach(sendEventRequestConsignHistory);
-            };
-
-            emitter.once('requestConsigns', requestConsignQueue);
-
-            const removeListeners = () => {
-                emitter.off(
-                    'createRequestConsign',
-                    sendEventCreateRequestConsign
-                );
-                emitter.off(
-                    'updateRequestConsignStatus',
-                    sendEventUpdateRequestConsignStatus
-                );
-            };
-
-            res.on('close', removeListeners);
-            res.on('error', removeListeners);
-            res.on('finish', removeListeners);
-        } catch (error) {
-            logger('Find request consign failed: %O', error);
-            res.status(500).json({
-                code: 'vitruveo.studio.api.requestConsign.failed',
-                message: `Find request consign failed: ${error}`,
-                args: error,
-                transaction: nanoid(),
-            } as APIResponse);
-        }
-    }
-);
 
 route.patch(
     '/:id',

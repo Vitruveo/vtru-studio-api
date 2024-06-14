@@ -3,66 +3,19 @@ import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { middleware } from '..';
 import * as model from '../model';
-import { Query } from '../../common/types';
 import {
     APIResponse,
     DeleteResult,
     InsertOneResult,
     UpdateResult,
 } from '../../../services';
-import {
-    needsToBeOwner,
-    validateParamsId,
-    validateQueries,
-} from '../../common/rules';
+import { needsToBeOwner, validateParamsId } from '../../common/rules';
 import { validateBodyForCreate, validateBodyForUpdate } from './rules';
 
 const logger = debug('features:users:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
-
-route.get(
-    '/',
-    needsToBeOwner({ permissions: ['user:admin', 'user:reader'] }),
-    validateQueries,
-    async (req, res) => {
-        try {
-            const { query }: { query: Query } = req;
-
-            const users = await model.findUsers({
-                query: { limit: query.limit },
-                sort: query.sort
-                    ? { [query.sort.field]: query.sort.order }
-                    : { name: 1 },
-                skip: query.skip || 0,
-            });
-
-            res.set('Content-Type', 'text/event-stream');
-            res.set('Cache-Control', 'no-cache');
-            res.set('Connection', 'keep-alive');
-            res.flushHeaders();
-
-            users
-                .on('data', (doc) => {
-                    res.write('event: user_list\n');
-                    res.write(`id: ${doc._id}\n`);
-                    res.write(`data: ${JSON.stringify(doc)}\n\n`);
-                })
-                .on('end', () => {
-                    res.end();
-                });
-        } catch (error) {
-            logger('Failed to read all users: %O', error);
-            res.status(500).json({
-                code: 'vitruveo.studio.api.admin.users.reader.all.failed',
-                message: `Reader all failed: ${error}`,
-                args: error,
-                transaction: nanoid(),
-            } as APIResponse);
-        }
-    }
-);
 
 route.get('/:id', validateParamsId, async (req, res) => {
     try {

@@ -157,7 +157,7 @@ export const checkWalletExists = async ({
 }: CheckWalletExistsParams) => {
     const result = await creators().countDocuments({
         _id: { $ne: new ObjectId(id) },
-        wallets: { address },
+        'wallets.address': address,
     });
     return !!result;
 };
