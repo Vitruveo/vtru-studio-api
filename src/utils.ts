@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import debug from 'debug';
-import { ZodError } from 'zod';
+import { ZodError, ZodIssue } from 'zod';
 
 const logger = debug('utils');
 
@@ -71,13 +71,40 @@ export const exitWithDelay = ({
     }, timeout);
 };
 
+export const formatPath = (value: (string | number)[]) =>
+    value
+        .reverse()
+        .filter((item) => item !== 'formData')
+        .map((item, index) => {
+            if (!Number.isNaN(Number(item))) {
+                const position = (Number(item) + 1).toString();
+                return `${position}º ${value[index + 2]}`;
+            }
+            return item;
+        });
+
 export const formatErrorMessage = (error: ZodError) => {
     if (error.issues.length === 0) return 'No errors found.';
 
-    return error.issues
-        .map((err) => {
-            const path = err.path.join(' -> ');
-            return `Error: ${err.message} at ${path}.`;
+    const formattedError = error.issues
+        .map((err: ZodIssue) => {
+            const path = formatPath(err.path);
+            let message;
+            if (err.code === 'invalid_type') {
+                message = err.message.replace(
+                    /Expected (\w+), received (\w+)/,
+                    (_match, _p1, p2) =>
+                        `Expected some information, received ${
+                            p2 === 'null' ? 'empty' : 'invalid information'
+                        }`
+                );
+            }
+            if (err.code === 'invalid_string') {
+                message = `Expected some information, received ${err.message}`;
+                return `${message} at ${path.join(' in ')}.`;
+            }
+            return `${message} at ${path.join(' ')}.`;
         })
         .join('\n');
+    return `Error: Validation Error\n${formattedError}`;
 };
