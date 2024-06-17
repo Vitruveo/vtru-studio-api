@@ -184,6 +184,27 @@ route.delete('/', async (req, res) => {
         const result = await model.deleteRequestConsign({
             id: exists._id,
         });
+
+        const asset = await modelAssets.findAssetCreatedBy({ id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        await modelAssets.updateAssets({
+            id: asset._id,
+            asset: {
+                consignArtwork: {
+                    status: 'draft',
+                },
+            },
+        });
+
         res.json({
             code: 'vitruveo.studio.api.requestConsign.success',
             message: 'Delete request consign success',
