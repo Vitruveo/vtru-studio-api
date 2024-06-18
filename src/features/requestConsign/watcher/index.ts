@@ -93,6 +93,7 @@ uniqueExecution({
                                 requestUpdated._id.toString()
                         );
                         if (index === -1) return;
+                        status.data[index].comments = requestUpdated.comments;
                         status.data[index].status = requestUpdated.status;
                         emitter.emitUpdateRequestConsign(status.data[index]);
                     }

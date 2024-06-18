@@ -156,7 +156,7 @@ route.patch(
 );
 
 route.patch(
-    '/:id/comments',
+    '/comments/:id',
     needsToBeOwner({ permissions: ['moderator:admin'] }),
     validateBodyForPatchComments,
     async (req, res) => {
@@ -177,7 +177,7 @@ route.patch(
             const result = await model.updateRequestConsign({
                 id,
                 requestConsign: {
-                    ...(comments && { comments }),
+                    comments,
                 },
             });
 
