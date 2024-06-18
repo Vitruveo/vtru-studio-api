@@ -13,7 +13,7 @@ import {
     UpdateResult,
 } from '../../../services';
 import { findAssetCreatedBy } from '../../assets/model';
-import { validateBodyForPatch } from './rules';
+import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
 import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
 
@@ -86,7 +86,7 @@ route.patch(
     async (req, res) => {
         try {
             const { id } = req.params;
-            const { status, logs, comments } = req.body;
+            const { status, logs } = req.body;
 
             const requestConsign = await model.findRequestConsignsById({ id });
 
@@ -104,7 +104,6 @@ route.patch(
                 requestConsign: {
                     status,
                     ...(logs && { logs }),
-                    ...(comments && { comments }),
                 },
             });
 
@@ -149,6 +148,50 @@ route.patch(
             res.status(500).json({
                 code: 'vitruveo.studio.api.requestConsign.failed',
                 message: `Update request consign failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.patch(
+    '/:id/comments',
+    needsToBeOwner({ permissions: ['moderator:admin'] }),
+    validateBodyForPatchComments,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { comments } = req.body;
+
+            const requestConsign = await model.findRequestConsignsById({ id });
+            if (!requestConsign) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.requestConsign.failed',
+                    message: 'Request consign not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            const result = await model.updateRequestConsign({
+                id,
+                requestConsign: {
+                    ...(comments && { comments }),
+                },
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.requestConsign.success',
+                message: 'Update request consign comments success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult<model.RequestConsignDocument>>);
+        } catch (error) {
+            logger('Update request consign comments failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: `Update request consign comments failed: ${error}`,
                 args: error,
                 transaction: nanoid(),
             } as APIResponse);
