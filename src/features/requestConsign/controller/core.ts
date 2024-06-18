@@ -86,7 +86,7 @@ route.patch(
     async (req, res) => {
         try {
             const { id } = req.params;
-            const { status, logs } = req.body;
+            const { status, logs, comments } = req.body;
 
             const requestConsign = await model.findRequestConsignsById({ id });
 
@@ -104,6 +104,7 @@ route.patch(
                 requestConsign: {
                     status,
                     ...(logs && { logs }),
+                    ...(comments && { comments }),
                 },
             });
 

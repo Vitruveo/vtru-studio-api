@@ -14,4 +14,11 @@ export const schemaValidationForPatch = z.object({
             })
         )
         .optional(),
+    comments: z
+        .array(
+            z.object({
+                message: z.string(),
+            })
+        )
+        .optional(),
 });
