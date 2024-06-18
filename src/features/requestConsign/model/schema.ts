@@ -20,6 +20,13 @@ export const RequestConsignSchema = z.object({
             })
         )
         .default([]),
+    comments: z
+        .array(
+            z.object({
+                message: z.string(),
+            })
+        )
+        .default([]),
 });
 
 export type RequestConsign = z.infer<typeof RequestConsignSchema>;

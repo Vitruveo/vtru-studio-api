@@ -15,3 +15,13 @@ export const schemaValidationForPatch = z.object({
         )
         .optional(),
 });
+
+export const schemaValidationForPatchComments = z.object({
+    comments: z
+        .array(
+            z.object({
+                comment: z.string(),
+            })
+        )
+        .optional(),
+});

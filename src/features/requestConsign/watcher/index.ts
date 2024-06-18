@@ -57,6 +57,7 @@ uniqueExecution({
                                 _id: 1,
                                 status: 1,
                                 logs: 1,
+                                comments: 1,
                                 asset: {
                                     _id: 1,
                                     title: '$asset.assetMetadata.context.formData.title',
@@ -92,6 +93,7 @@ uniqueExecution({
                                 requestUpdated._id.toString()
                         );
                         if (index === -1) return;
+                        status.data[index].comments = requestUpdated.comments;
                         status.data[index].status = requestUpdated.status;
                         emitter.emitUpdateRequestConsign(status.data[index]);
                     }
