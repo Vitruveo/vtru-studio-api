@@ -23,7 +23,9 @@ export const RequestConsignSchema = z.object({
     comments: z
         .array(
             z.object({
-                message: z.string(),
+                username: z.string(),
+                comment: z.string(),
+                when: z.string().default(() => new Date().toISOString()),
             })
         )
         .default([]),
