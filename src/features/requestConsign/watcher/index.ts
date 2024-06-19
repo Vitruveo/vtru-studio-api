@@ -163,7 +163,9 @@ uniqueExecution({
                     // OPERATION TYPE: DELETE REQUEST CONSIGN
                     if (change.operationType === 'delete') {
                         status.data = status.data.filter(
-                            (item) => item._id !== change.documentKey._id
+                            (item) =>
+                                item._id.toString() !==
+                                change.documentKey._id.toString()
                         );
 
                         emitter.emitDeleteRequestConsign(
