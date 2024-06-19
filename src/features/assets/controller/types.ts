@@ -18,6 +18,14 @@ export interface QueryCollectionParams {
     name: string;
 }
 
+export interface QueryParams {
+    query: Record<string, unknown>;
+    sort?: {
+        field: string;
+        order: number;
+    };
+}
+
 interface Tags {
     tag: string;
     count: number;
