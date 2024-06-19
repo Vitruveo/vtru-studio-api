@@ -334,8 +334,15 @@ export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
         .toArray();
 
 // return a stream of assets from database
-export const findAssets = async ({ query, sort }: FindAssetsParams) => {
-    const result = assets().find(query, {}).sort(sort);
+export const findAssets = async ({
+    query,
+    sort,
+    skip,
+    limit,
+}: FindAssetsParams) => {
+    let result = assets().find(query, {}).sort(sort).skip(skip);
+
+    if (limit) result = result.limit(limit);
 
     return result.stream();
 };

@@ -9,6 +9,8 @@ export interface CreateAssetsParams {
 export interface FindAssetsParams {
     query: any;
     sort: any;
+    skip: number;
+    limit?: number;
 }
 
 export interface FindAssetsPaginatedParams {
