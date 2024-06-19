@@ -28,7 +28,6 @@ import { sendToExchangeCreators } from '../../creators/upload';
 import { handleExtractColor } from '../../../services/extractColor';
 import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
 import { download } from '../../../services/stream';
-import { QueryParams } from './types';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -63,39 +62,6 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.creatorMy.failed',
             message: `Reader failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
-route.get('/', validateQueries, async (req, res) => {
-    try {
-        const { query, sort } = req.query as unknown as QueryParams;
-        const assets = await model.findAssets({
-            query: query || {},
-            sort: sort ? { [sort.field]: sort.order } : { status: 1 },
-        });
-
-        res.set('Content-Type', 'text/event-stream');
-        res.set('Cache-Control', 'no-cache');
-        res.set('Connection', 'keep-alive');
-        res.flushHeaders();
-
-        assets
-            .on('data', (doc) => {
-                res.write('event: asset_list\n');
-                res.write(`id: ${doc._id}\n`);
-                res.write(`data: ${JSON.stringify(doc)}\n\n`);
-            })
-            .on('end', () => {
-                res.end();
-            });
-    } catch (error) {
-        logger('Reader all assets failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.reader.all.failed',
-            message: `Reader all failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
