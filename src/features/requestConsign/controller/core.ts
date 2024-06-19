@@ -196,13 +196,12 @@ route.patch(
                 when: new Date().toISOString(),
             };
 
-            const result = await model.updateRequestConsign({
+            await model.updateRequestConsign({
                 id,
                 requestConsign: {
                     comments: [...comments, data],
                 },
             });
-            logger('result: %O', result);
 
             res.json({
                 code: 'vitruveo.studio.api.requestConsign.success',
