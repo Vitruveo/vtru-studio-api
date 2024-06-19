@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import * as model from '../model';
 import * as modelAssets from '../../assets/model';
 import * as modelCreator from '../../creators/model';
+import * as modelUsers from '../../users/model';
 import { middleware } from '../../users';
 import { needsToBeOwner } from '../../common/rules';
 import {
@@ -161,8 +162,9 @@ route.patch(
     validateBodyForPatchComments,
     async (req, res) => {
         try {
+            const logged = req.auth;
             const { id } = req.params;
-            const { comments } = req.body;
+            const { comment } = req.body;
 
             const requestConsign = await model.findRequestConsignsById({ id });
             if (!requestConsign) {
@@ -174,10 +176,30 @@ route.patch(
                 return;
             }
 
-            const result = await model.updateRequestConsign({
+            const user = await modelUsers.findUserById({ id: logged.id });
+            if (!user) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.requestConsign.failed',
+                    message: 'User not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            const comments = Array.isArray(requestConsign.comments)
+                ? requestConsign.comments
+                : [];
+
+            const data = {
+                username: user.name,
+                comment,
+                when: new Date().toISOString(),
+            };
+
+            await model.updateRequestConsign({
                 id,
                 requestConsign: {
-                    comments,
+                    comments: [...comments, data],
                 },
             });
 
@@ -185,8 +207,8 @@ route.patch(
                 code: 'vitruveo.studio.api.requestConsign.success',
                 message: 'Update request consign comments success',
                 transaction: nanoid(),
-                data: result,
-            } as APIResponse<UpdateResult<model.RequestConsignDocument>>);
+                data,
+            } as APIResponse);
         } catch (error) {
             logger('Update request consign comments failed: %O', error);
             res.status(500).json({
