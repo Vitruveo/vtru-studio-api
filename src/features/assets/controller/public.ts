@@ -129,6 +129,16 @@ route.get('/search', async (req, res) => {
                                 $options: 'i',
                             },
                         },
+                        {
+                            'assetMetadata.creators.formData': {
+                                $elemMatch: {
+                                    name: {
+                                        $regex: name,
+                                        $options: 'i',
+                                    },
+                                },
+                            },
+                        },
                     ],
                 });
             }
@@ -196,7 +206,6 @@ route.get('/search', async (req, res) => {
 });
 
 route.get('/carousel', async (req, res) => {
-
     const { layout } = req.query as FindAssetsCarouselParams;
 
     try {
