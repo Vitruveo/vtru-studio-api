@@ -19,7 +19,13 @@ route.use(middleware.checkAuth);
 route.get('/', async (_req, res) => {
     try {
         res.set('Content-Type', 'text/event-stream');
-        res.set('Cache-Control', 'no-cache');
+        res.set(
+            'Cache-Control',
+            'no-store, no-cache, must-revalidate, proxy-revalidate'
+        );
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        res.set('Surrogate-Control', 'no-store');
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
