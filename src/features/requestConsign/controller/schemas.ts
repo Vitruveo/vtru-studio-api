@@ -15,3 +15,7 @@ export const schemaValidationForPatch = z.object({
         )
         .optional(),
 });
+
+export const schemaValidationForPatchComments = z.object({
+    comment: z.string(),
+});

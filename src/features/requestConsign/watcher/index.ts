@@ -57,6 +57,7 @@ uniqueExecution({
                                 _id: 1,
                                 status: 1,
                                 logs: 1,
+                                comments: 1,
                                 asset: {
                                     _id: 1,
                                     title: '$asset.assetMetadata.context.formData.title',
@@ -92,6 +93,7 @@ uniqueExecution({
                                 requestUpdated._id.toString()
                         );
                         if (index === -1) return;
+                        status.data[index].comments = requestUpdated.comments;
                         status.data[index].status = requestUpdated.status;
                         emitter.emitUpdateRequestConsign(status.data[index]);
                     }
@@ -161,7 +163,9 @@ uniqueExecution({
                     // OPERATION TYPE: DELETE REQUEST CONSIGN
                     if (change.operationType === 'delete') {
                         status.data = status.data.filter(
-                            (item) => item._id !== change.documentKey._id
+                            (item) =>
+                                item._id.toString() !==
+                                change.documentKey._id.toString()
                         );
 
                         emitter.emitDeleteRequestConsign(
