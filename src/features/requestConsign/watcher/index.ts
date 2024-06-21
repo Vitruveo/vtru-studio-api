@@ -95,6 +95,7 @@ uniqueExecution({
                         if (index === -1) return;
                         status.data[index].comments = requestUpdated.comments;
                         status.data[index].status = requestUpdated.status;
+                        status.data[index].logs = requestUpdated.logs;
                         emitter.emitUpdateRequestConsign(status.data[index]);
                     }
 
