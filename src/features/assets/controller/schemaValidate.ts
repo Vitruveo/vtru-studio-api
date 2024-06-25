@@ -22,7 +22,7 @@ const FormDataSchema = z.object({
 });
 
 const CreatorsSchema = z.object({
-    name: z.string(),
+    name: z.string().trim(),
     roles: z.array(z.string()).default([]),
     bio: z.string().optional(),
     nationality: z.string().optional(),

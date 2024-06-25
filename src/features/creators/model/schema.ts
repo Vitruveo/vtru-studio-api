@@ -6,7 +6,7 @@ export const COLLECTION_CREATORS = 'creators';
 export const CreatorSchema = z.object({
     creatorRefId: z.number().nullable().default(null),
     name: z.string().default(''),
-    username: z.string().or(z.undefined()),
+    username: z.string().trim().or(z.undefined()),
     login: z
         .object({
             loginHistory: z

@@ -256,7 +256,7 @@ export const schemaAssetMetadata = z.object({
             formData: z.array(
                 z
                     .object({
-                        name: z.string().or(z.null()),
+                        name: z.string().trim().or(z.null()),
                         roles: z.array(z.string().or(z.null())),
                         bio: z.string().or(z.null()),
                         birthDate: z.string().or(z.null()),
