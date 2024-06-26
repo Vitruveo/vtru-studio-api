@@ -1,6 +1,7 @@
 /* eslint-disable no-await-in-loop */
 
 import { MigrationParameters } from '@nsfilho/migration';
+import { ObjectId } from 'mongodb';
 import { COLLECTION_ASSETS } from '../features/assets/model';
 import { COLLECTION_CREATORS } from '../features/creators/model';
 
@@ -24,7 +25,7 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
             ) {
                 await db.collection(COLLECTION_ASSETS).updateOne(
                     {
-                        _id: asset._id,
+                        _id: new ObjectId(asset._id),
                         'assetMetadata.creators.formData.name':
                             asset.assetMetadata.creators.formData[j].name,
                     },
