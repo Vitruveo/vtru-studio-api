@@ -13,7 +13,10 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
 
     for (let i = 0; i < assets.length; i += 1) {
         const asset = assets[i];
-        if (asset.assetMetadata.creators.formData) {
+        if (
+            asset.assetMetadata?.creators?.formData &&
+            Array.isArray(asset.assetMetadata?.creators?.formData)
+        ) {
             for (
                 let j = 0;
                 j < asset.assetMetadata.creators.formData.length;
