@@ -23,21 +23,26 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
                 j < asset.assetMetadata.creators.formData.length;
                 j += 1
             ) {
-                await db.collection(COLLECTION_ASSETS).updateOne(
-                    {
-                        _id: new ObjectId(asset._id),
-                        'assetMetadata.creators.formData.name':
-                            asset.assetMetadata.creators.formData[j].name,
-                    },
-                    {
-                        $set: {
-                            'assetMetadata.creators.formData.$.name':
-                                asset.assetMetadata.creators.formData[
-                                    j
-                                ].name.trim(),
+                const creatorName =
+                    asset.assetMetadata.creators.formData?.[j]?.name;
+                if (
+                    creatorName &&
+                    typeof creatorName === 'string' &&
+                    creatorName.length > 0
+                ) {
+                    await db.collection(COLLECTION_ASSETS).updateOne(
+                        {
+                            _id: new ObjectId(asset._id),
+                            'assetMetadata.creators.formData.name': creatorName,
                         },
-                    }
-                );
+                        {
+                            $set: {
+                                'assetMetadata.creators.formData.$.name':
+                                    creatorName.trim(),
+                            },
+                        }
+                    );
+                }
             }
         }
     }
@@ -49,7 +54,7 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
                 { _id: creator._id },
                 {
                     $set: {
-                        username: creator.username.trim(),
+                        username: creator?.username?.trim(),
                     },
                 }
             );
