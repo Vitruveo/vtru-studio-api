@@ -142,7 +142,7 @@ export const AssetsSchema = z.object({
             .object({
                 formData: z.array(
                     z.object({
-                        name: z.string(),
+                        name: z.string().trim(),
                     })
                 ),
             })
