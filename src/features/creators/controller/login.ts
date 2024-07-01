@@ -165,6 +165,13 @@ route.post('/', validateBodyForLogin, async (req, res) => {
             }
             await updateCodeHashEmailCreator({
                 id: creator._id,
+                email,
+                codeHash,
+                framework,
+                checkedAt: null,
+            });
+            await updateCodeHashEmailCreator({
+                id: creator._id,
                 email: standardEmail,
                 codeHash,
                 framework,
