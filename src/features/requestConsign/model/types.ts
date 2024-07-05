@@ -25,6 +25,7 @@ export interface FindOneRequestConsignParams {
 
 export interface FindOneRequestConsignByCreatorParams {
     creator: string;
+    assetId: string;
 }
 
 export interface UpdateRequestConsignParams {

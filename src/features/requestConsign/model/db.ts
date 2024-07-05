@@ -106,9 +106,11 @@ export const findOneRequestConsign = ({ query }: FindOneRequestConsignParams) =>
 
 export const findRequestConsignsByCreator = ({
     creator,
+    assetId,
 }: FindOneRequestConsignByCreatorParams) =>
     requestConsigns().findOne<RequestConsignDocument>({
         creator,
+        asset: assetId,
     });
 
 export const updateRequestConsign = ({
