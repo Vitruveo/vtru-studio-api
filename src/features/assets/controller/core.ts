@@ -277,10 +277,19 @@ route.delete(
 
 route.delete('/:id/form', async (req, res) => {
     try {
+        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+        if (!asset || asset._id.toString() !== req.params.id) {
+            res.status(401).json({
+                code: 'vitruveo.studio.api.assets.delete.not.allowed',
+                message: 'delete not permitted',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
         await model.deleteAssets({ id: req.params.id });
 
         res.json({
-            code: 'vitruveo.studio.api.admin.assets.delete.success',
+            code: 'vitruveo.studio.api.assets.delete.success',
             message: 'Delete success',
             transaction: nanoid(),
         } as APIResponse);
@@ -293,21 +302,27 @@ route.delete('/:id/form', async (req, res) => {
             transaction: nanoid(),
         } as APIResponse);
     }
-})  
+});
 
 route.put('/:id/form', validateBodyForUpdateStep, async (req, res) => {
     try {
-        const assetsByCreatorId = await model.findOneAssets({
-            query: { _id: new ObjectId(req.params.id) },
-        });
+        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+        if (!asset || asset._id.toString() !== req.params.id) {
+            res.status(401).json({
+                code: 'vitruveo.studio.api.assets.delete.not.allowed',
+                message: 'delete not permitted',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
 
         let result;
 
-        if (!assetsByCreatorId) {
+        if (!asset) {
             result = await model.createAssets({ asset: req.body });
         } else {
             result = await model.updateAssets({
-                id: assetsByCreatorId._id,
+                id: asset._id,
                 asset: req.body,
             });
         }

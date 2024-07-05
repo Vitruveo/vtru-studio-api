@@ -18,7 +18,6 @@ import {
     schemaIpfs,
     schemaLicenses,
     schemaPublish,
-    schemaValidationForCreate,
     schemaValidationForDeleteFile,
     schemaValidationForVideoGallery,
     schemaValidationForUpdate,
@@ -41,7 +40,6 @@ export const validateBodyForCreate = async (
     }
 
     try {
-        // req.body = schemaValidationForCreate.parse(req.body);
         req.body.framework = createRecordFramework({
             createdBy: req.auth.id,
         });
