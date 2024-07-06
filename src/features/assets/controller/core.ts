@@ -307,20 +307,20 @@ route.delete('/:id/form', async (req, res) => {
 route.put('/:id/form', validateBodyForUpdateStep, async (req, res) => {
     try {
         const asset = await model.findAssetCreatedBy({ id: req.auth.id });
-        if (!asset || asset._id.toString() !== req.params.id) {
-            res.status(401).json({
-                code: 'vitruveo.studio.api.assets.delete.not.allowed',
-                message: 'delete not permitted',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
 
         let result;
 
         if (!asset) {
             result = await model.createAssets({ asset: req.body });
         } else {
+            if (asset._id.toString() !== req.params.id) {
+                res.status(401).json({
+                    code: 'vitruveo.studio.api.assets.delete.not.allowed',
+                    message: 'delete not permitted',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
             result = await model.updateAssets({
                 id: asset._id,
                 asset: req.body,
