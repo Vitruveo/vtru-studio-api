@@ -122,8 +122,30 @@ route.get('/:id', validateParamsId, async (req, res) => {
 
 route.post('/', validateBodyForCreate, async (req, res) => {
     try {
+        let clone: {
+            assetMetadata: model.AssetsDocument['assetMetadata'];
+            licenses: model.AssetsDocument['licenses'];
+            terms: model.AssetsDocument['terms'];
+        } | null = null;
+
+        if (req.body.cloneId) {
+            const asset = await model.findAssetsById({
+                id: req.body.cloneId,
+            });
+            if (asset) {
+                clone = {
+                    assetMetadata: asset?.assetMetadata,
+                    licenses: asset?.licenses,
+                    terms: asset?.terms,
+                };
+            }
+        }
+
         const result = await model.createAssets({
-            asset: req.body,
+            asset: {
+                ...req.body,
+                ...(clone && clone),
+            },
         });
 
         res.json({
@@ -293,7 +315,7 @@ route.delete('/:id/form', async (req, res) => {
             transaction: nanoid(),
         } as APIResponse);
     }
-})  
+});
 
 route.put('/:id/form', validateBodyForUpdateStep, async (req, res) => {
     try {

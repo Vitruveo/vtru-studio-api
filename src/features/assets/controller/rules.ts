@@ -41,7 +41,7 @@ export const validateBodyForCreate = async (
     }
 
     try {
-        // req.body = schemaValidationForCreate.parse(req.body);
+        req.body = schemaValidationForCreate.parse(req.body);
         req.body.framework = createRecordFramework({
             createdBy: req.auth.id,
         });
