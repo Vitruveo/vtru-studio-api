@@ -18,11 +18,11 @@ import {
     schemaIpfs,
     schemaLicenses,
     schemaPublish,
-    schemaValidationForCreate,
     schemaValidationForDeleteFile,
     schemaValidationForVideoGallery,
     schemaValidationForUpdate,
     schemaAssetUpdateManyStatus,
+    schemaValidationForCreate,
 } from './schemas';
 
 export const validateBodyForCreate = async (

@@ -11,9 +11,9 @@ import {
     APIResponse,
     DeleteResult,
     InsertOneResult,
+    ObjectId,
     UpdateResult,
 } from '../../../services';
-import { findAssetCreatedBy } from '../../assets/model';
 import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
 import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
@@ -23,11 +23,12 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.post('/', async (req, res) => {
+route.post('/:assetId', async (req, res) => {
     try {
         const { id } = req.auth;
         const alreadyExists = await model.findRequestConsignsByCreator({
             creator: id,
+            assetId: req.params.assetId,
         });
         if (alreadyExists) {
             res.status(409).json({
@@ -38,7 +39,11 @@ route.post('/', async (req, res) => {
             return;
         }
 
-        const asset = await findAssetCreatedBy({ id });
+        const asset = await modelAssets.findOneAssets({
+            query: {
+                _id: new ObjectId(req.params.assetId),
+            },
+        });
         if (!asset) {
             res.status(404).json({
                 code: 'vitruveo.studio.api.requestConsign.failed',
@@ -221,12 +226,13 @@ route.patch(
     }
 );
 
-route.delete('/', async (req, res) => {
+route.delete('/:assetId', async (req, res) => {
     try {
         const { id } = req.auth;
 
         const exists = await model.findRequestConsignsByCreator({
             creator: id,
+            assetId: req.params.assetId,
         });
         if (!exists) {
             res.status(404).json({
@@ -251,7 +257,11 @@ route.delete('/', async (req, res) => {
             id: exists._id,
         });
 
-        const asset = await modelAssets.findAssetCreatedBy({ id });
+        const asset = await modelAssets.findOneAssets({
+            query: {
+                _id: new ObjectId(req.params.assetId),
+            },
+        });
 
         if (!asset) {
             res.status(404).json({

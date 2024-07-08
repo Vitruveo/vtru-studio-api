@@ -9,6 +9,7 @@ import {
     APIResponse,
     DeleteResult,
     InsertOneResult,
+    ObjectId,
     UpdateResult,
 } from '../../../services';
 import {
@@ -35,6 +36,27 @@ const route = Router();
 const tempFilename = customAlphabet('1234567890abcdefg', 10);
 
 route.use(middleware.checkAuth);
+
+route.get('/', async (req, res) => {
+    try {
+        const assets = await model.findAssetsByCreatorId({ id: req.auth.id });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.reader.success',
+            message: 'Reader success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.reader.failed',
+            message: `Reader failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.get('/creatorMy', validateQueries, async (req, res) => {
     try {
@@ -100,8 +122,30 @@ route.get('/:id', validateParamsId, async (req, res) => {
 
 route.post('/', validateBodyForCreate, async (req, res) => {
     try {
+        let clone: {
+            assetMetadata: model.AssetsDocument['assetMetadata'];
+            licenses: model.AssetsDocument['licenses'];
+            terms: model.AssetsDocument['terms'];
+        } | null = null;
+
+        if (req.body.cloneId) {
+            const asset = await model.findAssetsById({
+                id: req.body.cloneId,
+            });
+            if (asset) {
+                clone = {
+                    assetMetadata: asset?.assetMetadata,
+                    licenses: asset?.licenses,
+                    terms: asset?.terms,
+                };
+            }
+        }
+
         const result = await model.createAssets({
-            asset: req.body,
+            asset: {
+                ...req.body,
+                ...(clone && clone),
+            },
         });
 
         res.json({
@@ -253,10 +297,30 @@ route.delete(
     }
 );
 
-route.put('/', validateBodyForUpdateStep, async (req, res) => {
+route.delete('/:id/form', async (req, res) => {
+    try {
+        await model.deleteAssets({ id: req.params.id });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.delete.success',
+            message: 'Delete success',
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('Delete assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.delete.failed',
+            message: `Delete failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.put('/:id/form', validateBodyForUpdateStep, async (req, res) => {
     try {
         const assetsByCreatorId = await model.findOneAssets({
-            query: { 'framework.createdBy': req.auth.id },
+            query: { _id: new ObjectId(req.params.id) },
         });
 
         let result;
@@ -361,7 +425,7 @@ route.delete(
     }
 );
 
-route.post('/request/upload', async (req, res) => {
+route.post('/request/upload/:id', async (req, res) => {
     const transactionApiId = nanoid();
 
     try {
@@ -384,7 +448,7 @@ route.post('/request/upload', async (req, res) => {
         );
 
         const assetsByCreatorId = await model.findOneAssets({
-            query: { 'framework.createdBy': req.auth.id },
+            query: { _id: new ObjectId(req.params.id) },
         });
 
         if (assetsByCreatorId) {
