@@ -29,6 +29,7 @@ import { sendToExchangeCreators } from '../../creators/upload';
 import { handleExtractColor } from '../../../services/extractColor';
 import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
 import { download } from '../../../services/stream';
+import { mustBeOwner } from '../middleware';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -90,7 +91,7 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
     }
 });
 
-route.get('/:id', validateParamsId, async (req, res) => {
+route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
     try {
         const asset = await model.findAssetsById({ id: req.params.id });
 
@@ -297,7 +298,7 @@ route.delete(
     }
 );
 
-route.delete('/:id/form', async (req, res) => {
+route.delete('/:id/form', mustBeOwner, async (req, res) => {
     try {
         await model.deleteAssets({ id: req.params.id });
 
@@ -317,39 +318,44 @@ route.delete('/:id/form', async (req, res) => {
     }
 });
 
-route.put('/:id/form', validateBodyForUpdateStep, async (req, res) => {
-    try {
-        const assetsByCreatorId = await model.findOneAssets({
-            query: { _id: new ObjectId(req.params.id) },
-        });
-
-        let result;
-
-        if (!assetsByCreatorId) {
-            result = await model.createAssets({ asset: req.body });
-        } else {
-            result = await model.updateAssets({
-                id: assetsByCreatorId._id,
-                asset: req.body,
+route.put(
+    '/:id/form',
+    mustBeOwner,
+    validateBodyForUpdateStep,
+    async (req, res) => {
+        try {
+            const assetsByCreatorId = await model.findOneAssets({
+                query: { _id: new ObjectId(req.params.id) },
             });
-        }
 
-        res.json({
-            code: 'vitruveo.studio.api.admin.assets.updatStep.success',
-            message: 'Update step success',
-            transaction: nanoid(),
-            data: result,
-        } as APIResponse<InsertOneResult | UpdateResult>);
-    } catch (error) {
-        logger('Update step assets failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.assets.updatStep.failed',
-            message: `Update step failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
+            let result;
+
+            if (!assetsByCreatorId) {
+                result = await model.createAssets({ asset: req.body });
+            } else {
+                result = await model.updateAssets({
+                    id: assetsByCreatorId._id,
+                    asset: req.body,
+                });
+            }
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.assets.updatStep.success',
+                message: 'Update step success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<InsertOneResult | UpdateResult>);
+        } catch (error) {
+            logger('Update step assets failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.updatStep.failed',
+                message: `Update step failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     }
-});
+);
 
 route.delete(
     '/request/deleteFile',

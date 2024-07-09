@@ -17,18 +17,19 @@ import {
 import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
 import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
+import { mustBeOwner } from '../../assets/middleware';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.post('/:assetId', async (req, res) => {
+route.post('/:id', mustBeOwner, async (req, res) => {
     try {
         const { id } = req.auth;
         const alreadyExists = await model.findRequestConsignsByCreator({
             creator: id,
-            assetId: req.params.assetId,
+            assetId: req.params.id,
         });
         if (alreadyExists) {
             res.status(409).json({
@@ -41,7 +42,7 @@ route.post('/:assetId', async (req, res) => {
 
         const asset = await modelAssets.findOneAssets({
             query: {
-                _id: new ObjectId(req.params.assetId),
+                _id: new ObjectId(req.params.id),
             },
         });
         if (!asset) {
