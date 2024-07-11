@@ -143,7 +143,7 @@ route.patch(
                             template: MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
                             to: creator.emails[0].email,
                             title: asset?.assetMetadata.context.formData.title,
-                            username: creator.username,
+                            creator: creator.username,
                             thumbnail: `${ASSET_STORAGE_URL}/${
                                 asset?.formats.original?.path.replace(
                                     /\.(\w+)$/,
