@@ -130,7 +130,7 @@ route.patch(
                     id: requestConsign.creator,
                 });
                 const asset = await modelAssets.findAssetCreatedBy({
-                    id: creator!._id.toString(),
+                    id: requestConsign.asset.toString(),
                 });
 
                 if (
