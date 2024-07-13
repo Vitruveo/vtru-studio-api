@@ -133,8 +133,39 @@ route.post('/', validateBodyForCreate, async (req, res) => {
                 id: req.body.cloneId,
             });
             if (asset) {
+                const assetList = await model.findAssetsByCreatorId({
+                    id: asset.framework.createdBy as string,
+                });
+
+                const titleNumbers = assetList.map((item) => {
+                    const match =
+                        item?.assetMetadata?.context?.formData?.title.match(
+                            /(?:\s|^)(\d+)$/
+                        );
+                    return match ? parseInt(match[1], 10) : null;
+                });
+                const maxNumber = Math.max(
+                    0,
+                    ...titleNumbers.filter(
+                        (number): number is number => number !== null
+                    )
+                );
+
+                const newTitle = `${
+                    asset.assetMetadata.context.formData.title
+                } ${maxNumber + 1}`;
+
                 clone = {
-                    assetMetadata: asset?.assetMetadata,
+                    assetMetadata: {
+                        ...asset.assetMetadata,
+                        context: {
+                            ...asset.assetMetadata.context,
+                            formData: {
+                                ...asset.assetMetadata.context.formData,
+                                title: newTitle,
+                            },
+                        },
+                    },
                     licenses: asset?.licenses,
                     terms: asset?.terms,
                 };
