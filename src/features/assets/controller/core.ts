@@ -132,40 +132,19 @@ route.post('/', validateBodyForCreate, async (req, res) => {
             const asset = await model.findAssetsById({
                 id: req.body.cloneId,
             });
+
             if (asset) {
-                const assetList = await model.findAssetsByCreatorId({
-                    id: asset.framework.createdBy as string,
+                asset.actions = asset.actions || { countClone: null };
+                asset.actions.countClone = (asset.actions.countClone ?? 0) + 1;
+
+                await model.updateAssets({
+                    id: asset._id,
+                    asset: { actions: asset.actions },
                 });
 
-                const titleNumbers = assetList.map((item) => {
-                    const match =
-                        item?.assetMetadata?.context?.formData?.title.match(
-                            /(?:\s|^)(\d+)$/
-                        );
-                    return match ? parseInt(match[1], 10) : null;
-                });
-                const maxNumber = Math.max(
-                    0,
-                    ...titleNumbers.filter(
-                        (number): number is number => number !== null
-                    )
-                );
-
-                const newTitle = `${
-                    asset.assetMetadata.context.formData.title
-                } ${maxNumber + 1}`;
-
+                asset.assetMetadata.context.formData.title += ` ${asset.actions.countClone}`;
                 clone = {
-                    assetMetadata: {
-                        ...asset.assetMetadata,
-                        context: {
-                            ...asset.assetMetadata.context,
-                            formData: {
-                                ...asset.assetMetadata.context.formData,
-                                title: newTitle,
-                            },
-                        },
-                    },
+                    assetMetadata: asset?.assetMetadata,
                     licenses: asset?.licenses,
                     terms: asset?.terms,
                 };

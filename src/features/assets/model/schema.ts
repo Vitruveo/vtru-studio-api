@@ -155,6 +155,9 @@ export const AssetsSchema = z.object({
             })
             .default({ formData: [] }),
     }),
+    actions: z.object({
+        countClone: z.number().nullable().default(null),
+    }),
     terms: TermsSchema,
     consignArtwork: z
         .object({
