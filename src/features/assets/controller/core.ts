@@ -143,6 +143,7 @@ route.post('/', validateBodyForCreate, async (req, res) => {
                 });
 
                 asset.assetMetadata.context.formData.title += ` ${asset.actions.countClone}`;
+                asset.licenses.print.added = false;
                 clone = {
                     assetMetadata: asset?.assetMetadata,
                     licenses: asset?.licenses,
