@@ -11,23 +11,27 @@ import {
     APIResponse,
     DeleteResult,
     InsertOneResult,
+    ObjectId,
     UpdateResult,
 } from '../../../services';
-import { findAssetCreatedBy } from '../../assets/model';
 import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
-import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
+import {
+    ASSET_STORAGE_URL,
+    MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
+} from '../../../constants';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.post('/', async (req, res) => {
+route.post('/:assetId', async (req, res) => {
     try {
         const { id } = req.auth;
         const alreadyExists = await model.findRequestConsignsByCreator({
             creator: id,
+            assetId: req.params.assetId,
         });
         if (alreadyExists) {
             res.status(409).json({
@@ -38,7 +42,11 @@ route.post('/', async (req, res) => {
             return;
         }
 
-        const asset = await findAssetCreatedBy({ id });
+        const asset = await modelAssets.findOneAssets({
+            query: {
+                _id: new ObjectId(req.params.assetId),
+            },
+        });
         if (!asset) {
             res.status(404).json({
                 code: 'vitruveo.studio.api.requestConsign.failed',
@@ -121,6 +129,9 @@ route.patch(
                 const creator = await modelCreator.findCreatorById({
                     id: requestConsign.creator,
                 });
+                const asset = await modelAssets.findAssetCreatedBy({
+                    id: creator!._id.toString(),
+                });
 
                 if (
                     creator &&
@@ -129,10 +140,16 @@ route.patch(
                 ) {
                     await sendToExchangeMail(
                         JSON.stringify({
-                            template: MAIL_SENDGRID_TEMPLATE_CONSIGN,
+                            template: MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
                             to: creator.emails[0].email,
-                            consignMessage:
-                                'Your art was not accepted by the moderators.',
+                            title: asset?.assetMetadata.context.formData.title,
+                            creator: creator.username,
+                            thumbnail: `${ASSET_STORAGE_URL}/${
+                                asset?.formats.original?.path.replace(
+                                    /\.(\w+)$/,
+                                    '_thumb.jpg'
+                                ) || ''
+                            }`,
                         })
                     );
                 }
@@ -221,12 +238,13 @@ route.patch(
     }
 );
 
-route.delete('/', async (req, res) => {
+route.delete('/:assetId', async (req, res) => {
     try {
         const { id } = req.auth;
 
         const exists = await model.findRequestConsignsByCreator({
             creator: id,
+            assetId: req.params.assetId,
         });
         if (!exists) {
             res.status(404).json({
@@ -251,7 +269,11 @@ route.delete('/', async (req, res) => {
             id: exists._id,
         });
 
-        const asset = await modelAssets.findAssetCreatedBy({ id });
+        const asset = await modelAssets.findOneAssets({
+            query: {
+                _id: new ObjectId(req.params.assetId),
+            },
+        });
 
         if (!asset) {
             res.status(404).json({

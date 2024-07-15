@@ -6,6 +6,13 @@ export const COLLECTION_ASSETS = 'assets';
 const RGBSchema = z.array(z.number());
 export const ColorsSchema = z.array(RGBSchema);
 
+const TermsSchema = z.object({
+    isOriginal: z.boolean(),
+    contract: z.boolean(),
+    generatedArtworkAI: z.boolean(),
+    notMintedOtherBlockchain: z.boolean(),
+});
+
 export const AssetsSchema = z.object({
     assetRefId: z.number().nullable().default(null),
     uploadedMediaKeys: z.array(z.string()).default([]),
@@ -148,10 +155,7 @@ export const AssetsSchema = z.object({
             })
             .default({ formData: [] }),
     }),
-    isOriginal: z.boolean().default(false),
-    generatedArtworkAI: z.boolean().default(false),
-    notMintedOtherBlockchain: z.boolean().default(false),
-    contract: z.boolean().default(false),
+    terms: TermsSchema,
     consignArtwork: z
         .object({
             status: z.enum(['draft', 'preview', 'active', 'hidden', 'locked']),

@@ -2,20 +2,7 @@ import { z } from 'zod';
 import { ColorsSchema } from '../model';
 
 export const schemaValidationForCreate = z.object({
-    domain: z.string().default(''),
-    media: z.object({
-        path: z.string().default(''),
-        originalName: z.string().default(''),
-        mimetype: z.string().default(''),
-        size: z.number().default(0),
-    }),
-    formats: z.array(
-        z.object({
-            definition: z.string().default(''),
-            name: z.string().default(''),
-            path: z.string().default(''),
-        })
-    ),
+    cloneId: z.string().optional(),
 });
 
 export const schemaValidationForUpdate = z.object({

@@ -5,7 +5,7 @@ import { ZodError } from 'zod';
 
 import * as model from '../model';
 import { middleware } from '../../users';
-import { APIResponse, captureException } from '../../../services';
+import { APIResponse, ObjectId, captureException } from '../../../services';
 import { schemaAssetValidation } from './schemaValidate';
 import { formatErrorMessage } from '../../../utils';
 
@@ -14,9 +14,13 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/validation', async (req, res) => {
+route.get('/validation/:id', async (req, res) => {
     try {
-        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+        const asset = await model.findOneAssets({
+            query: {
+                _id: new ObjectId(req.params.id),
+            },
+        });
 
         schemaAssetValidation.parse(asset);
 
