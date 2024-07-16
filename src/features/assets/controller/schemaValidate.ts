@@ -22,7 +22,10 @@ const FormDataSchema = z.object({
 });
 
 const CreatorsSchema = z.object({
-    name: z.string().trim(),
+    username: z.string().nonempty('Username is required'),
+    wallet: z.string().nonempty('Wallet is required'),
+    email: z.string().email('Invalid email address'),
+    name: z.string().trim().optional(),
     roles: z.array(z.string()).default([]),
     bio: z.string().optional(),
     nationality: z.string().optional(),
@@ -317,7 +320,7 @@ export const schemaAssetValidation = z.object({
     mintExplorer: MintExplorerSchema.optional(),
     framework: FrameworkSchema,
 
-    // repository of media keys
+
     uploadedMediaKeys: z.array(z.string()),
 
     status: z.string(),
