@@ -16,7 +16,10 @@ import {
 } from '../../../services';
 import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
-import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
+import {
+    ASSET_STORAGE_URL,
+    MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
+} from '../../../constants';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
@@ -126,6 +129,9 @@ route.patch(
                 const creator = await modelCreator.findCreatorById({
                     id: requestConsign.creator,
                 });
+                const asset = await modelAssets.findAssetCreatedBy({
+                    id: creator!._id.toString(),
+                });
 
                 if (
                     creator &&
@@ -134,10 +140,16 @@ route.patch(
                 ) {
                     await sendToExchangeMail(
                         JSON.stringify({
-                            template: MAIL_SENDGRID_TEMPLATE_CONSIGN,
+                            template: MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
                             to: creator.emails[0].email,
-                            consignMessage:
-                                'Your art was not accepted by the moderators.',
+                            title: asset?.assetMetadata.context.formData.title,
+                            creator: creator.username,
+                            thumbnail: `${ASSET_STORAGE_URL}/${
+                                asset?.formats.original?.path.replace(
+                                    /\.(\w+)$/,
+                                    '_thumb.jpg'
+                                ) || ''
+                            }`,
                         })
                     );
                 }
