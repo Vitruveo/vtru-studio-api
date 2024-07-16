@@ -134,21 +134,21 @@ route.post('/', validateBodyForCreate, async (req, res) => {
             });
 
             if (asset) {
-                asset.actions = asset.actions || { countClone: null };
-                asset.actions.countClone = (asset.actions.countClone ?? 0) + 1;
+                asset.actions = asset.actions || { countClone: 0 };
+                asset.actions.countClone += 1;
 
                 await model.updateAssets({
                     id: asset._id,
                     asset: { actions: asset.actions },
                 });
 
-                asset.assetMetadata.context.formData.title += ` ${asset.actions.countClone}`;
-                asset.licenses.print.added = false;
                 clone = {
                     assetMetadata: asset?.assetMetadata,
                     licenses: asset?.licenses,
                     terms: asset?.terms,
                 };
+                clone.assetMetadata.context.formData.title += ` ${asset.actions.countClone}`;
+                clone.licenses.print.added = false;
             }
         }
 

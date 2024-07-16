@@ -13,6 +13,8 @@ const TermsSchema = z.object({
     notMintedOtherBlockchain: z.boolean(),
 });
 
+const ActionsSchema = z.object({ countClone: z.number().default(0) });
+
 export const AssetsSchema = z.object({
     assetRefId: z.number().nullable().default(null),
     uploadedMediaKeys: z.array(z.string()).default([]),
@@ -155,9 +157,7 @@ export const AssetsSchema = z.object({
             })
             .default({ formData: [] }),
     }),
-    actions: z.object({
-        countClone: z.number().nullable().default(null),
-    }),
+    actions: ActionsSchema.optional(),
     terms: TermsSchema,
     consignArtwork: z
         .object({
