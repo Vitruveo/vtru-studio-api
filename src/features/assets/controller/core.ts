@@ -132,12 +132,23 @@ route.post('/', validateBodyForCreate, async (req, res) => {
             const asset = await model.findAssetsById({
                 id: req.body.cloneId,
             });
+
             if (asset) {
+                asset.actions = asset.actions || { countClone: 0 };
+                asset.actions.countClone += 1;
+
+                await model.updateAssets({
+                    id: asset._id,
+                    asset: { actions: asset.actions },
+                });
+
                 clone = {
                     assetMetadata: asset?.assetMetadata,
                     licenses: asset?.licenses,
                     terms: asset?.terms,
                 };
+                clone.assetMetadata.context.formData.title += ` ${asset.actions.countClone}`;
+                clone.licenses.print.added = false;
             }
         }
 
