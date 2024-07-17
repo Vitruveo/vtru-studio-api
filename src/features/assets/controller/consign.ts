@@ -4,9 +4,13 @@ import { Router } from 'express';
 import { ZodError } from 'zod';
 
 import * as model from '../model';
+import * as modelCreators from '../../creators/model';
 import { middleware } from '../../users';
 import { APIResponse, ObjectId, captureException } from '../../../services';
-import { schemaAssetValidation } from './schemaValidate';
+import {
+    schemaAssetValidation,
+    schemaCreatorValidation,
+} from './schemaValidate';
 import { formatErrorMessage } from '../../../utils';
 
 const logger = debug('features:assets:controller:consign');
@@ -22,6 +26,19 @@ route.get('/validation/:id', async (req, res) => {
             },
         });
 
+        if (!asset || !asset.framework.createdBy) {
+            return res.status(400).json({
+                code: 'vitruveo.studio.api.assets.Creator is null.validation.error',
+                message: 'Creator ID is missing',
+                transaction: nanoid(),
+                args: 'Creator ID is missing',
+            } as APIResponse);
+        }
+
+        const creator = await modelCreators.findCreatorById({
+            id: asset?.framework.createdBy,
+        });
+        schemaCreatorValidation.parse(creator);
         schemaAssetValidation.parse(asset);
 
         return res.json({
