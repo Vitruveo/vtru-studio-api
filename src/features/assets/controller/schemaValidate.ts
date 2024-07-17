@@ -66,29 +66,96 @@ const ProvenanceSchema = z.object({
         .default([]),
 });
 
-const schemaCreatorValidation = z.object({
-    _id: z.string().nonempty(),
-    creatorRefId: z.string().nonempty(),
-    name: z.string().trim().optional(),
-    login: z.object({}).optional(),
+export const schemaCreatorValidation = z.object({
+    name: z
+        .string()
+        .trim()
+        .optional()
+        .refine((value) => value === undefined || value.length > 0, {
+            message: 'Name cannot be empty',
+        }),
     emails: z
-        .array(z.string().email('Invalid email address'))
-        .nonempty('Emails are required'),
-    wallets: z.array(z.string()).nonempty('Wallet is required'),
-    profile: z.object({}).optional(),
+        .array(
+            z.object({
+                email: z.string().email('Invalid email address'),
+                codeHash: z.string().nullable(),
+                checkedAt: z.date().nullable(),
+            })
+        )
+        .refine((emails) => emails.length > 0, {
+            message: 'At least one email is required',
+        }),
+    wallets: z
+        .array(
+            z.object({
+                address: z.string().refine((value) => value.length > 0, {
+                    message: 'Wallet address is required',
+                }),
+                archived: z.boolean(),
+            })
+        )
+        .refine((wallets) => wallets.length > 0, {
+            message: 'At least one wallet is required',
+        }),
+    profile: z
+        .object({
+            avatar: z.string().nullable(),
+            phone: z.string().nullable(),
+            language: z.string().nullable(),
+            location: z.string().nullable(),
+        })
+        .optional(),
     roles: z.array(z.string()).default([]),
-    bio: z.string().optional(),
-    nationality: z.string().optional(),
-    residence: z.string().optional(),
-    ethnicity: z.string().optional(),
-    gender: z.string().optional(),
-    profileUrl: z.string().url().optional(),
-    walletDefault: z.string().nonempty('Default wallet is required'),
-    framework: z.object({}).optional(),
+    walletDefault: z.string().min(1, 'Wallet default is required'),
+    framework: z
+        .object({
+            createdAt: z.date().nullable(),
+            createdBy: z.string().nullable(),
+            updatedAt: z.date(),
+            updatedBy: z.string(),
+        })
+        .refine((data) => data.createdAt !== undefined, {
+            message: 'Created at date is required',
+        })
+        .refine((data) => data.updatedAt !== undefined, {
+            message: 'Updated at date is required',
+        }),
     emailDefault: z.string().email('Invalid default email address'),
-    username: z.string().nonempty('Username is required'),
-    videoGallery: z.array(z.object({})).default([]),
-    vault: z.object({}).optional(),
+    username: z.string().min(1, 'Username is required'),
+    videoGallery: z
+        .array(
+            z.object({
+                url: z.string().refine((value) => value.length > 0, {
+                    message: 'Video URL is required',
+                }),
+                createdAt: z.date(),
+                thumbnail: z.string(),
+                title: z.string(),
+            })
+        )
+        .default([]),
+    vault: z
+        .object({
+            vaultKey: z.string().refine((value) => value.length > 0, {
+                message: 'Vault key is required',
+            }),
+            contractAddress: z.string().refine((value) => value.length > 0, {
+                message: 'Contract address is required',
+            }),
+            transactionHash: z.string().refine((value) => value.length > 0, {
+                message: 'Transaction hash is required',
+            }),
+            explorerUrl: z.string().refine((value) => value.length > 0, {
+                message: 'Explorer URL is required',
+            }),
+            blockNumber: z.number().int('Block number must be an integer'),
+            vaultAddress: z.string().refine((value) => value.length > 0, {
+                message: 'Vault address is required',
+            }),
+            createdAt: z.date(),
+            isBlocked: z.boolean(),
+        })
+        .optional(),
 });
 
 const AssetMetadataSchema = z.object({
@@ -347,5 +414,3 @@ export const schemaAssetValidation = z.object({
 
     status: z.string(),
 });
-
-export { schemaCreatorValidation };
