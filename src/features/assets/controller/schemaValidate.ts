@@ -21,23 +21,15 @@ const FormDataSchema = z.object({
     orientation: z.string(),
 });
 
-const schemaCreatorValidation = z.object({
-    _id: z.string().nonempty(),
-    creatorRefId: z.string().nonempty(),
-    name: z.string().trim().optional(),
-    login: z.object({}).optional(),
-    emails: z
-        .array(z.string().email('Invalid email address'))
-        .nonempty('Emails are required'),
-    wallets: z.array(z.string()).nonempty('Wallet is required'),
-    profile: z.object({}).optional(),
+const CreatorsSchema = z.object({
+    name: z.string().trim(),
     roles: z.array(z.string()).default([]),
-    walletDefault: z.string().nonempty('Default wallet is required'),
-    framework: z.object({}).optional(),
-    emailDefault: z.string().email('Invalid default email address'),
-    username: z.string().nonempty('Username is required'),
-    videoGallery: z.array(z.object({})).default([]),
-    vault: z.object({}).optional(),
+    bio: z.string().optional(),
+    nationality: z.string().optional(),
+    residence: z.string().optional(),
+    ethnicity: z.string().optional(),
+    gender: z.string().optional(),
+    profileUrl: z.string().url().optional(),
 });
 
 const TaxonomySchema = z.object({
@@ -74,6 +66,31 @@ const ProvenanceSchema = z.object({
         .default([]),
 });
 
+const schemaCreatorValidation = z.object({
+    _id: z.string().nonempty(),
+    creatorRefId: z.string().nonempty(),
+    name: z.string().trim().optional(),
+    login: z.object({}).optional(),
+    emails: z
+        .array(z.string().email('Invalid email address'))
+        .nonempty('Emails are required'),
+    wallets: z.array(z.string()).nonempty('Wallet is required'),
+    profile: z.object({}).optional(),
+    roles: z.array(z.string()).default([]),
+    bio: z.string().optional(),
+    nationality: z.string().optional(),
+    residence: z.string().optional(),
+    ethnicity: z.string().optional(),
+    gender: z.string().optional(),
+    profileUrl: z.string().url().optional(),
+    walletDefault: z.string().nonempty('Default wallet is required'),
+    framework: z.object({}).optional(),
+    emailDefault: z.string().email('Invalid default email address'),
+    username: z.string().nonempty('Username is required'),
+    videoGallery: z.array(z.object({})).default([]),
+    vault: z.object({}).optional(),
+});
+
 const AssetMetadataSchema = z.object({
     isCompleted: z.boolean().default(false),
     context: z.object({
@@ -81,7 +98,7 @@ const AssetMetadataSchema = z.object({
     }),
     creators: z
         .object({
-            formData: z.array(schemaCreatorValidation).default([]),
+            formData: z.array(CreatorsSchema).default([]),
         })
         .default({}),
     taxonomy: z.object({
