@@ -5,6 +5,7 @@ import { exitWithDelay, retry } from '../../../utils';
 import { ObjectId, getDb } from '../../../services';
 import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from '../model';
 import { emitter } from '../../events';
+import { COLLECTION_CREATORS, CreatorDocument } from '../../creators/model';
 
 const logger = debug('features:requestConsign:watcher');
 
@@ -81,7 +82,29 @@ uniqueExecution({
                         COLLECTION_REQUEST_CONSIGNS
                     )
                     .watch([], { fullDocument: 'updateLookup' });
+                const changeStreamCreators = getDb()
+                    .collection<CreatorDocument>(COLLECTION_CREATORS)
+                    .watch([], { fullDocument: 'updateLookup' });
 
+                changeStreamCreators.on('change', async (change) => {
+                    if (change.operationType === 'update') {
+                        if (!change.fullDocument) return;
+                        const creatorUpdated = change.fullDocument;
+                        const index = status.data.findIndex(
+                            (element: any) =>
+                                element.creator._id.toString() ===
+                                creatorUpdated._id.toString()
+                        );
+                        if (index === -1) return;
+                        status.data[index].creator = {
+                            _id: creatorUpdated._id,
+                            username: creatorUpdated.username,
+                            emails: creatorUpdated.emails,
+                        } as any;
+
+                        emitter.emitUpdateRequestConsign(status.data[index]);
+                    }
+                });
                 changeStream.on('change', async (change) => {
                     // OPERATION TYPE: UPDATE REQUEST CONSIGN
                     if (change.operationType === 'update') {
