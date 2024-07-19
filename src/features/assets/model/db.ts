@@ -451,6 +451,23 @@ export const removeUploadedMediaKeys = async ({
     return result;
 };
 
+export const findLastSoldAssets = () =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    mintExplorer: { $exists: true },
+                },
+            },
+            {
+                $sort: { 'consignArtwork.listing': -1 },
+            },
+            {
+                $limit: 50,
+            },
+        ])
+        .toArray();
+
 export const findAssetsCarousel = ({ layout }: FindAssetsCarouselParams) =>
     assets()
         .aggregate([

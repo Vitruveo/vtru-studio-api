@@ -324,6 +324,27 @@ route.get('/creators', async (req, res) => {
     }
 });
 
+route.get('/lastSold', async (req, res) => {
+    try {
+        const assets = await model.findLastSoldAssets();
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.lastSold.success',
+            message: 'Reader last sold success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader last sold failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.lastSold.failed',
+            message: `Reader last sold failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
