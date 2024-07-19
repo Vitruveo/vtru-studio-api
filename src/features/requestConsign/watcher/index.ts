@@ -5,11 +5,36 @@ import { exitWithDelay, retry } from '../../../utils';
 import { ObjectId, getDb } from '../../../services';
 import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from '../model';
 import { emitter } from '../../events';
+import { COLLECTION_ASSETS } from '../../assets/model';
+import { COLLECTION_CREATORS } from '../../creators/model';
 
 const logger = debug('features:requestConsign:watcher');
 
+export interface RequestConsignProps {
+    _id: string;
+    status: string;
+    asset: {
+        _id: string;
+        title: string;
+    };
+    creator: {
+        _id: string;
+        username: string;
+        emails: string[];
+    };
+    logs?: {
+        status: string;
+        message: string;
+        when: Date;
+    }[];
+    comments?: {
+        username: string;
+        comment: string;
+        when: string;
+    }[];
+}
 interface StatusProps {
-    data: RequestConsignDocument[];
+    data: RequestConsignProps[];
 }
 
 export const status: StatusProps = {
@@ -70,7 +95,7 @@ uniqueExecution({
                             },
                         },
                     ])
-                    .toArray()) as RequestConsignDocument[];
+                    .toArray()) as RequestConsignProps[];
                 status.data = requestConsigns;
                 emitter.on(emitter.INITIAL_REQUEST_CONSIGNS, () => {
                     emitter.emit(emitter.LIST_REQUEST_CONSIGNS, status.data);
@@ -78,16 +103,16 @@ uniqueExecution({
                 emitter.on(emitter.UPDATED_CREATOR, (value) => {
                     const creatorUpdated = value;
                     const index = status.data.findIndex(
-                        (element: any) =>
+                        (element) =>
                             element.creator._id.toString() ===
                             creatorUpdated._id.toString()
                     );
                     if (index === -1) return;
                     status.data[index].creator = {
-                        _id: creatorUpdated._id,
+                        _id: creatorUpdated._id.toString(),
                         username: creatorUpdated.username,
                         emails: creatorUpdated.emails,
-                    } as any;
+                    };
 
                     emitter.emitUpdateRequestConsign(status.data[index]);
                 });
@@ -120,7 +145,7 @@ uniqueExecution({
                         if (!change.fullDocument) return;
 
                         const asset = await getDb()
-                            .collection('assets')
+                            .collection(COLLECTION_ASSETS)
                             .findOne(
                                 {
                                     _id: new ObjectId(
@@ -135,7 +160,7 @@ uniqueExecution({
                                 }
                             );
                         const creator = await getDb()
-                            .collection('creators')
+                            .collection(COLLECTION_CREATORS)
                             .findOne(
                                 {
                                     _id: new ObjectId(
@@ -154,27 +179,23 @@ uniqueExecution({
                         if (!asset || !creator) return;
 
                         const data = {
-                            _id: change.fullDocument._id,
+                            _id: change.fullDocument._id.toString(),
                             status: change.fullDocument.status,
                             logs: change.fullDocument.logs,
                             asset: {
-                                _id: asset._id,
+                                _id: asset._id.toString(),
                                 title: asset.assetMetadata.context.formData
                                     .title,
                             },
                             creator: {
-                                _id: creator._id,
+                                _id: creator._id.toString(),
                                 username: creator.username,
                                 emails: creator.emails,
                             },
                         };
 
-                        status.data.push(
-                            data as unknown as RequestConsignDocument
-                        );
-                        emitter.emitCreateRequestConsign(
-                            data as unknown as RequestConsignDocument
-                        );
+                        status.data.push(data);
+                        emitter.emitCreateRequestConsign(data);
                     }
 
                     // OPERATION TYPE: DELETE REQUEST CONSIGN
