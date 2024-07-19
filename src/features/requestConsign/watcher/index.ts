@@ -7,32 +7,10 @@ import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from '../model';
 import { emitter } from '../../events';
 import { COLLECTION_ASSETS } from '../../assets/model';
 import { COLLECTION_CREATORS } from '../../creators/model';
+import { RequestConsignProps } from './types';
 
 const logger = debug('features:requestConsign:watcher');
 
-export interface RequestConsignProps {
-    _id: string;
-    status: string;
-    asset: {
-        _id: string;
-        title: string;
-    };
-    creator: {
-        _id: string;
-        username: string;
-        emails: string[];
-    };
-    logs?: {
-        status: string;
-        message: string;
-        when: Date;
-    }[];
-    comments?: {
-        username: string;
-        comment: string;
-        when: string;
-    }[];
-}
 interface StatusProps {
     data: RequestConsignProps[];
 }
@@ -100,8 +78,7 @@ uniqueExecution({
                 emitter.on(emitter.INITIAL_REQUEST_CONSIGNS, () => {
                     emitter.emit(emitter.LIST_REQUEST_CONSIGNS, status.data);
                 });
-                emitter.on(emitter.UPDATED_CREATOR, (value) => {
-                    const creatorUpdated = value;
+                emitter.on(emitter.UPDATED_CREATOR, (creatorUpdated) => {
                     const index = status.data.findIndex(
                         (element) =>
                             element.creator._id.toString() ===

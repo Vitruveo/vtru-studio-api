@@ -1,5 +1,5 @@
 import { EventEmitter } from 'stream';
-import { RequestConsignProps } from '../../requestConsign/watcher';
+import { RequestConsignProps } from '../../requestConsign/watcher/types';
 
 class Emitter extends EventEmitter {
     INITIAL_REQUEST_CONSIGNS = 'initialRequestConsigns';
