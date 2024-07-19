@@ -460,7 +460,7 @@ export const findLastSoldAssets = () =>
                 },
             },
             {
-                $sort: { 'consignArtwork.listing': 1 },
+                $sort: { 'consignArtwork.listing': -1 },
             },
             {
                 $limit: 50,
