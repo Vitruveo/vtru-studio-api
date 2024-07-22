@@ -4,6 +4,7 @@ import { join, parse } from 'path';
 import { customAlphabet, nanoid } from 'nanoid';
 import { Request, Router } from 'express';
 import * as model from '../model';
+import * as modelRequestConsign from '../../requestConsign/model';
 import { middleware } from '../../users';
 import {
     APIResponse,
@@ -321,7 +322,10 @@ route.delete('/:id/form', mustBeOwner, async (req, res) => {
             } as APIResponse);
             return;
         }
-        if (asset?.consignArtwork.status !== 'rejected') {
+        if (
+            asset.consignArtwork &&
+            asset.consignArtwork.status !== 'rejected'
+        ) {
             res.status(409).json({
                 code: 'vitruveo.studio.api.admin.assets.delete.conflict',
                 message: 'Asset conflict',
@@ -331,6 +335,9 @@ route.delete('/:id/form', mustBeOwner, async (req, res) => {
         }
 
         await model.deleteAssets({ id: req.params.id });
+        await modelRequestConsign.deleteRequestConsignByAsset({
+            id: asset._id.toString(),
+        });
         res.json({
             code: 'vitruveo.studio.api.admin.assets.delete.success',
             message: 'Delete success',
