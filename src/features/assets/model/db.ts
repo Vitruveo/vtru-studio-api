@@ -465,6 +465,35 @@ export const findLastSoldAssets = () =>
             {
                 $limit: 50,
             },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $project: {
+                    _id: '$_id',
+                    assetMetadata: '$assetMetadata',
+                    formats: '$formats.preview',
+                    licenses: '$licenses.nft',
+                    username: '$creator.username',
+                },
+            },
         ])
         .toArray();
 
