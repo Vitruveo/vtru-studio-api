@@ -1,5 +1,5 @@
 import { EventEmitter } from 'stream';
-import { RequestConsignDocument } from '../../requestConsign/model';
+import { RequestConsignProps } from '../../requestConsign/watcher/types';
 
 class Emitter extends EventEmitter {
     INITIAL_REQUEST_CONSIGNS = 'initialRequestConsigns';
@@ -73,11 +73,11 @@ class Emitter extends EventEmitter {
     DELETED_ALLOW_LIST = 'deletedAllowList';
 
     // REQUEST CONSIGNS EVENTS
-    emitCreateRequestConsign = (value: RequestConsignDocument) => {
+    emitCreateRequestConsign = (value: RequestConsignProps) => {
         this.emit(this.CREATED_REQUEST_CONSIGN, value);
     };
 
-    emitUpdateRequestConsign = (value: RequestConsignDocument) => {
+    emitUpdateRequestConsign = (value: RequestConsignProps) => {
         this.emit(this.UPDATED_REQUEST_CONSIGN, value);
     };
 
