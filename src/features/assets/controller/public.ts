@@ -206,10 +206,10 @@ route.get('/search', async (req, res) => {
 });
 
 route.get('/carousel', async (req, res) => {
-    const { layout } = req.query as FindAssetsCarouselParams;
+    const { layout, nudity } = req.query as FindAssetsCarouselParams;
 
     try {
-        const assets = await model.findAssetsCarousel({ layout });
+        const assets = await model.findAssetsCarousel({ layout, nudity });
 
         res.json({
             code: 'vitruveo.studio.api.assets.carousel.success',
