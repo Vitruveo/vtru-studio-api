@@ -311,8 +311,26 @@ route.delete(
 
 route.delete('/:id/form', mustBeOwner, async (req, res) => {
     try {
-        await model.deleteAssets({ id: req.params.id });
+        const asset = await model.findAssetsById({ id: req.params.id });
 
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.delete.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+        if (asset?.consignArtwork.status !== 'rejected') {
+            res.status(409).json({
+                code: 'vitruveo.studio.api.admin.assets.delete.conflict',
+                message: 'Asset conflict',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        await model.deleteAssets({ id: req.params.id });
         res.json({
             code: 'vitruveo.studio.api.admin.assets.delete.success',
             message: 'Delete success',
