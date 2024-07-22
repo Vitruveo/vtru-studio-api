@@ -451,7 +451,56 @@ export const removeUploadedMediaKeys = async ({
     return result;
 };
 
-export const findAssetsCarousel = ({ layout }: FindAssetsCarouselParams) =>
+export const findLastSoldAssets = () =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    mintExplorer: { $exists: true },
+                },
+            },
+            {
+                $sort: { 'consignArtwork.listing': -1 },
+            },
+            {
+                $limit: 50,
+            },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $project: {
+                    _id: '$_id',
+                    assetMetadata: '$assetMetadata',
+                    formats: '$formats.preview',
+                    licenses: '$licenses.nft',
+                    username: '$creator.username',
+                },
+            },
+        ])
+        .toArray();
+
+export const findAssetsCarousel = ({
+    layout,
+    nudity,
+}: FindAssetsCarouselParams) =>
     assets()
         .aggregate([
             {
@@ -488,6 +537,7 @@ export const findAssetsCarousel = ({ layout }: FindAssetsCarouselParams) =>
                     },
                     'assetMetadata.context.formData.orientation':
                         layout ?? 'horizontal',
+                    'assetMetadata.taxonomy.formData.nudity': nudity ?? 'no',
                 },
             },
             {

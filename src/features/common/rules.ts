@@ -5,6 +5,22 @@ import { APIResponse } from '../../services';
 import { NeedsToBeOwnerPermissions } from './types';
 import { checkUserPermission } from './permission';
 
+export const mustBeOwner = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.common.mustBeOwner.failed',
+            message: 'You are not allowed to change this',
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+};
+
 export const needsToBeOwner =
     ({ permissions }: NeedsToBeOwnerPermissions) =>
     async (req: Request, res: Response, next: NextFunction) => {
