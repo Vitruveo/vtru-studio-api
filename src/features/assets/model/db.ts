@@ -497,7 +497,10 @@ export const findLastSoldAssets = () =>
         ])
         .toArray();
 
-export const findAssetsCarousel = ({ layout }: FindAssetsCarouselParams) =>
+export const findAssetsCarousel = ({
+    layout,
+    nudity,
+}: FindAssetsCarouselParams) =>
     assets()
         .aggregate([
             {
@@ -534,6 +537,7 @@ export const findAssetsCarousel = ({ layout }: FindAssetsCarouselParams) =>
                     },
                     'assetMetadata.context.formData.orientation':
                         layout ?? 'horizontal',
+                    'assetMetadata.taxonomy.formData.nudity': nudity ?? 'no',
                 },
             },
             {

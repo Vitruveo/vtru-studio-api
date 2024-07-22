@@ -23,11 +23,11 @@ uniqueExecution({
             async () => {
                 logger('Watching changes in creators');
 
-                const creatorss = (await getDb()
+                const creators = (await getDb()
                     .collection<CreatorDocument>(COLLECTION_CREATORS)
                     .find({})
                     .toArray()) as CreatorDocument[];
-                status.data = creatorss;
+                status.data = creators;
 
                 emitter.on(emitter.INITIAL_CREATORS, () => {
                     emitter.emit(emitter.LIST_CREATORS, status.data);
@@ -43,7 +43,9 @@ uniqueExecution({
                         if (!change.fullDocument) return;
 
                         const index = status.data.findIndex(
-                            (item) => item._id === change.documentKey._id
+                            (item) =>
+                                item._id.toString() ===
+                                change.documentKey._id.toString()
                         );
                         if (index !== -1) {
                             status.data[index] = change.fullDocument;
@@ -65,7 +67,9 @@ uniqueExecution({
                     // OPERATION TYPE: DELETE CREATOR
                     if (change.operationType === 'delete') {
                         status.data = status.data.filter(
-                            (item) => item._id !== change.documentKey._id
+                            (item) =>
+                                item._id.toString() !==
+                                change.documentKey._id.toString()
                         );
 
                         emitter.emitDeleteCreator(
