@@ -2,8 +2,8 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { ObjectId, APIResponse, captureException } from '../../../services';
 import { ZodError } from 'zod';
+import { ObjectId, APIResponse, captureException } from '../../../services';
 
 import * as model from '../model';
 import * as modelCreators from '../../creators/model';
@@ -85,9 +85,7 @@ route.get('/validation/:id', async (req, res) => {
             avatarPath,
         ]
             .filter(Boolean)
-            .map((path) => {
-                return path ? path.replace(GENERAL_STORAGE_URL + '/', '') : '';
-            })
+            .map((path) => path ? path.replace(`${GENERAL_STORAGE_URL  }/`, '') : '')
             .filter(Boolean);
 
         try {
