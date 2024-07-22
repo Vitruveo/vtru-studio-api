@@ -8,13 +8,14 @@ import { middleware } from '../../users';
 import { APIResponse, ObjectId, captureException } from '../../../services';
 import { schemaAssetValidation } from './schemaValidate';
 import { formatErrorMessage } from '../../../utils';
+import { mustBeOwner } from '../../common/rules';
 
 const logger = debug('features:assets:controller:consign');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/validation/:id', async (req, res) => {
+route.get('/validation/:id', mustBeOwner, async (req, res) => {
     try {
         const asset = await model.findOneAssets({
             query: {
