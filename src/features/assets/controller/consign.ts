@@ -1,7 +1,6 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { ZodError } from 'zod';
 import { ObjectId, APIResponse, captureException } from '../../../services';
 
@@ -9,37 +8,19 @@ import * as model from '../model';
 import * as modelCreators from '../../creators/model';
 import { middleware } from '../../users';
 import { formatErrorMessage } from '../../../utils';
-import {
-    AWS_DEFAULT_REGION,
-    GENERAL_STORAGE_URL,
-    DEFAULT_AVATAR_URL,
-    ASSET_STORAGE_NAME,
-} from '../../../constants';
+import { GENERAL_STORAGE_URL, ASSET_STORAGE_NAME } from '../../../constants';
+import { exists } from '../../../services/aws/s3/exists';
+
 import {
     schemaAssetValidation,
     schemaCreatorValidation,
 } from './schemaValidate';
 
 const logger = debug('features:assets:controller:consign');
-const s3Client = new S3Client({ region: AWS_DEFAULT_REGION });
 const bucketName = ASSET_STORAGE_NAME;
 const route = Router();
 
 route.use(middleware.checkAuth);
-
-async function checkS3FileExists(key: string) {
-    try {
-        await s3Client.send(
-            new HeadObjectCommand({ Bucket: bucketName, Key: key })
-        );
-        return true;
-    } catch (error: any) {
-        if (error.name === 'NotFound') {
-            return false;
-        }
-        throw error; 
-    }
-}
 
 route.get('/validation/:id', async (req, res) => {
     try {
@@ -70,11 +51,7 @@ route.get('/validation/:id', async (req, res) => {
             } as APIResponse);
         }
 
-        const avatarPath =
-            creator.profile?.avatar &&
-            creator.profile.avatar !== DEFAULT_AVATAR_URL
-                ? `${GENERAL_STORAGE_URL}/${creator.profile.avatar}`
-                : null;
+        const avatarPath = creator.profile?.avatar;
 
         const mediaPaths = [
             asset.formats?.original?.path,
@@ -82,18 +59,31 @@ route.get('/validation/:id', async (req, res) => {
             asset.formats?.preview?.path,
             asset.formats?.exhibition?.path,
             asset.formats?.print?.path,
+            asset.mediaAuxiliary?.formats?.arImage?.path,
+            asset.mediaAuxiliary?.formats?.arVideo?.path,
+            asset.mediaAuxiliary?.formats?.btsImage?.path,
+            asset.mediaAuxiliary?.formats?.btsVideo?.path,
+            asset.mediaAuxiliary?.formats?.codeZip?.path,
             avatarPath,
         ]
             .filter(Boolean)
-            .map((path) => path ? path.replace(`${GENERAL_STORAGE_URL  }/`, '') : '')
-            .filter(Boolean);
+            .map((path) => `${GENERAL_STORAGE_URL}/${path}`);
 
         try {
-            await Promise.all(mediaPaths.map(checkS3FileExists));
+            const checkExists = await Promise.all(
+                mediaPaths.map((path) =>
+                    exists({ key: path, bucket: bucketName })
+                )
+            );
+            if (checkExists.some((fileExists) => !fileExists)) {
+                throw new Error(
+                    'One or more media files do not exist in our S3 bucket.'
+                );
+            }
         } catch (error) {
             return res.status(404).json({
                 code: 'vitruveo.studio.api.assets.consign.validation.error',
-                message: `Media file at path does not exist in our S3 bucket.`,
+                message: 'validation error',
                 transaction: nanoid(),
             } as APIResponse);
         }
