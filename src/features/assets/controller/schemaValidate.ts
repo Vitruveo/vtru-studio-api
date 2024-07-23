@@ -67,13 +67,6 @@ const ProvenanceSchema = z.object({
 });
 
 export const schemaCreatorValidation = z.object({
-    name: z
-        .string()
-        .trim()
-        .optional()
-        .refine((value) => value === undefined || value.length > 0, {
-            message: 'Name cannot be empty',
-        }),
     emails: z
         .array(
             z.object({

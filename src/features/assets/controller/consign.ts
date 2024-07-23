@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
@@ -77,29 +78,52 @@ route.get('/validation/:id', async (req, res) => {
         }
 
         // Validate midias
-        const mediaPaths = [
-            asset.formats?.original?.path,
-            asset.formats?.display?.path,
-            asset.formats?.preview?.path,
-            asset.formats?.exhibition?.path,
-            asset.formats?.print?.path,
-            asset.mediaAuxiliary?.formats?.arImage?.path,
-            asset.mediaAuxiliary?.formats?.arVideo?.path,
-            asset.mediaAuxiliary?.formats?.btsImage?.path,
-            asset.mediaAuxiliary?.formats?.btsVideo?.path,
-            asset.mediaAuxiliary?.formats?.codeZip?.path,
-        ].filter(Boolean) as string[];
+        const medias = [
+            { name: 'original', path: asset.formats?.original?.path },
+            { name: 'display', path: asset.formats?.display?.path },
+            { name: 'preview', path: asset.formats?.preview?.path },
+            { name: 'exhibition', path: asset.formats?.exhibition?.path },
+            { name: 'print', path: asset.formats?.print?.path },
+            {
+                name: 'arImage',
+                path: asset.mediaAuxiliary?.formats?.arImage?.path,
+            },
+            {
+                name: 'arVideo',
+                path: asset.mediaAuxiliary?.formats?.arVideo?.path,
+            },
+            {
+                name: 'btsImage',
+                path: asset.mediaAuxiliary?.formats?.btsImage?.path,
+            },
+            {
+                name: 'btsVideo',
+                path: asset.mediaAuxiliary?.formats?.btsVideo?.path,
+            },
+            {
+                name: 'codeZip',
+                path: asset.mediaAuxiliary?.formats?.codeZip?.path,
+            },
+        ].filter((media) => media.path);
 
-        const checkExists = await Promise.all(
-            mediaPaths.map((path) =>
-                exists({ key: path, bucket: ASSET_STORAGE_NAME })
-            )
-        );
+        // list files not found
+        const filesNotFound = [];
 
-        if (checkExists.some((fileExists) => !fileExists)) {
+        for (let i = 0; i < medias.length; i += 1) {
+            const media = medias[i];
+
+            const existsFile = await exists({
+                key: media.path!,
+                bucket: ASSET_STORAGE_NAME,
+            });
+
+            if (!existsFile) filesNotFound.push(media.name);
+        }
+
+        if (filesNotFound.length > 0) {
             res.status(400).json({
                 code: 'vitruveo.studio.api.assets.file.not.found',
-                message: 'File not found',
+                message: `The file ${filesNotFound.join(', ')} not found on S3`,
                 transaction: nanoid(),
             } as APIResponse);
             return;
