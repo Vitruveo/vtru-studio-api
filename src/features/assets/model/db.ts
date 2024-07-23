@@ -505,6 +505,7 @@ export const findAssetsCarousel = ({
         .aggregate([
             {
                 $addFields: {
+                    randomField: { $rand: {} },
                     createdBy: {
                         $toObjectId: '$framework.createdBy',
                     },
@@ -542,7 +543,7 @@ export const findAssetsCarousel = ({
             },
             {
                 $sort: {
-                    'consignArtwork.listing': 1,
+                    randomField: 1,
                 },
             },
             {
