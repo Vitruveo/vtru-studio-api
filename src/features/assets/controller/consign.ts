@@ -2,14 +2,14 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { ZodError } from 'zod';
-import { ObjectId, APIResponse, captureException } from '../../../services';
 
 import * as model from '../model';
 import * as modelCreators from '../../creators/model';
+import { ObjectId, APIResponse } from '../../../services';
+import { exists } from '../../../services/aws/s3/exists';
 import { middleware } from '../../users';
 import { formatErrorMessage } from '../../../utils';
-import { GENERAL_STORAGE_URL, ASSET_STORAGE_NAME } from '../../../constants';
-import { exists } from '../../../services/aws/s3/exists';
+import { ASSET_STORAGE_NAME } from '../../../constants';
 
 import {
     schemaAssetValidation,
@@ -31,12 +31,12 @@ route.get('/validation/:id', async (req, res) => {
         });
 
         if (!asset || !asset.framework.createdBy) {
-            return res.status(400).json({
-                code: 'vitruveo.studio.api.assets.Creator is null.validation.error',
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.creator.id.missing',
                 message: 'Creator ID is missing',
                 transaction: nanoid(),
-                args: 'Creator ID is missing',
             } as APIResponse);
+            return;
         }
 
         const creator = await modelCreators.findCreatorById({
@@ -44,15 +44,22 @@ route.get('/validation/:id', async (req, res) => {
         });
 
         if (!creator) {
-            return res.status(404).json({
-                code: 'vitruveo.studio.api.assets.Creator not found',
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.creator.not.found',
                 message: 'Creator not found',
                 transaction: nanoid(),
             } as APIResponse);
+            return;
         }
 
-        const avatarPath = creator.profile?.avatar;
+        // Validate schema asset
+        schemaAssetValidation.parse(asset);
 
+        // Validate schema creator
+        schemaCreatorValidation.parse(creator);
+
+        // Validate midias
+        const avatarPath = creator.profile?.avatar;
         const mediaPaths = [
             asset.formats?.original?.path,
             asset.formats?.display?.path,
@@ -65,33 +72,22 @@ route.get('/validation/:id', async (req, res) => {
             asset.mediaAuxiliary?.formats?.btsVideo?.path,
             asset.mediaAuxiliary?.formats?.codeZip?.path,
             avatarPath,
-        ]
-            .filter(Boolean)
-            .map((path) => `${GENERAL_STORAGE_URL}/${path}`);
+        ].filter(Boolean) as string[];
 
-        try {
-            const checkExists = await Promise.all(
-                mediaPaths.map((path) =>
-                    exists({ key: path, bucket: bucketName })
-                )
-            );
-            if (checkExists.some((fileExists) => !fileExists)) {
-                throw new Error(
-                    'One or more media files do not exist in our S3 bucket.'
-                );
-            }
-        } catch (error) {
-            return res.status(404).json({
-                code: 'vitruveo.studio.api.assets.consign.validation.error',
-                message: 'validation error',
+        const checkExists = await Promise.all(
+            mediaPaths.map((path) => exists({ key: path, bucket: bucketName }))
+        );
+
+        if (checkExists.some((fileExists) => !fileExists)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.file.not.found',
+                message: 'File not found',
                 transaction: nanoid(),
             } as APIResponse);
+            return;
         }
 
-        schemaCreatorValidation.parse(creator);
-        schemaAssetValidation.parse(asset);
-
-        return res.json({
+        res.json({
             code: 'vitruveo.studio.api.assets.consign.validation.success',
             message: 'Consign validation success',
             transaction: nanoid(),
@@ -99,16 +95,8 @@ route.get('/validation/:id', async (req, res) => {
         } as APIResponse<boolean>);
     } catch (error) {
         logger('Consign validation failed: %O', error);
-        captureException(
-            {
-                message: 'Consign validation failed',
-                error: error instanceof Error ? error.message : error,
-                creator: req.auth.id,
-            },
-            { tags: { scope: 'consign' } }
-        );
 
-        return res.status(400).json({
+        res.status(400).json({
             code: 'vitruveo.studio.api.assets.consign.validation.error',
             message: 'Consign validation error',
             transaction: nanoid(),
