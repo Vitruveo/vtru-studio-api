@@ -105,57 +105,7 @@ export const schemaCreatorValidation = z.object({
             location: z.string().nullable(),
         })
         .optional(),
-    roles: z.array(z.string()).default([]),
-    walletDefault: z.string().min(1, 'Wallet default is required'),
-    framework: z
-        .object({
-            createdAt: z.date().nullable(),
-            createdBy: z.string().nullable(),
-            updatedAt: z.date(),
-            updatedBy: z.string(),
-        })
-        .refine((data) => data.createdAt !== undefined, {
-            message: 'Created at date is required',
-        })
-        .refine((data) => data.updatedAt !== undefined, {
-            message: 'Updated at date is required',
-        }),
-    emailDefault: z.string().email('Invalid default email address'),
     username: z.string().min(1, 'Username is required'),
-    videoGallery: z
-        .array(
-            z.object({
-                url: z.string().refine((value) => value.length > 0, {
-                    message: 'Video URL is required',
-                }),
-                createdAt: z.date(),
-                thumbnail: z.string(),
-                title: z.string(),
-            })
-        )
-        .default([]),
-    vault: z
-        .object({
-            vaultKey: z.string().refine((value) => value.length > 0, {
-                message: 'Vault key is required',
-            }),
-            contractAddress: z.string().refine((value) => value.length > 0, {
-                message: 'Contract address is required',
-            }),
-            transactionHash: z.string().refine((value) => value.length > 0, {
-                message: 'Transaction hash is required',
-            }),
-            explorerUrl: z.string().refine((value) => value.length > 0, {
-                message: 'Explorer URL is required',
-            }),
-            blockNumber: z.number().int('Block number must be an integer'),
-            vaultAddress: z.string().refine((value) => value.length > 0, {
-                message: 'Vault address is required',
-            }),
-            createdAt: z.date(),
-            isBlocked: z.boolean(),
-        })
-        .optional(),
 });
 
 const AssetMetadataSchema = z.object({

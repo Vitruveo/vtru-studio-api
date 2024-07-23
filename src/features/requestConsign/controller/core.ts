@@ -6,7 +6,7 @@ import * as modelAssets from '../../assets/model';
 import * as modelCreator from '../../creators/model';
 import * as modelUsers from '../../users/model';
 import { middleware } from '../../users';
-import { needsToBeOwner } from '../../common/rules';
+import { mustBeOwner, needsToBeOwner } from '../../common/rules';
 import {
     APIResponse,
     DeleteResult,
@@ -26,7 +26,7 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.post('/:assetId', async (req, res) => {
+route.post('/:assetId', mustBeOwner, async (req, res) => {
     try {
         const { id } = req.auth;
         const alreadyExists = await model.findRequestConsignsByCreator({
@@ -129,8 +129,8 @@ route.patch(
                 const creator = await modelCreator.findCreatorById({
                     id: requestConsign.creator,
                 });
-                const asset = await modelAssets.findAssetCreatedBy({
-                    id: creator!._id.toString(),
+                const asset = await modelAssets.findAssetsById({
+                    id: requestConsign.asset.toString(),
                 });
 
                 if (

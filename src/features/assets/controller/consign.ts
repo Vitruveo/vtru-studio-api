@@ -9,7 +9,7 @@ import { ObjectId, APIResponse } from '../../../services';
 import { exists } from '../../../services/aws/s3/exists';
 import { middleware } from '../../users';
 import { formatErrorMessage } from '../../../utils';
-import { ASSET_STORAGE_NAME } from '../../../constants';
+import { ASSET_STORAGE_NAME, GENERAL_STORAGE_NAME } from '../../../constants';
 
 import {
     schemaAssetValidation,
@@ -17,7 +17,7 @@ import {
 } from './schemaValidate';
 
 const logger = debug('features:assets:controller:consign');
-const bucketName = ASSET_STORAGE_NAME;
+
 const route = Router();
 
 route.use(middleware.checkAuth);
@@ -58,8 +58,25 @@ route.get('/validation/:id', async (req, res) => {
         // Validate schema creator
         schemaCreatorValidation.parse(creator);
 
-        // Validate midias
+        // Validate avatar
         const avatarPath = creator.profile?.avatar;
+        if (avatarPath) {
+            const checkAvatarExists = await exists({
+                key: avatarPath,
+                bucket: GENERAL_STORAGE_NAME,
+            });
+
+            if (!checkAvatarExists) {
+                res.status(400).json({
+                    code: 'vitruveo.studio.api.assets.creator.avatar.not.found',
+                    message: 'Avatar not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+        }
+
+        // Validate midias
         const mediaPaths = [
             asset.formats?.original?.path,
             asset.formats?.display?.path,
@@ -71,11 +88,12 @@ route.get('/validation/:id', async (req, res) => {
             asset.mediaAuxiliary?.formats?.btsImage?.path,
             asset.mediaAuxiliary?.formats?.btsVideo?.path,
             asset.mediaAuxiliary?.formats?.codeZip?.path,
-            avatarPath,
         ].filter(Boolean) as string[];
 
         const checkExists = await Promise.all(
-            mediaPaths.map((path) => exists({ key: path, bucket: bucketName }))
+            mediaPaths.map((path) =>
+                exists({ key: path, bucket: ASSET_STORAGE_NAME })
+            )
         );
 
         if (checkExists.some((fileExists) => !fileExists)) {

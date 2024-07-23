@@ -206,10 +206,10 @@ route.get('/search', async (req, res) => {
 });
 
 route.get('/carousel', async (req, res) => {
-    const { layout } = req.query as FindAssetsCarouselParams;
+    const { layout, nudity } = req.query as FindAssetsCarouselParams;
 
     try {
-        const assets = await model.findAssetsCarousel({ layout });
+        const assets = await model.findAssetsCarousel({ layout, nudity });
 
         res.json({
             code: 'vitruveo.studio.api.assets.carousel.success',
@@ -318,6 +318,27 @@ route.get('/creators', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.creators.failed',
             message: `Reader creators failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/lastSold', async (req, res) => {
+    try {
+        const assets = await model.findLastSoldAssets();
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.lastSold.success',
+            message: 'Reader last sold success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader last sold failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.lastSold.failed',
+            message: `Reader last sold failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
