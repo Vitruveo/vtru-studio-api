@@ -69,6 +69,7 @@ uniqueExecution({
                                     _id: 1,
                                     username: '$creator.username',
                                     emails: '$creator.emails',
+                                    isTrusted: '$creator.vault.isTrusted',
                                 },
                             },
                         },
@@ -89,6 +90,7 @@ uniqueExecution({
                         _id: creatorUpdated._id.toString(),
                         username: creatorUpdated.username,
                         emails: creatorUpdated.emails,
+                        isTrusted: creatorUpdated.vault.isTrusted,
                     };
 
                     emitter.emitUpdateRequestConsign(status.data[index]);
@@ -149,6 +151,7 @@ uniqueExecution({
                                         _id: 1,
                                         username: 1,
                                         emails: 1,
+                                        isTrusted: 1,
                                     },
                                 }
                             );
@@ -168,6 +171,7 @@ uniqueExecution({
                                 _id: creator._id.toString(),
                                 username: creator.username,
                                 emails: creator.emails,
+                                isTrusted: creator.vault.isTrusted,
                             },
                         };
 
