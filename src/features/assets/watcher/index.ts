@@ -74,6 +74,22 @@ uniqueExecution({
 
                 changeStream.on('change', async (change) => {
                     // OPERATION TYPE: UPDATE ASSET
+                    if (change.operationType === 'replace') {
+                        if (!change.fullDocument) return;
+
+                        const index = status.data.findIndex(
+                            (item) => item._id === change.documentKey._id
+                        );
+                        if (index !== -1) {
+                            status.data[index] = change.fullDocument;
+                        } else {
+                            status.data.push(change.fullDocument);
+                        }
+
+                        emitter.emitUpdateAsset(change.fullDocument);
+                    }
+
+                    // OPERATION TYPE: UPDATE ASSET
                     if (change.operationType === 'update') {
                         if (!change.fullDocument) return;
 
