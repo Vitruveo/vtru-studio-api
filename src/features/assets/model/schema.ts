@@ -161,7 +161,14 @@ export const AssetsSchema = z.object({
     terms: TermsSchema,
     consignArtwork: z
         .object({
-            status: z.enum(['draft', 'preview', 'active', 'hidden', 'locked']),
+            status: z.enum([
+                'draft',
+                'preview',
+                'active',
+                'hidden',
+                'locked',
+                'rejected',
+            ]),
             listing: z.string().nullable().default(null),
             wallet: z.string().nullable().default(null),
         })
