@@ -16,8 +16,11 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', async (_req, res) => {
+route.get('/', async (req, res) => {
     try {
+        const { events } = req.query as { events: string };
+        const eventsType = events.split(',');
+
         res.set('Content-Type', 'text/event-stream');
         res.set(
             'Cache-Control',
@@ -36,23 +39,36 @@ route.get('/', async (_req, res) => {
             return !(res.closed || res.destroyed);
         };
 
-        listDataEvents.forEach((eventType) =>
-            emitter.once(eventType, (data: any[]) => sendEvent(data, eventType))
+        listDataEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.once(eventType, (data: any[]) =>
+                    sendEvent(data, eventType)
+                )
         );
 
-        createdEvents.forEach((eventType) =>
-            emitter.on(eventType, (data: any) => sendEvent(data, eventType))
+        createdEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.on(eventType, (data: any) => sendEvent(data, eventType))
         );
 
-        updatedEvents.forEach((eventType) =>
-            emitter.on(eventType, (data: any) => sendEvent(data, eventType))
+        updatedEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.on(eventType, (data: any) => sendEvent(data, eventType))
         );
 
-        deletedEvents.forEach((eventType) =>
-            emitter.on(eventType, (data: any) => sendEvent(data, eventType))
+        deletedEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.on(eventType, (data: any) => sendEvent(data, eventType))
         );
 
-        initialEvents.forEach((eventType) => emitter.emit(eventType));
+        initialEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) && emitter.emit(eventType)
+        );
 
         const removeListeners = () => {
             createdEvents.forEach((eventType) =>
