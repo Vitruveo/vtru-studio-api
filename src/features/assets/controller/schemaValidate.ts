@@ -72,7 +72,7 @@ export const schemaCreatorValidation = z.object({
             z.object({
                 email: z.string().email('Invalid email address'),
                 codeHash: z.string().nullable(),
-                checkedAt: z.date().nullable(),
+                checkedAt: z.string().nullable(),
             })
         )
         .refine((emails) => emails.length > 0, {
