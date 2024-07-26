@@ -22,13 +22,7 @@ route.get('/', async (req, res) => {
         const eventsType = events.split(',');
 
         res.set('Content-Type', 'text/event-stream');
-        res.set(
-            'Cache-Control',
-            'no-store, no-cache, must-revalidate, proxy-revalidate'
-        );
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
-        res.set('Surrogate-Control', 'no-store');
+        res.set('Cache-Control', 'no-cache');
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
@@ -75,7 +69,7 @@ route.get('/', async (req, res) => {
                 emitter.removeAllListeners(eventType)
             );
             updatedEvents.forEach((eventType) =>
-                emitter.removeAllListeners(eventType)
+                emitter.removeListener(eventType, sendEvent)
             );
             deletedEvents.forEach((eventType) =>
                 emitter.removeAllListeners(eventType)
