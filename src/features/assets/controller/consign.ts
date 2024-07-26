@@ -110,8 +110,12 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
         // list files not found
         const filesNotFound = [];
 
+        logger('Bucket: %s', ASSET_STORAGE_NAME);
+
         for (let i = 0; i < medias.length; i += 1) {
             const media = medias[i];
+
+            logger('path: %s', media.path);
 
             const existsFile = await exists({
                 key: media.path!,
