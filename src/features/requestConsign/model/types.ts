@@ -36,3 +36,7 @@ export interface UpdateRequestConsignParams {
 export interface DeleteRequestConsignByIdParams {
     id: string;
 }
+
+export interface DeleteRequestConsignByAssetParams {
+    id: string;
+}

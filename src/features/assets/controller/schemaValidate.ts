@@ -66,6 +66,35 @@ const ProvenanceSchema = z.object({
         .default([]),
 });
 
+export const schemaCreatorValidation = z.object({
+    emails: z
+        .array(
+            z.object({
+                email: z.string().email('Invalid email address'),
+            })
+        )
+        .refine((emails) => emails.length > 0, {
+            message: 'At least one email is required',
+        }),
+    wallets: z
+        .array(
+            z.object({
+                address: z.string().refine((value) => value.length > 0, {
+                    message: 'Wallet address is required',
+                }),
+            })
+        )
+        .refine((wallets) => wallets.length > 0, {
+            message: 'At least one wallet is required',
+        }),
+    profile: z
+        .object({
+            avatar: z.string().nullable(),
+        })
+        .optional(),
+    username: z.string().min(1, 'Username is required'),
+});
+
 const AssetMetadataSchema = z.object({
     isCompleted: z.boolean().default(false),
     context: z.object({
