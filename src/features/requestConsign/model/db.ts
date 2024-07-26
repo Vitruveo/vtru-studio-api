@@ -68,6 +68,10 @@ export const findRequestConsigns = ({
                     _id: 1,
                     username: '$creator.username',
                     emails: '$creator.emails',
+                    vault: {
+                        isTrusted: '$creator.vault.isTrusted',
+                        isBlocked: '$creator.vault.isBlocked',
+                    },
                 },
             },
         },

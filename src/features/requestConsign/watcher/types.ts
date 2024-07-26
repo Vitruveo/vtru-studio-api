@@ -9,6 +9,10 @@ export interface RequestConsignProps {
         _id: string;
         username: string;
         emails: string[];
+        vault: {
+            isTrusted: boolean;
+            isBlocked: boolean;
+        };
     };
     logs?: {
         status: string;
