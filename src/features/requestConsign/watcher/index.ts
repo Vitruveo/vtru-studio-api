@@ -79,19 +79,26 @@ uniqueExecution({
                     emitter.emit(emitter.LIST_REQUEST_CONSIGNS, status.data);
                 });
                 emitter.on(emitter.UPDATED_CREATOR, (creatorUpdated) => {
-                    const index = status.data.findIndex(
-                        (element) =>
-                            element.creator._id.toString() ===
-                            creatorUpdated._id.toString()
+                    const indexes = status.data.reduce(
+                        (acc: number[], element, i) => {
+                            if (
+                                element.creator._id.toString() ===
+                                creatorUpdated._id.toString()
+                            ) {
+                                acc.push(i);
+                            }
+                            return acc;
+                        },
+                        []
                     );
-                    if (index === -1) return;
-                    status.data[index].creator = {
-                        _id: creatorUpdated._id.toString(),
-                        username: creatorUpdated.username,
-                        emails: creatorUpdated.emails,
-                    };
-
-                    emitter.emitUpdateRequestConsign(status.data[index]);
+                    indexes.forEach((index) => {
+                        status.data[index].creator = {
+                            _id: creatorUpdated._id.toString(),
+                            username: creatorUpdated.username,
+                            emails: creatorUpdated.emails,
+                        };
+                        emitter.emitUpdateRequestConsign(status.data[index]);
+                    });
                 });
 
                 const changeStream = getDb()
