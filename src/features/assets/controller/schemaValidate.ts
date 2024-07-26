@@ -71,8 +71,6 @@ export const schemaCreatorValidation = z.object({
         .array(
             z.object({
                 email: z.string().email('Invalid email address'),
-                codeHash: z.string().nullable(),
-                checkedAt: z.string().nullable(),
             })
         )
         .refine((emails) => emails.length > 0, {
@@ -84,7 +82,6 @@ export const schemaCreatorValidation = z.object({
                 address: z.string().refine((value) => value.length > 0, {
                     message: 'Wallet address is required',
                 }),
-                archived: z.boolean(),
             })
         )
         .refine((wallets) => wallets.length > 0, {
@@ -93,9 +90,6 @@ export const schemaCreatorValidation = z.object({
     profile: z
         .object({
             avatar: z.string().nullable(),
-            phone: z.string().nullable(),
-            language: z.string().nullable(),
-            location: z.string().nullable(),
         })
         .optional(),
     username: z.string().min(1, 'Username is required'),
