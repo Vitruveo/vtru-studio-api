@@ -1,4 +1,3 @@
-import { Sort } from 'mongodb';
 import { Assets, AssetsDocument } from './schema';
 import { ObjectId } from '../../../services';
 
@@ -18,7 +17,7 @@ export interface FindAssetsPaginatedParams {
         [key: string]: unknown;
         _id?: { $in: string[] | ObjectId[] };
     };
-    sort: Sort;
+    sort: string;
     skip: number;
     limit: number;
     colors?: number[][];
