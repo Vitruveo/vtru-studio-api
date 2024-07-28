@@ -4,7 +4,10 @@ export interface QueryPaginatedParams {
     query: Record<string, unknown>;
     page: string;
     limit: string;
-    sort: string;
+    sort: {
+        order: string;
+        isIncludeSold: boolean;
+    };
     minPrice: string;
     maxPrice: string;
     name?: string;

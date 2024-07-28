@@ -1,6 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
+import { Sort } from 'mongodb';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -42,7 +43,7 @@ route.get('/search', async (req, res) => {
             precision = '0.7',
             showAdditionalAssets,
         } = req.query as unknown as QueryPaginatedParams;
-
+        logger(sort);
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
         const showAdditionalAssetsValue = showAdditionalAssets === 'true';
@@ -144,6 +145,62 @@ route.get('/search', async (req, res) => {
             }
         }
 
+        let sortQuery: Sort = {};
+        if (sort?.isIncludeSold) {
+            sortQuery = {
+                'licenses.nft.availableLicenses': -1,
+            };
+        }
+        if (sort?.order) {
+            switch (sort.order) {
+                case 'priceHighToLow':
+                    sortQuery = {
+                        'licenses.nft.single.editionPrice': -1,
+                        ...sortQuery,
+                    };
+                    break;
+                case 'priceLowToHigh':
+                    sortQuery = {
+                        'licenses.nft.single.editionPrice': 1,
+                        ...sortQuery,
+                    };
+                    break;
+                case 'creatorAZ':
+                    sortQuery = {
+                        'assetMetadata.creators.formData.name': 1,
+                        ...sortQuery,
+                    };
+                    break;
+                case 'creatorZA':
+                    sortQuery = {
+                        'assetMetadata.creators.formData.name': -1,
+                        ...sortQuery,
+                    };
+                    break;
+                case 'consignNewToOld':
+                    sortQuery = { 'consignArtwork.listing': 1, ...sortQuery };
+                    break;
+                case 'consignOldToNew':
+                    sortQuery = { 'consignArtwork.listing': -1, ...sortQuery };
+                    break;
+                default:
+                    sortQuery = {
+                        'consignArtwork.status': 1,
+                        'licenses.nft.availableLicenses': -1,
+                        'consignArtwork.listing': 1,
+                        ...sortQuery,
+                    };
+                    break;
+            }
+        } else {
+            sortQuery = {
+                'consignArtwork.status': 1,
+                'licenses.nft.availableLicenses': -1,
+                'consignArtwork.listing': 1,
+                ...sortQuery,
+            };
+        }
+
         let filterColors: number[][] = [];
 
         if (query['assetMetadata.context.formData.colors']?.$in) {
@@ -171,9 +228,9 @@ route.get('/search', async (req, res) => {
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
-            sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
+            sort: sortQuery,
             colors: filterColors,
             precision: Number(precision),
         });

@@ -1,4 +1,3 @@
-import { Sort } from 'mongodb';
 import { AssetsDocument, COLLECTION_ASSETS } from './schema';
 import type {
     CreateAssetsParams,
@@ -83,44 +82,15 @@ export const findAssetsPaginated = ({
             },
         },
         {
+            $sort: sort,
+        },
+        {
             $limit: limit,
         },
         {
             $skip: skip,
         },
     ];
-    if (sort) {
-        let sortQuery: Sort = {};
-
-        switch (sort) {
-            case 'priceHighToLow':
-                sortQuery = { 'licenses.nft.single.editionPrice': -1 };
-                break;
-            case 'priceLowToHigh':
-                sortQuery = { 'licenses.nft.single.editionPrice': 1 };
-                break;
-            case 'creatorAZ':
-                sortQuery = { 'assetMetadata.creators.formData.name': 1 };
-                break;
-            case 'creatorZA':
-                sortQuery = { 'assetMetadata.creators.formData.name': -1 };
-                break;
-            case 'consignNewToOld':
-                sortQuery = { 'consignArtwork.listing': 1 };
-                break;
-            case 'consignOldToNew':
-                sortQuery = { 'consignArtwork.listing': -1 };
-                break;
-            default:
-                sortQuery = {
-                    'consignArtwork.status': 1,
-                    'licenses.nft.availableLicenses': -1,
-                    'consignArtwork.listing': 1,
-                };
-                break;
-        }
-        aggregate.push({ $sort: sortQuery } as any);
-    }
 
     return assets().aggregate(aggregate).toArray();
 };
