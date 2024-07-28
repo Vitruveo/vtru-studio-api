@@ -6,7 +6,7 @@ export interface QueryPaginatedParams {
     limit: string;
     sort: {
         order: string;
-        isIncludeSold: boolean;
+        isIncludeSold: string;
     };
     minPrice: string;
     maxPrice: string;
