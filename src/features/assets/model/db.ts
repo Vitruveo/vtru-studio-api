@@ -81,15 +81,9 @@ export const findAssetsPaginated = ({
                 exists: true,
             },
         },
-        {
-            $sort: sort,
-        },
-        {
-            $limit: limit,
-        },
-        {
-            $skip: skip,
-        },
+        { $sort: sort },
+        { $skip: skip },
+        { $limit: limit },
     ];
 
     return assets().aggregate(aggregate).toArray();
