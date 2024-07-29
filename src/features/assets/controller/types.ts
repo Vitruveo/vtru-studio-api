@@ -1,11 +1,13 @@
-import { Sort } from 'mongodb';
 import { model } from '..';
 
 export interface QueryPaginatedParams {
     query: Record<string, unknown>;
     page: string;
     limit: string;
-    sort: Sort;
+    sort: {
+        order: string;
+        isIncludeSold: string;
+    };
     minPrice: string;
     maxPrice: string;
     name?: string;
@@ -49,9 +51,9 @@ export interface CarouselResponse {
         image?: string;
         title: string;
         description: string;
-    },
+    };
     creator: {
         avatar?: string;
         username: string;
-    }
+    };
 }

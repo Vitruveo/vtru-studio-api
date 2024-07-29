@@ -36,6 +36,7 @@ export const findAssetsPaginated = ({
     limit,
     colors,
     precision,
+    sort,
 }: FindAssetsPaginatedParams) => {
     const aggregate = [
         {
@@ -81,17 +82,13 @@ export const findAssetsPaginated = ({
             },
         },
         {
-            $sort: {
-                'consignArtwork.status': 1,
-                'licenses.nft.availableLicenses': -1,
-                'consignArtwork.listing': -1,
-            },
-        },
-        {
-            $skip: skip,
+            $sort: sort,
         },
         {
             $limit: limit,
+        },
+        {
+            $skip: skip,
         },
     ];
 
