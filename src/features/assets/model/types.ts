@@ -84,3 +84,7 @@ export interface FindAssetsCarouselParams {
     layout?: 'vertical' | 'horizontal';
     nudity?: 'yes' | 'no';
 }
+
+export interface CountAssetByCreatorIdWithConsignParams {
+    creatorId: string;
+}

@@ -17,6 +17,7 @@ import type {
     FindAssetsByCreatorName,
     UpdateManyAssetsStatusParams,
     FindAssetsCarouselParams,
+    CountAssetByCreatorIdWithConsignParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { conditionsToShowAssets } from '../controller/public';
@@ -553,3 +554,12 @@ export const findAssetsCarousel = ({
             },
         ])
         .toArray();
+
+export const countAssetConsignedByCreator = ({
+    creatorId,
+}: CountAssetByCreatorIdWithConsignParams) =>
+    assets().countDocuments({
+        contractExplorer: { $exists: true },
+        'consignArtwork.status': 'active',
+        'framework.createdBy': creatorId,
+    });

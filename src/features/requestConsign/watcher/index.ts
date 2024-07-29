@@ -3,11 +3,19 @@ import { captureException } from '@sentry/node';
 import debug from 'debug';
 import { exitWithDelay, retry } from '../../../utils';
 import { ObjectId, getDb } from '../../../services';
-import { COLLECTION_REQUEST_CONSIGNS, RequestConsignDocument } from '../model';
+import {
+    COLLECTION_REQUEST_CONSIGNS,
+    RequestConsignDocument,
+    updateRequestConsign,
+} from '../model';
 import { emitter } from '../../events';
-import { COLLECTION_ASSETS } from '../../assets/model';
+import {
+    COLLECTION_ASSETS,
+    countAssetConsignedByCreator,
+} from '../../assets/model';
 import { COLLECTION_CREATORS } from '../../creators/model';
 import { RequestConsignProps } from './types';
+import { sendToExchangeAutoConsign } from '../../../services/autoConsign';
 
 const logger = debug('features:requestConsign:watcher');
 
@@ -108,90 +116,149 @@ uniqueExecution({
                     .watch([], { fullDocument: 'updateLookup' });
 
                 changeStream.on('change', async (change) => {
-                    // OPERATION TYPE: UPDATE REQUEST CONSIGN
-                    if (change.operationType === 'update') {
-                        if (!change.fullDocument) return;
-                        const requestUpdated = change.fullDocument;
-                        const index = status.data.findIndex(
-                            (element) =>
-                                element._id.toString() ===
-                                requestUpdated._id.toString()
-                        );
-                        if (index === -1) return;
-                        status.data[index].comments = requestUpdated.comments;
-                        status.data[index].status = requestUpdated.status;
-                        status.data[index].logs = requestUpdated.logs;
-                        emitter.emitUpdateRequestConsign(status.data[index]);
-                    }
-
-                    // OPERATION TYPE: INSERT REQUEST CONSIGN
-                    if (change.operationType === 'insert') {
-                        if (!change.fullDocument) return;
-
-                        const asset = await getDb()
-                            .collection(COLLECTION_ASSETS)
-                            .findOne(
-                                {
-                                    _id: new ObjectId(
-                                        change.fullDocument.asset
-                                    ),
-                                },
-                                {
-                                    projection: {
-                                        _id: 1,
-                                        'assetMetadata.context.formData.title': 1,
-                                    },
-                                }
+                    try {
+                        // OPERATION TYPE: UPDATE REQUEST CONSIGN
+                        if (change.operationType === 'update') {
+                            if (!change.fullDocument) return;
+                            const requestUpdated = change.fullDocument;
+                            const index = status.data.findIndex(
+                                (element) =>
+                                    element._id.toString() ===
+                                    requestUpdated._id.toString()
                             );
-                        const creator = await getDb()
-                            .collection(COLLECTION_CREATORS)
-                            .findOne(
-                                {
-                                    _id: new ObjectId(
-                                        change.fullDocument.creator
-                                    ),
-                                },
-                                {
-                                    projection: {
-                                        _id: 1,
-                                        username: 1,
-                                        emails: 1,
+                            if (index === -1) return;
+                            status.data[index].comments =
+                                requestUpdated.comments;
+                            status.data[index].status = requestUpdated.status;
+                            status.data[index].logs = requestUpdated.logs;
+                            emitter.emitUpdateRequestConsign(
+                                status.data[index]
+                            );
+                        }
+
+                        // OPERATION TYPE: INSERT REQUEST CONSIGN
+                        if (change.operationType === 'insert') {
+                            if (!change.fullDocument) return;
+
+                            const asset = await getDb()
+                                .collection(COLLECTION_ASSETS)
+                                .findOne(
+                                    {
+                                        _id: new ObjectId(
+                                            change.fullDocument.asset
+                                        ),
                                     },
+                                    {
+                                        projection: {
+                                            _id: 1,
+                                            'assetMetadata.context.formData.title': 1,
+                                        },
+                                    }
+                                );
+                            const creator = await getDb()
+                                .collection(COLLECTION_CREATORS)
+                                .findOne(
+                                    {
+                                        _id: new ObjectId(
+                                            change.fullDocument.creator
+                                        ),
+                                    },
+                                    {
+                                        projection: {
+                                            _id: 1,
+                                            username: 1,
+                                            emails: 1,
+                                            vault: 1,
+                                        },
+                                    }
+                                );
+
+                            if (!asset || !creator) return;
+
+                            const data = {
+                                _id: change.fullDocument._id.toString(),
+                                status: change.fullDocument.status,
+                                logs: change.fullDocument.logs,
+                                asset: {
+                                    _id: asset._id.toString(),
+                                    title: asset.assetMetadata.context.formData
+                                        .title,
+                                },
+                                creator: {
+                                    _id: creator._id.toString(),
+                                    username: creator.username,
+                                    emails: creator.emails,
+                                },
+                            };
+
+                            status.data.push(data);
+                            emitter.emitCreateRequestConsign(data);
+
+                            // rules auto consign
+
+                            logger(
+                                `Checking auto consign rules for asset: ${asset._id.toString()}`
+                            );
+                            // check if status is pending
+                            if (change.fullDocument.status === 'pending') {
+                                if (!creator?.vault) {
+                                    logger(
+                                        `Creator vault is missing for ${creator._id.toString()}`
+                                    );
+                                    return;
                                 }
+
+                                // check if creator has field isBlocked
+                                if ('isBlocked' in creator.vault) {
+                                    // check if creator is not blocked
+                                    if (!creator.vault.isBlocked) {
+                                        const countAssetConsigned =
+                                            await countAssetConsignedByCreator({
+                                                creatorId:
+                                                    creator._id.toString(),
+                                            });
+
+                                        // check if creator has more than 1 asset consigned
+                                        if (countAssetConsigned >= 1) {
+                                            await sendToExchangeAutoConsign(
+                                                JSON.stringify({
+                                                    assetId:
+                                                        asset._id.toString(),
+                                                })
+                                            );
+
+                                            await updateRequestConsign({
+                                                id: change.fullDocument._id,
+                                                requestConsign: {
+                                                    status: 'queue',
+                                                },
+                                            });
+                                        } else {
+                                            logger(
+                                                `Creator ${creator._id.toString()} not have more than 1 asset consigned`
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // OPERATION TYPE: DELETE REQUEST CONSIGN
+                        if (change.operationType === 'delete') {
+                            status.data = status.data.filter(
+                                (item) =>
+                                    item._id.toString() !==
+                                    change.documentKey._id.toString()
                             );
 
-                        if (!asset || !creator) return;
-
-                        const data = {
-                            _id: change.fullDocument._id.toString(),
-                            status: change.fullDocument.status,
-                            logs: change.fullDocument.logs,
-                            asset: {
-                                _id: asset._id.toString(),
-                                title: asset.assetMetadata.context.formData
-                                    .title,
-                            },
-                            creator: {
-                                _id: creator._id.toString(),
-                                username: creator.username,
-                                emails: creator.emails,
-                            },
-                        };
-
-                        status.data.push(data);
-                        emitter.emitCreateRequestConsign(data);
-                    }
-
-                    // OPERATION TYPE: DELETE REQUEST CONSIGN
-                    if (change.operationType === 'delete') {
-                        status.data = status.data.filter(
-                            (item) =>
-                                item._id.toString() !==
+                            emitter.emitDeleteRequestConsign(
                                 change.documentKey._id.toString()
-                        );
-
-                        emitter.emitDeleteRequestConsign(
-                            change.documentKey._id.toString()
+                            );
+                        }
+                    } catch (error) {
+                        logger(
+                            'Error watching changes in requestConsign: %O',
+                            error
                         );
                     }
                 });

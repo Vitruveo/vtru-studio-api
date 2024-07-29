@@ -10,7 +10,11 @@ import { ObjectId, APIResponse } from '../../../services';
 import { exists } from '../../../services/aws/s3/exists';
 import { middleware } from '../../users';
 import { formatErrorMessage } from '../../../utils';
-import { ASSET_STORAGE_NAME, GENERAL_STORAGE_NAME } from '../../../constants';
+import {
+    ASSET_STORAGE_NAME,
+    ASSET_STORAGE_URL,
+    GENERAL_STORAGE_URL,
+} from '../../../constants';
 
 import {
     schemaAssetValidation,
@@ -65,7 +69,7 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
         if (avatarPath) {
             const checkAvatarExists = await exists({
                 key: avatarPath,
-                bucket: GENERAL_STORAGE_NAME,
+                bucketUrl: GENERAL_STORAGE_URL,
             });
 
             if (!checkAvatarExists) {
@@ -73,6 +77,7 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
                     code: 'vitruveo.studio.api.assets.creator.avatar.not.found',
                     message: 'Avatar not found',
                     transaction: nanoid(),
+                    args: `Error: Validation Error\nThe file ${avatarPath} not found on S3. Please, upload the avatar again.`,
                 } as APIResponse);
                 return;
             }
@@ -108,7 +113,7 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
         ].filter((media) => media.path);
 
         // list files not found
-        const filesNotFound = [];
+        const filesNotFound: string[] = [];
 
         logger('Bucket: %s', ASSET_STORAGE_NAME);
 
@@ -119,7 +124,7 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
 
             const existsFile = await exists({
                 key: media.path!,
-                bucket: ASSET_STORAGE_NAME,
+                bucketUrl: ASSET_STORAGE_URL,
             });
 
             if (!existsFile) filesNotFound.push(media.name);
@@ -128,8 +133,11 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
         if (filesNotFound.length > 0) {
             res.status(400).json({
                 code: 'vitruveo.studio.api.assets.file.not.found',
-                message: `The file ${filesNotFound.join(', ')} not found on S3`,
+                message: 'Files not found',
                 transaction: nanoid(),
+                args: `Error: Validation Error\nThe file ${filesNotFound.join(
+                    ', '
+                )} not found on S3. Please, upload the files again.`,
             } as APIResponse);
             return;
         }
