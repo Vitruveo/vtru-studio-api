@@ -37,7 +37,7 @@ route.get('/', async (req, res) => {
             (eventType) =>
                 eventsType.includes(eventType) &&
                 emitter.once(eventType, (data: any[]) =>
-                    sendEvent(data, eventType)
+                    data.forEach(eventData => sendEvent(eventData, eventType))
                 )
         );
 
