@@ -150,39 +150,34 @@ route.get('/search', async (req, res) => {
         switch (sort?.order) {
             case 'priceHighToLow':
                 sortQuery = {
-                    'licenses.nft.single.editionPrice': -1,
-                    ...sortQuery,
+                    'licenses.nft.single.editionPrice': 1,
                 };
                 break;
             case 'priceLowToHigh':
                 sortQuery = {
-                    'licenses.nft.single.editionPrice': 1,
-                    ...sortQuery,
+                    'licenses.nft.single.editionPrice': -1,
                 };
                 break;
             case 'creatorAZ':
                 sortQuery = {
                     'assetMetadata.creators.formData.name': 1,
-                    ...sortQuery,
                 };
                 break;
             case 'creatorZA':
                 sortQuery = {
                     'assetMetadata.creators.formData.name': -1,
-                    ...sortQuery,
                 };
                 break;
             case 'consignNewToOld':
-                sortQuery = { 'consignArtwork.listing': 1, ...sortQuery };
+                sortQuery = { 'consignArtwork.listing': 1 };
                 break;
             case 'consignOldToNew':
-                sortQuery = { 'consignArtwork.listing': -1, ...sortQuery };
+                sortQuery = { 'consignArtwork.listing': -1 };
                 break;
             default:
                 sortQuery = {
                     'consignArtwork.status': 1,
                     'consignArtwork.listing': 1,
-                    ...sortQuery,
                 };
                 break;
         }
