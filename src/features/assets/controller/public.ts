@@ -182,7 +182,7 @@ route.get('/search', async (req, res) => {
                 break;
         }
         sortQuery =
-            sort.isIncludeSold === 'true'
+            sort?.isIncludeSold === 'true'
                 ? sortQuery
                 : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
 
