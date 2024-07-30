@@ -177,7 +177,8 @@ route.get('/search', async (req, res) => {
             default:
                 sortQuery = {
                     'consignArtwork.status': 1,
-                    'consignArtwork.listing': 1,
+                    'licenses.nft.availableLicenses': -1,
+                    'consignArtwork.listing': -1,
                 };
                 break;
         }
