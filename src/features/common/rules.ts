@@ -12,6 +12,13 @@ export const mustBeOwner = async (
     next: NextFunction
 ) => {
     try {
+        const { type: authType } = req.auth;
+
+        if (authType === 'user') {
+            next();
+            return;
+        }
+
         const assetId = req.params?.id || req.params?.assetId;
 
         if (!assetId) {
