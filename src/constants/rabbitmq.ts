@@ -7,6 +7,8 @@ export const RABBITMQ_EXCHANGE_MAIL =
 export const RABBITMQ_EXCHANGE_CREATORS =
     process.env.RABBITMQ_EXCHANGE_CREATORS || 'creators';
 export const RABBITMQ_EXCHANGE_RSS = process.env.RABBITMQ_EXCHANGE_RSS || 'rss';
+export const RABBITMQ_EXCHANGE_AUTO_CONSIGN =
+    process.env.RABBITMQ_EXCHANGE_AUTO_CONSIGN || 'autoConsign';
 export const RABBITMQ_ERROR_TIMEOUT_BEFORE_EXIT = process.env
     .RABBITMQ_ERROR_TIMEOUT_BEFORE_EXIT
     ? parseInt(process.env.RABBITMQ_ERROR_TIMEOUT_BEFORE_EXIT, 10)

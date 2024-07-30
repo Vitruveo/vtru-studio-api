@@ -16,16 +16,13 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.get('/', async (_req, res) => {
+route.get('/', async (req, res) => {
     try {
+        const { events } = req.query as { events: string };
+        const eventsType = events.split(',');
+
         res.set('Content-Type', 'text/event-stream');
-        res.set(
-            'Cache-Control',
-            'no-store, no-cache, must-revalidate, proxy-revalidate'
-        );
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
-        res.set('Surrogate-Control', 'no-store');
+        res.set('Cache-Control', 'no-cache');
         res.set('Connection', 'keep-alive');
         res.flushHeaders();
 
@@ -36,30 +33,43 @@ route.get('/', async (_req, res) => {
             return !(res.closed || res.destroyed);
         };
 
-        listDataEvents.forEach((eventType) =>
-            emitter.once(eventType, (data: any[]) => sendEvent(data, eventType))
+        listDataEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.once(eventType, (data: any[]) =>
+                    data.forEach(eventData => sendEvent(eventData, eventType))
+                )
         );
 
-        createdEvents.forEach((eventType) =>
-            emitter.on(eventType, (data: any) => sendEvent(data, eventType))
+        createdEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.on(eventType, (data: any) => sendEvent(data, eventType))
         );
 
-        updatedEvents.forEach((eventType) =>
-            emitter.on(eventType, (data: any) => sendEvent(data, eventType))
+        updatedEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.on(eventType, (data: any) => sendEvent(data, eventType))
         );
 
-        deletedEvents.forEach((eventType) =>
-            emitter.on(eventType, (data: any) => sendEvent(data, eventType))
+        deletedEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) &&
+                emitter.on(eventType, (data: any) => sendEvent(data, eventType))
         );
 
-        initialEvents.forEach((eventType) => emitter.emit(eventType));
+        initialEvents.forEach(
+            (eventType) =>
+                eventsType.includes(eventType) && emitter.emit(eventType)
+        );
 
         const removeListeners = () => {
             createdEvents.forEach((eventType) =>
                 emitter.removeAllListeners(eventType)
             );
             updatedEvents.forEach((eventType) =>
-                emitter.removeAllListeners(eventType)
+                emitter.removeListener(eventType, sendEvent)
             );
             deletedEvents.forEach((eventType) =>
                 emitter.removeAllListeners(eventType)

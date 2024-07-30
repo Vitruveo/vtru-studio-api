@@ -1,21 +1,21 @@
-import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
+import axios from 'axios';
+import debug from 'debug';
 
-import type { ExistsOptions } from './types';
-import { AWS_DEFAULT_REGION } from '../../../constants';
+const logger = debug('services:aws:s3:exists');
 
-export const exists = async ({ key, bucket }: ExistsOptions) => {
-    const s3 = new S3Client({
-        region: AWS_DEFAULT_REGION,
-    });
+interface ExistsOptions {
+    key: string;
+    bucketUrl: string;
+}
+
+export const exists = async ({ key, bucketUrl }: ExistsOptions) => {
     try {
-        await s3.send(
-            new HeadObjectCommand({
-                Bucket: bucket,
-                Key: key,
-            })
-        );
+        await axios.head(`${bucketUrl}/${key}`);
+
         return true;
     } catch (error) {
+        logger('Error on check file exists: %O', error);
+
         return false;
     }
 };

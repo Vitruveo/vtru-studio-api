@@ -17,6 +17,7 @@ import type {
     FindAssetsByCreatorName,
     UpdateManyAssetsStatusParams,
     FindAssetsCarouselParams,
+    CountAssetByCreatorIdWithConsignParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { conditionsToShowAssets } from '../controller/public';
@@ -36,6 +37,7 @@ export const findAssetsPaginated = ({
     limit,
     colors,
     precision,
+    sort,
 }: FindAssetsPaginatedParams) => {
     const aggregate = [
         {
@@ -80,19 +82,9 @@ export const findAssetsPaginated = ({
                 exists: true,
             },
         },
-        {
-            $sort: {
-                'consignArtwork.status': 1,
-                'licenses.nft.availableLicenses': -1,
-                'consignArtwork.listing': -1,
-            },
-        },
-        {
-            $skip: skip,
-        },
-        {
-            $limit: limit,
-        },
+        { $sort: sort },
+        { $skip: skip },
+        { $limit: limit },
     ];
 
     return assets().aggregate(aggregate).toArray();
@@ -562,3 +554,12 @@ export const findAssetsCarousel = ({
             },
         ])
         .toArray();
+
+export const countAssetConsignedByCreator = ({
+    creatorId,
+}: CountAssetByCreatorIdWithConsignParams) =>
+    assets().countDocuments({
+        contractExplorer: { $exists: true },
+        'consignArtwork.status': 'active',
+        'framework.createdBy': creatorId,
+    });

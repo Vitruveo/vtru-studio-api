@@ -1,6 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
+import { Sort } from 'mongodb';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -144,6 +145,47 @@ route.get('/search', async (req, res) => {
             }
         }
 
+        let sortQuery: Sort = {};
+
+        switch (sort?.order) {
+            case 'priceHighToLow':
+                sortQuery = {
+                    'licenses.nft.single.editionPrice': 1,
+                };
+                break;
+            case 'priceLowToHigh':
+                sortQuery = {
+                    'licenses.nft.single.editionPrice': -1,
+                };
+                break;
+            case 'creatorAZ':
+                sortQuery = {
+                    'assetMetadata.creators.formData.name': 1,
+                };
+                break;
+            case 'creatorZA':
+                sortQuery = {
+                    'assetMetadata.creators.formData.name': -1,
+                };
+                break;
+            case 'consignNewToOld':
+                sortQuery = { 'consignArtwork.listing': 1 };
+                break;
+            case 'consignOldToNew':
+                sortQuery = { 'consignArtwork.listing': -1 };
+                break;
+            default:
+                sortQuery = {
+                    'consignArtwork.status': 1,
+                    'consignArtwork.listing': 1,
+                };
+                break;
+        }
+        sortQuery =
+            sort.isIncludeSold === 'true'
+                ? sortQuery
+                : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
+
         let filterColors: number[][] = [];
 
         if (query['assetMetadata.context.formData.colors']?.$in) {
@@ -171,9 +213,9 @@ route.get('/search', async (req, res) => {
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
-            sort,
             skip: (pageNumber - 1) * limitNumber,
             limit: limitNumber,
+            sort: sortQuery,
             colors: filterColors,
             precision: Number(precision),
         });
