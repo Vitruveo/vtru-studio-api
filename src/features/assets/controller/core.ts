@@ -41,7 +41,20 @@ route.use(middleware.checkAuth);
 
 route.get('/', async (req, res) => {
     try {
-        const assets = await model.findAssetsByCreatorId({ id: req.auth.id });
+        const creatorId = req.query?.creatorId as string;
+
+        if (creatorId && req.auth.type !== 'user') {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.assets.reader.notAllowed',
+                message: 'You are not allowed to read assets',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const assets = await model.findAssetsByCreatorId({
+            id: creatorId || req.auth.id,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.reader.success',
