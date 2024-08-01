@@ -10,6 +10,9 @@ import { APIResponse } from '../../../services';
 import { download } from '../../../services/stream';
 import { upload } from '../../../services/aws';
 import * as multer from '../../../services/multer';
+import { sendToExchangeCreators } from '../../creators/upload';
+import { checkAuth } from '../../users/middleware';
+import * as modelCreators from '../../creators/model';
 
 const logger = debug('features:upload:controller');
 const route = Router();
@@ -83,5 +86,38 @@ route.post(
         }
     }
 );
+
+route.post('/request', checkAuth, async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const { metadata = {} } = req.body;
+        const creator = await modelCreators.findCreatorById({ id });
+
+        await sendToExchangeCreators(
+            JSON.stringify({
+                creatorId: id,
+                origin: 'profile',
+                method: 'PUT',
+                transactionId: nanoid(),
+                path: `${id}/stats_${creator?.username || ''}/${Date.now()}`,
+                metadata,
+            })
+        );
+
+        res.status(200).json({
+            code: 'vitruveo.studio.api.upload.request.success',
+            message: `Request Upload success`,
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('Request upload failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.upload.request.failed',
+            message: `Request Upload failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 export { route };
