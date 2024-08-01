@@ -103,3 +103,8 @@ export interface RemoveCreatorSocialById {
 export interface FindCreatorsByName {
     name: string;
 }
+
+export interface UpdateCreatorSearch {
+    id: string;
+    grid: { path: string };
+}

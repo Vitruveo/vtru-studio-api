@@ -12,7 +12,7 @@ import { upload } from '../../../services/aws';
 import * as multer from '../../../services/multer';
 import { sendToExchangeCreators } from '../../creators/upload';
 import { checkAuth } from '../../users/middleware';
-import * as modelCreators from '../../creators/model';
+import { model } from '../../creators';
 
 const logger = debug('features:upload:controller');
 const route = Router();
@@ -91,7 +91,7 @@ route.post('/request', checkAuth, async (req, res) => {
     try {
         const { id } = req.auth;
         const { metadata = {} } = req.body;
-        const creator = await modelCreators.findCreatorById({ id });
+        const date = Date.now();
 
         await sendToExchangeCreators(
             JSON.stringify({
@@ -99,10 +99,15 @@ route.post('/request', checkAuth, async (req, res) => {
                 origin: 'profile',
                 method: 'PUT',
                 transactionId: nanoid(),
-                path: `${id}/stats_${creator?.username || ''}/${Date.now()}`,
+                path: `${id}/grid/${date}`,
                 metadata,
             })
         );
+
+        await model.updateCreatorSearch({
+            id,
+            grid: { path: `${id}/grid/${date}` },
+        });
 
         res.status(200).json({
             code: 'vitruveo.studio.api.upload.request.success',
