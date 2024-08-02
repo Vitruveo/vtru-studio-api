@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { Sort } from 'mongodb';
+import { ObjectId, Sort } from 'mongodb';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -201,6 +201,12 @@ route.get('/search', async (req, res) => {
         }
 
         const maxAssetPrice = await model.findMaxPrice();
+
+        if (parsedQuery?._id?.$in) {
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
+        }
 
         const result = await model.countAssets({
             query: parsedQuery,
@@ -438,6 +444,30 @@ route.get('/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.get.failed',
             message: `Reader get asset failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/grid/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const grid = await creatorModel.findCreatorAssetsByGridId({ id });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.grid.success',
+            message: 'Reader grid success',
+            transaction: nanoid(),
+            data: {
+                grid,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader get grid failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.grid.get.failed',
+            message: `Reader get grid failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
