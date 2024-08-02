@@ -16,6 +16,7 @@ import type {
     AddVideoToGalleryParams,
     UpdateCreatorSocialById,
     RemoveCreatorSocialById,
+    UpdateCreatorSearch,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -192,6 +193,19 @@ export const updateCreatorSocialById = ({
         {
             $set: {
                 [`socials.${key}`]: value,
+            },
+        }
+    );
+
+export const updateCreatorSearch = ({ id, grid }: UpdateCreatorSearch) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $push: {
+                'search.grid': {
+                    path: grid.path,
+                    createdAt: new Date(),
+                },
             },
         }
     );
