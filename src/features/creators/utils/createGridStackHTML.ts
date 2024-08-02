@@ -38,9 +38,9 @@ export const createGridStackHTML = ({
 </head>
 
 <body>
-    <div>
-        ${title}
-    </div>
+    <script>
+        window.location.href = '${SEARCH_URL}?grid=${id}';
+    </script>
 </body>
 
 </html>
