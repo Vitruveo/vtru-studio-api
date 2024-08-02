@@ -94,6 +94,18 @@ export const CreatorSchema = z.object({
             updatedBy: z.string().nullable().default(null),
         })
         .default({}),
+    search: z
+        .object({
+            grid: z.array(
+                z.object({
+                    id: z.string(),
+                    path: z.string(),
+                    assets: z.array(z.string()).default([]),
+                    createdAt: z.date().default(new Date()),
+                })
+            ),
+        })
+        .optional(),
 });
 
 export type Creator = z.infer<typeof CreatorSchema>;

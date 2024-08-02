@@ -25,6 +25,10 @@ export interface FindCreatorByIdParams {
     id: string | ObjectId;
 }
 
+export interface FindCreatorAssetsByGridId {
+    id: string;
+}
+
 export interface FindOneCreatorParams {
     query: any;
 }
@@ -102,4 +106,9 @@ export interface RemoveCreatorSocialById {
 
 export interface FindCreatorsByName {
     name: string;
+}
+
+export interface UpdateCreatorSearch {
+    id: string;
+    grid: { id: string; path: string; assets: string[] };
 }
