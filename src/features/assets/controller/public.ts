@@ -86,7 +86,12 @@ route.get('/search', async (req, res) => {
             }
         }
 
-        if (maxPrice && minPrice) {
+        if (
+            maxPrice &&
+            minPrice &&
+            Number(minPrice) >= 0 &&
+            Number(maxPrice) > 0
+        ) {
             parsedQuery.$and = [
                 {
                     $or: [
