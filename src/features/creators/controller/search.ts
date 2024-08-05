@@ -1,35 +1,69 @@
 import debug from 'debug';
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { model } from '..';
 import { APIResponse } from '../../../services';
 import { createVideoGalleryHTML } from '../utils/createVideoGalleryHTML';
-import { createGridStackHTML } from '../utils/createGridStackHTML';
+import { GENERAL_STORAGE_URL, SEARCH_URL } from '../../../constants';
 
 const logger = debug('features:creators:controller:search');
 const route = Router();
+const DIST = join(__dirname, '..', '..', '..', 'services', 'express', 'static');
 
 /* Route to generate twitter grid stack url */
 route.get('/grid', async (req, res) => {
     try {
-        const { title, creatorId, type, timestamp } = req.query;
+        const { title, creatorId, type, timestamp } = req.query as {
+            title: string;
+            creatorId: string;
+            type: string;
+            timestamp: string;
+        };
         const path = `${creatorId}/${type}/${timestamp}`;
+        const domain = `${req.protocol}://${req.get('host')}`;
 
-        const html = createGridStackHTML({
-            id: timestamp as string,
-            path: path as string,
-            title: title as string,
+        const params = [
+            {
+                name: '__META_OG_URL__',
+                value: `${SEARCH_URL}?grid=${timestamp}`,
+            },
+            { name: '__META_OG_TITLE__', value: title },
+            { name: '__META_OG_DESCRIPTION__', value: title },
+            {
+                name: '__META_OG_IMAGE__',
+                value: `${GENERAL_STORAGE_URL}/${path}`,
+            },
+
+            // from twitter
+            { name: '__META_OG_TWITTER_DOMAIN__', value: domain },
+            {
+                name: '__META_OG_TWITTER_URL__',
+                value: `${SEARCH_URL}?grid=${timestamp}`,
+            },
+            { name: '__META_OG_TWITTER_TITLE__', value: title },
+            { name: '__META_OG_TWITTER_DESCRIPTION__', value: title },
+            {
+                name: '__META_OG_TWITTER_IMAGE__',
+                value: `${GENERAL_STORAGE_URL}/${path}`,
+            },
+            { name: '__SEARCH_URL__', value: SEARCH_URL },
+            { name: '__GRID_ID__', value: timestamp },
+        ];
+
+        let html = (await readFile(join(DIST, 'index.html'))).toString();
+        params.forEach((param) => {
+            if (!param.value) return;
+            html = html.replace(param.name, param.value);
         });
 
-        res.send(html);
+        return res.status(200).send(html);
     } catch (error) {
         logger('Generate html failed: %O', error);
 
-        res.status(500).json({
-            code: 'vitruveo.studio.api.admin.creators.grid.error',
-            message: 'Error generating grid',
-            transaction: nanoid(),
-        } as APIResponse);
+        const html = (await readFile(join(DIST, 'index.html'))).toString();
+        return res.status(200).send(html);
     }
 });
 
