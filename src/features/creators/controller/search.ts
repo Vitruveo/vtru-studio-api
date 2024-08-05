@@ -10,7 +10,7 @@ import { GENERAL_STORAGE_URL, SEARCH_URL } from '../../../constants';
 
 const logger = debug('features:creators:controller:search');
 const route = Router();
-const DIST = join(__dirname, '..', '..', '..', 'services', 'express', 'static');
+const DIST = join(__dirname, '..', '..', '..', '..', 'static');
 
 /* Route to generate twitter grid stack url */
 route.get('/grid', async (req, res) => {

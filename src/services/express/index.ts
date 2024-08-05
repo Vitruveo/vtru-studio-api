@@ -32,7 +32,11 @@ app.use(
     })
 );
 
-app.use(express.static(path.join(__dirname, 'static', 'index.html')));
+app.use(
+    express.static(
+        path.join(__dirname, '..', '..', '..', 'static', 'index.html')
+    )
+);
 
 app.get('/', (_req, res) => {
     res.status(200).json({
