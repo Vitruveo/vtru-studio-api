@@ -148,6 +148,58 @@ route.get('/search', async (req, res) => {
                     ],
                 });
             }
+        } else if (name) {
+            if (parsedQuery.$or) {
+                parsedQuery.$or.push(
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.creators.formData': {
+                            $elemMatch: {
+                                name: {
+                                    $regex: name,
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    }
+                );
+            } else {
+                parsedQuery.$or = [
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.creators.formData': {
+                            $elemMatch: {
+                                name: {
+                                    $regex: name,
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    },
+                ];
+            }
         }
 
         let sortQuery: Sort = {};
