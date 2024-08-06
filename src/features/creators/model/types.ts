@@ -110,5 +110,5 @@ export interface FindCreatorsByName {
 
 export interface UpdateCreatorSearch {
     id: string;
-    grid: { id: string; path: string; assets: string[] };
+    grid: { id: string; path: string; fees: number; assets: string[] };
 }

@@ -207,6 +207,7 @@ export const updateCreatorSearch = ({ id, grid }: UpdateCreatorSearch) =>
                     id: grid.id,
                     path: grid.path,
                     assets: grid.assets,
+                    fees: grid.fees,
                     createdAt: new Date(),
                 },
             },
