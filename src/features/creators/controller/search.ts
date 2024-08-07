@@ -81,9 +81,9 @@ route.get('/:id/html', async (req, res) => {
             return;
         }
 
-        const gallery = creator.videoGallery;
+        const gallery = creator.search?.video;
 
-        if (gallery.length === 0) {
+        if (!gallery || gallery.length === 0) {
             res.status(404).json({
                 code: 'vitruveo.studio.api.admin.creators.gallery.notFound',
                 message: 'Creator gallery not found',

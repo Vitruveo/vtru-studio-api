@@ -104,6 +104,17 @@ export const CreatorSchema = z.object({
                     createdAt: z.date().default(new Date()),
                 })
             ),
+            video: z.array(
+                z.object({
+                    id: z.string(),
+                    url: z.string(),
+                    thumbnail: z.string().nullable(),
+                    title: z.string(),
+                    sound: z.string(),
+                    fees: z.number(),
+                    assets: z.array(z.string()),
+                })
+            ),
         })
         .optional(),
 });
