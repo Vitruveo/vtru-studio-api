@@ -40,9 +40,7 @@ export const findAssetsPaginated = ({
     sort,
 }: FindAssetsPaginatedParams) => {
     const aggregate = [
-        {
-            $match: query,
-        },
+        { $match: query },
         {
             $addFields: {
                 'licenses.nft.availableLicenses': {
@@ -50,6 +48,9 @@ export const findAssetsPaginated = ({
                 },
                 'assetMetadata.context.formData.colors': {
                     $ifNull: ['$assetMetadata.context.formData.colors', []],
+                },
+                insensitiveCreator: {
+                    $toLower: '$assetMetadata.creators.formData.name',
                 },
                 exists: {
                     $cond: {
