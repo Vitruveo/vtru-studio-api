@@ -98,7 +98,7 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             video: {
                 id: timestamp,
                 fees,
-                assets: artworks,
+                assets: assets.map(item => item._id.toString()),
                 url: response.url,
                 sound,
                 thumbnail:
