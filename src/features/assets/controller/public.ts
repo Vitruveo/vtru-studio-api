@@ -516,15 +516,35 @@ route.get('/grid/:id', async (req, res) => {
             code: 'vitruveo.studio.api.assets.grid.success',
             message: 'Reader grid success',
             transaction: nanoid(),
-            data: {
-                grid,
-            },
+            data: { grid },
         } as APIResponse);
     } catch (error) {
         logger('Reader get grid failed: %O', error);
         res.status(500).json({
             code: 'vitruveo.studio.api.grid.get.failed',
             message: `Reader get grid failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/video/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const video = await creatorModel.findCreatorAssetsByVideoId({ id });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.video.success',
+            message: 'Reader video success',
+            transaction: nanoid(),
+            data: { video },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader get video failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.video.get.failed',
+            message: `Reader get video failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

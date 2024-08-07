@@ -51,6 +51,8 @@ export const schemaValidationForVideoGallery = z.object({
     artworks: z.array(z.string()).max(15),
     title: z.string().default(''),
     sound: z.string(),
+    fees: z.number(),
+    timestamp: z.string(),
 });
 
 export const schemaAssetUpload = z.object({
