@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { Sort } from 'mongodb';
+import { ObjectId, Sort } from 'mongodb';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -86,7 +86,12 @@ route.get('/search', async (req, res) => {
             }
         }
 
-        if (maxPrice && minPrice) {
+        if (
+            maxPrice &&
+            minPrice &&
+            Number(minPrice) >= 0 &&
+            Number(maxPrice) > 0
+        ) {
             parsedQuery.$and = [
                 {
                     $or: [
@@ -143,6 +148,58 @@ route.get('/search', async (req, res) => {
                     ],
                 });
             }
+        } else if (name) {
+            if (parsedQuery.$or) {
+                parsedQuery.$or.push(
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.creators.formData': {
+                            $elemMatch: {
+                                name: {
+                                    $regex: name,
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    }
+                );
+            } else {
+                parsedQuery.$or = [
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: name,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.creators.formData': {
+                            $elemMatch: {
+                                name: {
+                                    $regex: name,
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    },
+                ];
+            }
         }
 
         let sortQuery: Sort = {};
@@ -150,29 +207,29 @@ route.get('/search', async (req, res) => {
         switch (sort?.order) {
             case 'priceHighToLow':
                 sortQuery = {
-                    'licenses.nft.single.editionPrice': 1,
+                    'licenses.nft.single.editionPrice': -1,
                 };
                 break;
             case 'priceLowToHigh':
                 sortQuery = {
-                    'licenses.nft.single.editionPrice': -1,
+                    'licenses.nft.single.editionPrice': 1,
                 };
                 break;
             case 'creatorAZ':
                 sortQuery = {
-                    'assetMetadata.creators.formData.name': 1,
+                    insensitiveCreator: 1,
                 };
                 break;
             case 'creatorZA':
                 sortQuery = {
-                    'assetMetadata.creators.formData.name': -1,
+                    insensitiveCreator: -1,
                 };
                 break;
             case 'consignNewToOld':
-                sortQuery = { 'consignArtwork.listing': 1 };
+                sortQuery = { 'consignArtwork.listing': -1 };
                 break;
             case 'consignOldToNew':
-                sortQuery = { 'consignArtwork.listing': -1 };
+                sortQuery = { 'consignArtwork.listing': 1 };
                 break;
             default:
                 sortQuery = {
@@ -201,6 +258,12 @@ route.get('/search', async (req, res) => {
         }
 
         const maxAssetPrice = await model.findMaxPrice();
+
+        if (parsedQuery?._id?.$in) {
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
+        }
 
         const result = await model.countAssets({
             query: parsedQuery,
@@ -438,6 +501,50 @@ route.get('/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.get.failed',
             message: `Reader get asset failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/grid/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const grid = await creatorModel.findCreatorAssetsByGridId({ id });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.grid.success',
+            message: 'Reader grid success',
+            transaction: nanoid(),
+            data: { grid },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader get grid failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.grid.get.failed',
+            message: `Reader get grid failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/video/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const video = await creatorModel.findCreatorAssetsByVideoId({ id });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.video.success',
+            message: 'Reader video success',
+            transaction: nanoid(),
+            data: { video },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader get video failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.video.get.failed',
+            message: `Reader get video failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

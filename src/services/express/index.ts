@@ -3,6 +3,7 @@ import debug from 'debug';
 import express from 'express';
 import morgan from 'morgan';
 import dayjs from 'dayjs';
+import path from 'path';
 import { nanoid } from 'nanoid';
 import cors from 'cors';
 import { uniqueExecution } from '@nsfilho/unique';
@@ -29,6 +30,12 @@ app.use(
             },
         },
     })
+);
+
+app.use(
+    express.static(
+        path.join(__dirname, '..', '..', '..', 'static', 'index.html')
+    )
 );
 
 app.get('/', (_req, res) => {

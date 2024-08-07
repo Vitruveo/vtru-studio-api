@@ -11,6 +11,7 @@ RUN npm pkg delete scripts.prepare && \
 COPY build ./
 COPY tools ./tools/
 COPY entrypoint.sh ./
+COPY static ./static/
 
 ENTRYPOINT [ "/app/entrypoint.sh" ]
 CMD [ "wait" ]

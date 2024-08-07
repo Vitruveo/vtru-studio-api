@@ -37,9 +37,8 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             return;
         }
 
-        const { artworks, title, sound } = req.body as zodInfer<
-            typeof schemaValidationForVideoGallery
-        >;
+        const { artworks, title, sound, fees, timestamp } =
+            req.body as zodInfer<typeof schemaValidationForVideoGallery>;
 
         const assets = await modelAssets.findAssetsByPath({
             path: 'formats.preview.path',
@@ -93,14 +92,21 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             stackImages: payloadArtwork,
             sound,
         });
+
         await model.addToVideoGallery({
             id: req.auth.id,
-            url: response.url,
-            thumbnail:
-                response.data.timeline.tracks[
-                    response.data.timeline.tracks.length - 1
-                ].clips[0].asset.src,
-            title,
+            video: {
+                id: timestamp,
+                fees,
+                assets: assets.map(item => item._id.toString()),
+                url: response.url,
+                sound,
+                thumbnail:
+                    response.data.timeline.tracks[
+                        response.data.timeline.tracks.length - 1
+                    ].clips[0].asset.src,
+                title,
+            },
         });
 
         if (creator.emails.length) {

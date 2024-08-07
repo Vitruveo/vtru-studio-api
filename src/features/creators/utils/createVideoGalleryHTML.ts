@@ -1,13 +1,17 @@
+import { SEARCH_URL } from '../../../constants';
+
 interface CreateVideoGalleryHTMLParams {
+    id: string;
     video: string;
     thumbnail: string;
     title: string;
 }
 
 export const createVideoGalleryHTML = ({
+    id,
     video,
     thumbnail,
-    title
+    title,
 }: CreateVideoGalleryHTMLParams) =>
     `
   <!DOCTYPE html>
@@ -24,6 +28,9 @@ export const createVideoGalleryHTML = ({
       <meta name="twitter:image" content="${thumbnail}" />
     </head>
     <body>
+    <script>
+        window.location.href = '${SEARCH_URL}?video=${id}';
+    </script>
     </body>
   </html>
   `;

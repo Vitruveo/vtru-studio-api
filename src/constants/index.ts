@@ -20,4 +20,5 @@ export * from './store';
 export * from './consign';
 export * from './x';
 export * from './google';
+export * from './search';
 export * from './facebook';
