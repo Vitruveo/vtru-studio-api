@@ -50,7 +50,21 @@ export const findAssetsPaginated = ({
                     $ifNull: ['$assetMetadata.context.formData.colors', []],
                 },
                 insensitiveCreator: {
-                    $toLower: '$assetMetadata.creators.formData.name',
+                    $cond: {
+                        if: {
+                            $isArray: '$assetMetadata.creators.formData.name',
+                        },
+                        then: {
+                            $map: {
+                                input: '$assetMetadata.creators.formData.name',
+                                as: 'n',
+                                in: { $toLower: '$$n' },
+                            },
+                        },
+                        else: {
+                            $toLower: '$assetMetadata.creators.formData.name',
+                        },
+                    },
                 },
                 exists: {
                     $cond: {
