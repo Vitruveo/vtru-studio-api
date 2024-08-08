@@ -464,6 +464,7 @@ export const findLastSoldAssets = () =>
             {
                 $match: {
                     mintExplorer: { $exists: true },
+                    'assetMetadata.taxonomy.formData.nudity': 'no',
                 },
             },
             { $sort: { 'mintExplorer.createdAt': -1 } },
