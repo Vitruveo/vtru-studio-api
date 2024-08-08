@@ -466,12 +466,8 @@ export const findLastSoldAssets = () =>
                     mintExplorer: { $exists: true },
                 },
             },
-            {
-                $sort: { 'consignArtwork.listing': -1 },
-            },
-            {
-                $limit: 50,
-            },
+            { $sort: { 'mintExplorer.createdAt': -1 } },
+            { $limit: 50 },
             {
                 $addFields: {
                     creatorId: {
