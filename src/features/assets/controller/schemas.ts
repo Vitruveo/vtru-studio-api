@@ -47,6 +47,11 @@ export const schemaAssetUpdateManyStatus = z.object({
     ids: z.array(z.string()),
 });
 
+export const schemaAssetUpdateManyNudity = z.object({
+    nudity: z.boolean(),
+    ids: z.array(z.string()),
+});
+
 export const schemaValidationForVideoGallery = z.object({
     artworks: z.array(z.string()).max(15),
     title: z.string().default(''),

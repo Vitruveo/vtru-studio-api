@@ -60,6 +60,11 @@ export interface UpdateManyAssetsStatusParams {
     status: string;
 }
 
+export interface UpdateManyAssetsNudityParams {
+    ids: string[] | ObjectId[];
+    nudity: boolean;
+}
+
 export interface DeleteAssetsParams {
     id: string | ObjectId;
 }

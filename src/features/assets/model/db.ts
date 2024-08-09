@@ -18,6 +18,7 @@ import type {
     UpdateManyAssetsStatusParams,
     FindAssetsCarouselParams,
     CountAssetByCreatorIdWithConsignParams,
+    UpdateManyAssetsNudityParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { conditionsToShowAssets } from '../controller/public';
@@ -381,6 +382,19 @@ export const updateAssets = async ({ id, asset }: UpdateAssetsParams) => {
     );
     return result;
 };
+
+export const updateManyAssetsNudity = ({
+    ids,
+    nudity,
+}: UpdateManyAssetsNudityParams) =>
+    assets().updateMany(
+        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+        {
+            $set: {
+                'assetMetadata.taxonomy.formData.nudity': nudity ? 'yes' : 'no',
+            },
+        }
+    );
 
 export const updateManyAssetsStatus = async ({
     ids,
