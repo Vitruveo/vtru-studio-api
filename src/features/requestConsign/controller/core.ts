@@ -245,7 +245,7 @@ route.patch(
 );
 
 route.patch(
-    '/comments/:id/changeVisibility',
+    '/comments/:id/visibility',
     needsToBeOwner({ permissions: ['moderator:admin'] }),
     validateBodyForPatchCommentsVisibility,
     async (req, res) => {
