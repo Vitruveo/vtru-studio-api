@@ -14,7 +14,11 @@ import {
     ObjectId,
     UpdateResult,
 } from '../../../services';
-import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
+import {
+    validateBodyForPatch,
+    validateBodyForPatchComments,
+    validateBodyForPatchCommentsVisibility,
+} from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
 import {
     ASSET_STORAGE_URL,
@@ -233,6 +237,72 @@ route.patch(
             res.status(500).json({
                 code: 'vitruveo.studio.api.requestConsign.failed',
                 message: `Update request consign comments failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.patch(
+    '/comments/:id/changeVisibility',
+    needsToBeOwner({ permissions: ['moderator:admin'] }),
+    validateBodyForPatchCommentsVisibility,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { isPublic, commentId } = req.body;
+
+            const requestConsign = await model.findRequestConsignsById({ id });
+            if (!requestConsign) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.requestConsign.failed',
+                    message: 'Request consign not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            const comments = Array.isArray(requestConsign.comments)
+                ? requestConsign.comments
+                : [];
+
+            const index = comments.findIndex(
+                (comment) => comment.id === commentId
+            );
+
+            if (index === -1) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.requestConsign.failed',
+                    message: 'Comment not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            comments[index].isPublic = isPublic;
+
+            await model.updateRequestConsign({
+                id,
+                requestConsign: {
+                    comments,
+                },
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.requestConsign.success',
+                message: 'Update request consign comments visibility success',
+                transaction: nanoid(),
+                data: comments[index],
+            } as APIResponse);
+        } catch (error) {
+            logger(
+                'Update request consign comments visibility failed: %O',
+                error
+            );
+            res.status(500).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: `Update request consign comments visibility failed: ${error}`,
                 args: error,
                 transaction: nanoid(),
             } as APIResponse);
