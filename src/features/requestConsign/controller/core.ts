@@ -181,7 +181,7 @@ route.patch(
         try {
             const logged = req.auth;
             const { id } = req.params;
-            const { comment, isPublic } = req.body;
+            const { comment } = req.body;
 
             const requestConsign = await model.findRequestConsignsById({ id });
             if (!requestConsign) {
@@ -212,7 +212,7 @@ route.patch(
                 username: user.name,
                 comment,
                 when: new Date().toISOString(),
-                isPublic,
+                isPublic: false,
             };
 
             await model.updateRequestConsign({
