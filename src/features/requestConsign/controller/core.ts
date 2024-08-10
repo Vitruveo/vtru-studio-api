@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import debug from 'debug';
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
@@ -309,6 +310,45 @@ route.patch(
         }
     }
 );
+
+route.get('/comments/:assetId', async (req, res) => {
+    try {
+        const { assetId } = req.params;
+
+        const requestConsign = await model.findRequestConsignsByCreator({
+            creator: req.auth.id,
+            assetId,
+        });
+
+        if (!requestConsign) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const data = requestConsign.comments
+            .filter((comment) => comment.isPublic)
+            .map(({ username, ...rest }) => rest);
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consign comments success',
+            transaction: nanoid(),
+            data,
+        } as APIResponse);
+    } catch (error) {
+        logger('Get request consign comments failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consign comments failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.delete('/:assetId', async (req, res) => {
     try {
