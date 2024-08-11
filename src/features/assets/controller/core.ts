@@ -1,5 +1,6 @@
 import debug from 'debug';
 import fs from 'fs/promises';
+import { z } from 'zod';
 import { join, parse } from 'path';
 import { customAlphabet, nanoid } from 'nanoid';
 import { Request, Router } from 'express';
@@ -23,6 +24,7 @@ import {
     validateBodyForCreate,
     validateBodyForDeleteFile,
     validateBodyForUpdate,
+    validateBodyForUpdateManyNudity,
     validateBodyForUpdateManyStatus,
     validateBodyForUpdateStatus,
     validateBodyForUpdateStep,
@@ -31,6 +33,7 @@ import { sendToExchangeCreators } from '../../creators/upload';
 import { handleExtractColor } from '../../../services/extractColor';
 import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
 import { download } from '../../../services/stream';
+import { schemaAssetUpdateManyNudity } from './schemas';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -218,6 +221,37 @@ route.put(
             res.status(500).json({
                 code: 'vitruveo.studio.api.admin.assets.updateStatus.failed',
                 message: `Update status failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.put(
+    '/nudity',
+    needsToBeOwner({ permissions: ['asset:admin'] }),
+    validateBodyForUpdateManyNudity,
+    async (req, res) => {
+        const body = req.body as z.infer<typeof schemaAssetUpdateManyNudity>;
+
+        try {
+            const result = await model.updateManyAssetsNudity({
+                ids: body.ids,
+                nudity: body.nudity,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.admin.assets.updateNudity.success',
+                message: 'Update nudity success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult>);
+        } catch (error) {
+            logger('Update nudity assets failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.updateNudity.failed',
+                message: `Update nudity failed: ${error}`,
                 args: error,
                 transaction: nanoid(),
             } as APIResponse);

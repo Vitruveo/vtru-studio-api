@@ -23,6 +23,7 @@ import {
     schemaValidationForUpdate,
     schemaAssetUpdateManyStatus,
     schemaValidationForCreate,
+    schemaAssetUpdateManyNudity,
 } from './schemas';
 
 export const validateBodyForCreate = async (
@@ -169,6 +170,24 @@ export const validateBodyForUpdateManyStatus = async (
 ) => {
     try {
         req.body = schemaAssetUpdateManyStatus.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateManyStatus.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateManyNudity = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.body = schemaAssetUpdateManyNudity.parse(req.body);
         next();
     } catch (error) {
         res.status(400).json({
