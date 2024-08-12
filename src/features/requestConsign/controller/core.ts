@@ -254,47 +254,16 @@ route.patch(
             const { id } = req.params;
             const { isPublic, commentId } = req.body;
 
-            const requestConsign = await model.findRequestConsignsById({ id });
-            if (!requestConsign) {
-                res.status(404).json({
-                    code: 'vitruveo.studio.api.requestConsign.failed',
-                    message: 'Request consign not found',
-                    transaction: nanoid(),
-                } as APIResponse);
-                return;
-            }
-
-            const comments = Array.isArray(requestConsign.comments)
-                ? requestConsign.comments
-                : [];
-
-            const index = comments.findIndex(
-                (comment) => comment.id === commentId
-            );
-
-            if (index === -1) {
-                res.status(404).json({
-                    code: 'vitruveo.studio.api.requestConsign.failed',
-                    message: 'Comment not found',
-                    transaction: nanoid(),
-                } as APIResponse);
-                return;
-            }
-
-            comments[index].isPublic = isPublic;
-
-            await model.updateRequestConsign({
+            await model.updateCommentVisibility({
                 id,
-                requestConsign: {
-                    comments,
-                },
+                commentId,
+                isPublic,
             });
 
             res.json({
                 code: 'vitruveo.studio.api.requestConsign.success',
                 message: 'Update request consign comments visibility success',
                 transaction: nanoid(),
-                data: comments[index],
             } as APIResponse);
         } catch (error) {
             logger(
@@ -311,27 +280,11 @@ route.patch(
     }
 );
 
-route.get('/comments/:assetId', async (req, res) => {
+route.get('/comments/:assetId', mustBeOwner, async (req, res) => {
     try {
         const { assetId } = req.params;
 
-        const requestConsign = await model.findRequestConsignsByCreator({
-            creator: req.auth.id,
-            assetId,
-        });
-
-        if (!requestConsign) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.requestConsign.failed',
-                message: 'Request consign not found',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
-
-        const data = requestConsign.comments
-            .filter((comment) => comment.isPublic)
-            .map(({ username, ...rest }) => rest);
+        const data = await model.findCommentsByAsset({ assetId });
 
         res.json({
             code: 'vitruveo.studio.api.requestConsign.success',

@@ -8,11 +8,13 @@ import {
     CreateRequestConsignParams,
     DeleteRequestConsignByAssetParams,
     DeleteRequestConsignByIdParams,
+    FindCommentsByAssetParams,
     FindOneRequestConsignByCreatorParams,
     FindOneRequestConsignParams,
     FindRequestConsignByIdParams,
     FindRequestConsignsByIdsParams,
     FindRequestConsignsParams,
+    updateCommentVisibilityParams,
     UpdateRequestConsignParams,
 } from './types';
 
@@ -114,6 +116,25 @@ export const findRequestConsignsByCreator = ({
         asset: assetId,
     });
 
+export const findCommentsByAsset = ({ assetId }: FindCommentsByAssetParams) =>
+    requestConsigns()
+        .aggregate([
+            { $match: { asset: assetId } },
+            {
+                $project: {
+                    comments: {
+                        $filter: {
+                            input: '$comments',
+                            as: 'comment',
+                            cond: { $eq: ['$$comment.isPublic', true] },
+                        },
+                    },
+                },
+            },
+            { $project: { 'comments.username': 0 } },
+        ])
+        .toArray();
+
 export const updateRequestConsign = ({
     id,
     requestConsign,
@@ -121,6 +142,29 @@ export const updateRequestConsign = ({
     requestConsigns().updateOne(
         { _id: new ObjectId(id) },
         { $set: requestConsign }
+    );
+
+export const updateCommentVisibility = ({
+    id,
+    isPublic,
+    commentId,
+}: updateCommentVisibilityParams) =>
+    requestConsigns().updateOne(
+        {
+            _id: new ObjectId(id),
+        },
+        {
+            $set: {
+                'comments.$[element].isPublic': isPublic,
+            },
+        },
+        {
+            arrayFilters: [
+                {
+                    'element.id': commentId,
+                },
+            ],
+        }
     );
 
 export const deleteRequestConsign = ({ id }: DeleteRequestConsignByIdParams) =>
