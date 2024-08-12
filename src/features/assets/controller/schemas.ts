@@ -73,6 +73,12 @@ export const schemaAssetUpload = z.object({
                     .enum(['landscape', 'portrait', 'square'])
                     .nullable()
                     .default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -81,6 +87,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -89,6 +101,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -97,6 +115,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -105,6 +129,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),

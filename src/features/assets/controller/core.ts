@@ -441,7 +441,7 @@ route.put(
 );
 
 route.delete(
-    '/request/deleteFile',
+    '/request/deleteFile/:assetId',
     validateBodyForDeleteFile,
     async (req, res) => {
         const transactionApiId = nanoid();
@@ -450,7 +450,7 @@ route.delete(
             const { id } = req.auth;
 
             const assetsByCreatorId = await model.findOneAssets({
-                query: { 'framework.createdBy': id },
+                query: { _id: new ObjectId(req.params.assetId) },
             });
 
             if (assetsByCreatorId) {
@@ -466,28 +466,21 @@ route.delete(
                         ).some((f) => f?.path === v)
                 );
 
-                if (checkDeleteKeys.length === 0) {
-                    res.status(404).json({
-                        code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.notFound',
-                        message: 'Asset not found',
-                        transaction: transactionApiId,
-                    } as APIResponse);
-                    return;
+                if (checkDeleteKeys.length > 0) {
+                    await sendToExchangeCreators(
+                        JSON.stringify({
+                            creatorId: id,
+                            origin: 'asset',
+                            method: 'DELETE',
+                            deleteKeys: checkDeleteKeys,
+                        })
+                    );
+
+                    await model.removeUploadedMediaKeys({
+                        id: assetsByCreatorId._id,
+                        mediaKeys: checkDeleteKeys,
+                    });
                 }
-
-                await sendToExchangeCreators(
-                    JSON.stringify({
-                        creatorId: id,
-                        origin: 'asset',
-                        method: 'DELETE',
-                        deleteKeys: checkDeleteKeys,
-                    })
-                );
-
-                await model.removeUploadedMediaKeys({
-                    id: assetsByCreatorId._id,
-                    mediaKeys: checkDeleteKeys,
-                });
 
                 res.json({
                     code: 'vitruveo.studio.api.admin.assets.request.deleteFiles.success',
