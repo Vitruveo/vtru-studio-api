@@ -28,11 +28,20 @@ export interface FindOneRequestConsignByCreatorParams {
     assetId: string;
 }
 
+export interface FindCommentsByAssetParams {
+    assetId: string;
+}
+
 export interface UpdateRequestConsignParams {
     id: string;
     requestConsign: Record<string, any>;
 }
 
+export interface updateCommentVisibilityParams {
+    id: string;
+    commentId: string;
+    isPublic: boolean;
+}
 export interface DeleteRequestConsignByIdParams {
     id: string;
 }

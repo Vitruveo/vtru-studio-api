@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import debug from 'debug';
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
@@ -14,7 +15,11 @@ import {
     ObjectId,
     UpdateResult,
 } from '../../../services';
-import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
+import {
+    validateBodyForPatch,
+    validateBodyForPatchComments,
+    validateBodyForPatchCommentsVisibility,
+} from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
 import {
     ASSET_STORAGE_URL,
@@ -208,9 +213,11 @@ route.patch(
                 : [];
 
             const data = {
+                id: new ObjectId().toString(),
                 username: user.name,
                 comment,
                 when: new Date().toISOString(),
+                isPublic: false,
             };
 
             await model.updateRequestConsign({
@@ -237,6 +244,64 @@ route.patch(
         }
     }
 );
+
+route.patch(
+    '/comments/:id/visibility',
+    needsToBeOwner({ permissions: ['moderator:admin'] }),
+    validateBodyForPatchCommentsVisibility,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { isPublic, commentId } = req.body;
+
+            await model.updateCommentVisibility({
+                id,
+                commentId,
+                isPublic,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.requestConsign.success',
+                message: 'Update request consign comments visibility success',
+                transaction: nanoid(),
+            } as APIResponse);
+        } catch (error) {
+            logger(
+                'Update request consign comments visibility failed: %O',
+                error
+            );
+            res.status(500).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: `Update request consign comments visibility failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.get('/comments/:assetId', mustBeOwner, async (req, res) => {
+    try {
+        const { assetId } = req.params;
+
+        const data = await model.findCommentsByAsset({ assetId });
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consign comments success',
+            transaction: nanoid(),
+            data,
+        } as APIResponse);
+    } catch (error) {
+        logger('Get request consign comments failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consign comments failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.delete('/:assetId', async (req, res) => {
     try {

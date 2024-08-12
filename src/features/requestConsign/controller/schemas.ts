@@ -19,3 +19,8 @@ export const schemaValidationForPatch = z.object({
 export const schemaValidationForPatchComments = z.object({
     comment: z.string(),
 });
+
+export const schemaValidationForPatchCommentsVisility = z.object({
+    commentId: z.string(),
+    isPublic: z.boolean().default(false),
+});
