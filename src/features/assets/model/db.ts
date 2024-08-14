@@ -361,7 +361,63 @@ export const findAssetsById = async ({ id }: FindAssetsByIdParams) => {
 };
 
 export const findAssetsByCreatorId = async ({ id }: FindAssetsByIdParams) =>
-    assets().find({ 'framework.createdBy': id }).toArray();
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'framework.createdBy': id,
+                },
+            },
+            {
+                $addFields: {
+                    assetId: { $toString: '$_id' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'requestConsigns',
+                    localField: 'assetId',
+                    foreignField: 'asset',
+                    as: 'request',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$request',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $addFields: {
+                    countComments: {
+                        $cond: {
+                            if: {
+                                $gt: [{ $type: '$request' }, 'missing'],
+                            },
+                            then: {
+                                $size: {
+                                    $filter: {
+                                        input: '$request.comments',
+                                        as: 'item',
+                                        cond: {
+                                            $eq: ['$$item.isPublic', true],
+                                        },
+                                    },
+                                },
+                            },
+                            else: 0,
+                        },
+                    },
+                },
+            },
+            {
+                $project: {
+                    request: 0,
+                    assetId: 0,
+                },
+            },
+        ])
+        .toArray();
 
 export const findAssetCreatedBy = async ({ id }: FindAssetsByIdParams) => {
     const result = await assets().findOne({
