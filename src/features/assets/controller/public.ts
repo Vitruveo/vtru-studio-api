@@ -257,6 +257,21 @@ route.get('/search', async (req, res) => {
             delete parsedQuery['assetMetadata.context.formData.colors'];
         }
 
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: {
+                            $regex: creator,
+                            $options: 'i',
+                        },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
+
         const maxAssetPrice = await model.findMaxPrice();
 
         if (parsedQuery?._id?.$in) {

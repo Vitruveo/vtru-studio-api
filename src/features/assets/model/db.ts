@@ -314,17 +314,40 @@ export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
             { $unwind: '$assetMetadata.creators.formData' },
             {
                 $match: {
+                    ...conditionsToShowAssets,
                     'assetMetadata.creators.formData.name': {
                         $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
-                    ...conditionsToShowAssets,
+                },
+            },
+            {
+                $addFields: {
+                    insensitiveCreator: {
+                        $cond: {
+                            if: {
+                                $isArray:
+                                    '$assetMetadata.creators.formData.name',
+                            },
+                            then: {
+                                $map: {
+                                    input: '$assetMetadata.creators.formData.name',
+                                    as: 'n',
+                                    in: { $toLower: '$$n' },
+                                },
+                            },
+                            else: {
+                                $toLower:
+                                    '$assetMetadata.creators.formData.name',
+                            },
+                        },
+                    },
                 },
             },
             {
                 $group: {
                     _id: {
                         $trim: {
-                            input: '$assetMetadata.creators.formData.name',
+                            input: '$insensitiveCreator',
                         },
                     },
                     count: { $sum: 1 },
