@@ -12,6 +12,7 @@ import {
     ResponseAssetsPaginated,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
+import { queryByPrice, queryByTitleOrDescOrCreator } from '../utils/queries';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -29,7 +30,6 @@ export const conditionsToShowAssets = {
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
-// TODO: ALTERAR COMPLETAMENTE FORMA DE BUSCA DE ASSETS E FILTRAR
 route.get('/search', async (req, res) => {
     try {
         const {
@@ -46,7 +46,6 @@ route.get('/search', async (req, res) => {
 
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
-        const showAdditionalAssetsValue = showAdditionalAssets === 'true';
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -62,29 +61,27 @@ route.get('/search', async (req, res) => {
             ...conditionsToShowAssets,
         };
 
-        if (showAdditionalAssetsValue) {
+        if (showAdditionalAssets === 'true') {
             delete parsedQuery['consignArtwork.status'];
-
-            if (parsedQuery.$or) {
-                parsedQuery.$or.push(
-                    {
-                        'consignArtwork.status': 'active',
-                    },
-                    {
-                        'consignArtwork.status': 'blocked',
-                    }
-                );
-            } else {
-                parsedQuery.$or = [
-                    {
-                        'consignArtwork.status': 'active',
-                    },
-                    {
-                        'consignArtwork.status': 'blocked',
-                    },
-                ];
-            }
+            const statusCondition = [
+                { 'consignArtwork.status': 'active' },
+                { 'consignArtwork.status': 'blocked' },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(statusCondition)
+                : statusCondition;
         }
+
+        const addSearchByTitleDescCreator = (param: string) => {
+            const searchByTitleDescCreator = {
+                $or: queryByTitleOrDescOrCreator({ name: param }),
+            };
+            if (parsedQuery.$and) {
+                parsedQuery.$and.push(searchByTitleDescCreator);
+            } else {
+                parsedQuery.$and = [searchByTitleDescCreator];
+            }
+        };
 
         if (
             maxPrice &&
@@ -94,143 +91,16 @@ route.get('/search', async (req, res) => {
         ) {
             parsedQuery.$and = [
                 {
-                    $or: [
-                        {
-                            'licenses.nft.elastic.editionPrice': {
-                                $gte: Number(minPrice),
-                                $lte: Number(maxPrice),
-                            },
-                            'licenses.nft.editionOption': 'elastic',
-                        },
-                        {
-                            'licenses.nft.single.editionPrice': {
-                                $gte: Number(minPrice),
-                                $lte: Number(maxPrice),
-                            },
-                            'licenses.nft.editionOption': 'single',
-                        },
-                        {
-                            'licenses.nft.unlimited.editionPrice': {
-                                $gte: Number(minPrice),
-                                $lte: Number(maxPrice),
-                            },
-                            'licenses.nft.editionOption': 'unlimited',
-                        },
-                    ],
+                    $or: queryByPrice({
+                        min: Number(minPrice),
+                        max: Number(maxPrice),
+                    }),
                 },
             ];
 
-            if (name) {
-                parsedQuery.$and.push({
-                    $or: [
-                        {
-                            'assetMetadata.context.formData.title': {
-                                $regex: name,
-                                $options: 'i',
-                            },
-                        },
-                        {
-                            'assetMetadata.context.formData.description': {
-                                $regex: name,
-                                $options: 'i',
-                            },
-                        },
-                        {
-                            'assetMetadata.creators.formData': {
-                                $elemMatch: {
-                                    name: {
-                                        $regex: name,
-                                        $options: 'i',
-                                    },
-                                },
-                            },
-                        },
-                    ],
-                });
-            }
+            if (name) addSearchByTitleDescCreator(name);
         } else if (name) {
-            if (parsedQuery.$or && parsedQuery.$and) {
-                parsedQuery.$and.push({
-                    $or: [
-                        {
-                            'assetMetadata.context.formData.title': {
-                                $regex: name,
-                                $options: 'i',
-                            },
-                        },
-                        {
-                            'assetMetadata.context.formData.description': {
-                                $regex: name,
-                                $options: 'i',
-                            },
-                        },
-                        {
-                            'assetMetadata.creators.formData': {
-                                $elemMatch: {
-                                    name: {
-                                        $regex: name,
-                                        $options: 'i',
-                                    },
-                                },
-                            },
-                        },
-                    ],
-                });
-            } else if (parsedQuery.$or && !parsedQuery.$and) {
-                parsedQuery.$and = [
-                    {
-                        $or: [
-                            {
-                                'assetMetadata.context.formData.title': {
-                                    $regex: name,
-                                    $options: 'i',
-                                },
-                            },
-                            {
-                                'assetMetadata.context.formData.description': {
-                                    $regex: name,
-                                    $options: 'i',
-                                },
-                            },
-                            {
-                                'assetMetadata.creators.formData': {
-                                    $elemMatch: {
-                                        name: {
-                                            $regex: name,
-                                            $options: 'i',
-                                        },
-                                    },
-                                },
-                            },
-                        ],
-                    },
-                ];
-            } else {
-                parsedQuery.$or = [
-                    {
-                        'assetMetadata.context.formData.title': {
-                            $regex: name,
-                            $options: 'i',
-                        },
-                    },
-                    {
-                        'assetMetadata.context.formData.description': {
-                            $regex: name,
-                            $options: 'i',
-                        },
-                    },
-                    {
-                        'assetMetadata.creators.formData': {
-                            $elemMatch: {
-                                name: {
-                                    $regex: name,
-                                    $options: 'i',
-                                },
-                            },
-                        },
-                    },
-                ];
-            }
+            addSearchByTitleDescCreator(name);
         }
 
         let sortQuery: Sort = {};
@@ -280,11 +150,9 @@ route.get('/search', async (req, res) => {
         if (query['assetMetadata.context.formData.colors']?.$in) {
             const colors = query['assetMetadata.context.formData.colors']
                 .$in as string[][];
-
             filterColors = colors.map((color) =>
                 color.map((rgb) => parseInt(rgb, 10))
             );
-
             delete parsedQuery['assetMetadata.context.formData.colors'];
         }
 
@@ -293,25 +161,19 @@ route.get('/search', async (req, res) => {
             parsedQuery['assetMetadata.creators.formData'] = {
                 $elemMatch: {
                     $or: creators.map((creator: string) => ({
-                        name: {
-                            $regex: creator,
-                            $options: 'i',
-                        },
+                        name: { $regex: creator, $options: 'i' },
                     })),
                 },
             };
             delete parsedQuery['assetMetadata.creators.formData.name'];
         }
 
-        console.log(JSON.stringify(parsedQuery, null, 4));
-
         const maxAssetPrice = await model.findMaxPrice();
 
-        if (parsedQuery?._id?.$in) {
+        if (parsedQuery?._id?.$in)
             parsedQuery._id.$in = parsedQuery._id.$in.map(
                 (id: string) => new ObjectId(id)
             );
-        }
 
         const result = await model.countAssets({
             query: parsedQuery,
