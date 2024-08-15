@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { ObjectId, Sort } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -12,7 +12,11 @@ import {
     ResponseAssetsPaginated,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
-import { queryByPrice, queryByTitleOrDescOrCreator } from '../utils/queries';
+import {
+    queryByPrice,
+    queryByTitleOrDescOrCreator,
+    querySort,
+} from '../utils/queries';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -103,50 +107,7 @@ route.get('/search', async (req, res) => {
             addSearchByTitleDescCreator(name);
         }
 
-        let sortQuery: Sort = {};
-
-        switch (sort?.order) {
-            case 'priceHighToLow':
-                sortQuery = {
-                    'licenses.nft.single.editionPrice': -1,
-                };
-                break;
-            case 'priceLowToHigh':
-                sortQuery = {
-                    'licenses.nft.single.editionPrice': 1,
-                };
-                break;
-            case 'creatorAZ':
-                sortQuery = {
-                    insensitiveCreator: 1,
-                };
-                break;
-            case 'creatorZA':
-                sortQuery = {
-                    insensitiveCreator: -1,
-                };
-                break;
-            case 'consignNewToOld':
-                sortQuery = { 'consignArtwork.listing': -1 };
-                break;
-            case 'consignOldToNew':
-                sortQuery = { 'consignArtwork.listing': 1 };
-                break;
-            default:
-                sortQuery = {
-                    'consignArtwork.status': 1,
-                    'licenses.nft.availableLicenses': -1,
-                    'consignArtwork.listing': -1,
-                };
-                break;
-        }
-        sortQuery =
-            sort?.isIncludeSold === 'true'
-                ? sortQuery
-                : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
-
         let filterColors: number[][] = [];
-
         if (query['assetMetadata.context.formData.colors']?.$in) {
             const colors = query['assetMetadata.context.formData.colors']
                 .$in as string[][];
@@ -184,6 +145,8 @@ route.get('/search', async (req, res) => {
         const total = result[0]?.count ?? 0;
 
         const totalPage = Math.ceil(total / limitNumber);
+
+        const sortQuery = querySort(sort);
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
@@ -246,7 +209,8 @@ route.get('/carousel', async (req, res) => {
 
 route.get('/collections', async (req, res) => {
     try {
-        const { name } = req.query as unknown as QueryCollectionParams;
+        const { name, showAdditionalAssets } =
+            req.query as unknown as QueryCollectionParams;
 
         if (name.trim().length < 3) {
             res.status(400).json({
@@ -257,7 +221,10 @@ route.get('/collections', async (req, res) => {
             return;
         }
 
-        const collections = await model.findAssetsCollections({ name });
+        const collections = await model.findAssetsCollections({
+            name,
+            showAdditionalAssets,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.collections.success',
@@ -278,7 +245,8 @@ route.get('/collections', async (req, res) => {
 
 route.get('/subjects', async (req, res) => {
     try {
-        const { name } = req.query as unknown as QueryCollectionParams;
+        const { name, showAdditionalAssets } =
+            req.query as unknown as QueryCollectionParams;
 
         if (name.trim().length < 3) {
             res.status(400).json({
@@ -289,7 +257,10 @@ route.get('/subjects', async (req, res) => {
             return;
         }
 
-        const subjects = await model.findAssetsSubjects({ name });
+        const subjects = await model.findAssetsSubjects({
+            name,
+            showAdditionalAssets,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.subjects.success',
@@ -310,7 +281,8 @@ route.get('/subjects', async (req, res) => {
 
 route.get('/creators', async (req, res) => {
     try {
-        const { name } = req.query as unknown as QueryCollectionParams;
+        const { name, showAdditionalAssets } =
+            req.query as unknown as QueryCollectionParams;
 
         if (name.trim().length < 3) {
             res.status(400).json({
@@ -321,7 +293,10 @@ route.get('/creators', async (req, res) => {
             return;
         }
 
-        const creators = await model.findAssetsByCreatorName({ name });
+        const creators = await model.findAssetsByCreatorName({
+            name,
+            showAdditionalAssets,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.creators.success',
