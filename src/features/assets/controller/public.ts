@@ -149,31 +149,62 @@ route.get('/search', async (req, res) => {
                 });
             }
         } else if (name) {
-            if (parsedQuery.$or) {
-                parsedQuery.$or.push(
-                    {
-                        'assetMetadata.context.formData.title': {
-                            $regex: name,
-                            $options: 'i',
+            if (parsedQuery.$or && parsedQuery.$and) {
+                parsedQuery.$and.push({
+                    $or: [
+                        {
+                            'assetMetadata.context.formData.title': {
+                                $regex: name,
+                                $options: 'i',
+                            },
                         },
-                    },
-                    {
-                        'assetMetadata.context.formData.description': {
-                            $regex: name,
-                            $options: 'i',
+                        {
+                            'assetMetadata.context.formData.description': {
+                                $regex: name,
+                                $options: 'i',
+                            },
                         },
-                    },
+                        {
+                            'assetMetadata.creators.formData': {
+                                $elemMatch: {
+                                    name: {
+                                        $regex: name,
+                                        $options: 'i',
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                });
+            } else if (parsedQuery.$or && !parsedQuery.$and) {
+                parsedQuery.$and = [
                     {
-                        'assetMetadata.creators.formData': {
-                            $elemMatch: {
-                                name: {
+                        $or: [
+                            {
+                                'assetMetadata.context.formData.title': {
                                     $regex: name,
                                     $options: 'i',
                                 },
                             },
-                        },
-                    }
-                );
+                            {
+                                'assetMetadata.context.formData.description': {
+                                    $regex: name,
+                                    $options: 'i',
+                                },
+                            },
+                            {
+                                'assetMetadata.creators.formData': {
+                                    $elemMatch: {
+                                        name: {
+                                            $regex: name,
+                                            $options: 'i',
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                ];
             } else {
                 parsedQuery.$or = [
                     {
@@ -271,6 +302,8 @@ route.get('/search', async (req, res) => {
             };
             delete parsedQuery['assetMetadata.creators.formData.name'];
         }
+
+        console.log(JSON.stringify(parsedQuery, null, 4));
 
         const maxAssetPrice = await model.findMaxPrice();
 
