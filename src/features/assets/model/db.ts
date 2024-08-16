@@ -21,7 +21,6 @@ import type {
     UpdateManyAssetsNudityParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
-import { conditionsToShowAssets } from '../controller/public';
 import { buildFilterColorsQuery } from '../utils/color';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
@@ -219,15 +218,23 @@ export const countAssets = async ({
     >;
 };
 
-export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
+export const findAssetsCollections = ({
+    name,
+    showAdditionalAssets,
+}: FindAssetsCollectionsParams) =>
     assets()
         .aggregate([
-            { $unwind: '$assetMetadata.taxonomy.formData.collections' },
+            {
+                $unwind: '$assetMetadata.taxonomy.formData.collections',
+            },
             {
                 $match: {
                     'assetMetadata.taxonomy.formData.collections': {
                         $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
+                    ...(showAdditionalAssets === 'true'
+                        ? {}
+                        : { 'consignArtwork.status': 'active' }),
                 },
             },
             {
@@ -251,7 +258,10 @@ export const findAssetsCollections = ({ name }: FindAssetsCollectionsParams) =>
         ])
         .toArray();
 
-export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
+export const findAssetsSubjects = ({
+    name,
+    showAdditionalAssets,
+}: FindAssetsSubjectsParams) =>
     assets()
         .aggregate([
             { $unwind: '$assetMetadata.taxonomy.formData.subject' },
@@ -260,6 +270,9 @@ export const findAssetsSubjects = ({ name }: FindAssetsSubjectsParams) =>
                     'assetMetadata.taxonomy.formData.subject': {
                         $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
+                    ...(showAdditionalAssets === 'true'
+                        ? {}
+                        : { 'consignArtwork.status': 'active' }),
                 },
             },
             {
@@ -308,7 +321,10 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
         ])
         .toArray();
 
-export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
+export const findAssetsByCreatorName = ({
+    name,
+    showAdditionalAssets,
+}: FindAssetsByCreatorName) =>
     assets()
         .aggregate([
             { $unwind: '$assetMetadata.creators.formData' },
@@ -317,14 +333,39 @@ export const findAssetsByCreatorName = ({ name }: FindAssetsByCreatorName) =>
                     'assetMetadata.creators.formData.name': {
                         $regex: new RegExp(`(^| )${name}`, 'i'),
                     },
-                    ...conditionsToShowAssets,
+                    ...(showAdditionalAssets === 'true'
+                        ? {}
+                        : { 'consignArtwork.status': 'active' }),
+                },
+            },
+            {
+                $addFields: {
+                    insensitiveCreator: {
+                        $cond: {
+                            if: {
+                                $isArray:
+                                    '$assetMetadata.creators.formData.name',
+                            },
+                            then: {
+                                $map: {
+                                    input: '$assetMetadata.creators.formData.name',
+                                    as: 'n',
+                                    in: { $toLower: '$$n' },
+                                },
+                            },
+                            else: {
+                                $toLower:
+                                    '$assetMetadata.creators.formData.name',
+                            },
+                        },
+                    },
                 },
             },
             {
                 $group: {
                     _id: {
                         $trim: {
-                            input: '$assetMetadata.creators.formData.name',
+                            input: '$insensitiveCreator',
                         },
                     },
                     count: { $sum: 1 },

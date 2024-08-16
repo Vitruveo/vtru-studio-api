@@ -18,11 +18,13 @@ export interface QueryPaginatedParams {
 
 export interface QueryCollectionParams {
     name: string;
+    showAdditionalAssets: string;
 }
 
 interface Tags {
     tag: string;
     count: number;
+    showAdditionalAssets: string;
 }
 
 export interface ResponseAssetsPaginated {
