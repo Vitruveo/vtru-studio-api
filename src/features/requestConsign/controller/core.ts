@@ -38,7 +38,10 @@ route.post('/:assetId', mustBeOwner, async (req, res) => {
             creator: id,
             assetId: req.params.assetId,
         });
-        if (alreadyExists) {
+        if (
+            alreadyExists &&
+            !['draft', 'error'].includes(alreadyExists.status)
+        ) {
             res.status(409).json({
                 code: 'vitruveo.studio.api.requestConsign.failed',
                 message: 'Request consign already exists',
@@ -66,7 +69,15 @@ route.post('/:assetId', mustBeOwner, async (req, res) => {
             creator: id,
         });
 
-        const result = await model.createRequestConsign({ requestConsign });
+        if (alreadyExists) {
+            await model.updateRequestConsign({
+                id: alreadyExists._id,
+                requestConsign: { status: 'pending' },
+            });
+        } else {
+            await model.createRequestConsign({ requestConsign });
+        }
+
         await modelAssets.updateAssets({
             id: asset._id,
             asset: {
@@ -80,8 +91,7 @@ route.post('/:assetId', mustBeOwner, async (req, res) => {
             code: 'vitruveo.studio.api.requestConsign.success',
             message: 'Create request consign success',
             transaction: nanoid(),
-            data: result,
-        } as APIResponse<InsertOneResult<model.RequestConsignDocument>>);
+        } as APIResponse);
     } catch (error) {
         logger('Create request consign failed: %O', error);
         res.status(500).json({
