@@ -23,8 +23,65 @@ import type {
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { conditionsToShowAssets } from '../controller/public';
 import { buildFilterColorsQuery } from '../utils/color';
+import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
 
 const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
+
+export const findAssetMintedByAddress = async ({
+    address,
+}: {
+    address: string;
+}) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'mintExplorer.address': address,
+                    'framework.createdBy': { $exists: true, $ne: '' },
+                },
+            },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $project: {
+                    storeUrl: {
+                        $concat: [
+                            STORE_URL,
+                            '/',
+                            '$creator.username',
+                            '/',
+                            '$consignArtwork.assetKey',
+                        ],
+                    },
+                    previewUrl: {
+                        $concat: [
+                            ASSET_STORAGE_URL,
+                            '/',
+                            '$formats.preview.path',
+                        ],
+                    },
+                },
+            },
+        ])
+        .toArray();
 
 // basic actions.
 export const createAssets = async ({ asset }: CreateAssetsParams) => {
