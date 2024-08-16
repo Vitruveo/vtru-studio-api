@@ -65,4 +65,22 @@ route.get('/:id', async (req, res) => {
     }
 });
 
+route.get('/nft/:address', async (req, res) => {
+    try {
+        const assets = await model.findAssetMintedByAddress({
+            address: req.params.address,
+        });
+
+        res.json(assets);
+    } catch (error) {
+        logger('Reader get asset failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.get.failed',
+            message: `Reader get asset failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 export { route };
