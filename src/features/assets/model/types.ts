@@ -30,14 +30,17 @@ export interface FindAssetsTagsParams {
 }
 export interface FindAssetsByCreatorName {
     name: string;
+    showAdditionalAssets: string;
 }
 
 export interface FindAssetsCollectionsParams {
     name: string;
+    showAdditionalAssets: string;
 }
 
 export interface FindAssetsSubjectsParams {
     name: string;
+    showAdditionalAssets: string;
 }
 export interface CountAssetsParams
     extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
