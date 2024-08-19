@@ -27,6 +27,83 @@ export const status: StatusProps = {
     data: [],
 };
 
+const getAsset = (assetId: string) =>
+    getDb()
+        .collection(COLLECTION_ASSETS)
+        .findOne(
+            {
+                _id: new ObjectId(assetId),
+            },
+            {
+                projection: {
+                    _id: 1,
+                    'assetMetadata.context.formData.title': 1,
+                },
+            }
+        );
+
+const getCreator = (creatorId: string) =>
+    getDb()
+        .collection(COLLECTION_CREATORS)
+        .findOne(
+            {
+                _id: new ObjectId(creatorId),
+            },
+            {
+                projection: {
+                    _id: 1,
+                    username: 1,
+                    emails: 1,
+                    vault: 1,
+                },
+            }
+        );
+
+const sendToConsign = async ({
+    creator,
+    asset,
+    requestConsignId,
+}: {
+    creator: any;
+    asset: any;
+    requestConsignId: string;
+}) => {
+    if (!creator?.vault) {
+        logger(`Creator vault is missing for ${creator._id.toString()}`);
+        return;
+    }
+
+    // check if creator has field isBlocked
+    if ('isBlocked' in creator.vault) {
+        // check if creator is not blocked
+        if (!creator.vault.isBlocked) {
+            const countAssetConsigned = await countAssetConsignedByCreator({
+                creatorId: creator._id.toString(),
+            });
+
+            // check if creator has more than 1 asset consigned
+            if (countAssetConsigned >= 1) {
+                await sendToExchangeAutoConsign(
+                    JSON.stringify({
+                        assetId: asset._id.toString(),
+                    })
+                );
+
+                await updateRequestConsign({
+                    id: requestConsignId,
+                    requestConsign: {
+                        status: 'queue',
+                    },
+                });
+            } else {
+                logger(
+                    `Creator ${creator._id.toString()} not have more than 1 asset consigned`
+                );
+            }
+        }
+    }
+};
+
 uniqueExecution({
     name: __filename,
     callback: () => {
@@ -134,44 +211,53 @@ uniqueExecution({
                             emitter.emitUpdateRequestConsign(
                                 status.data[index]
                             );
+
+                            const requestStatus =
+                                change.updateDescription.updatedFields?.status;
+
+                            if (requestStatus && requestStatus === 'pending') {
+                                const asset = await getAsset(
+                                    change.fullDocument.asset
+                                );
+                                const creator = await getCreator(
+                                    change.fullDocument.creator
+                                );
+
+                                if (!asset || !creator) {
+                                    logger(
+                                        `Asset (${change.fullDocument.asset}) or Creator (${change.fullDocument.creator}) not found`
+                                    );
+
+                                    return;
+                                }
+
+                                if (!creator?.vault) {
+                                    logger(
+                                        `Creator vault is missing for ${creator._id.toString()}`
+                                    );
+                                    return;
+                                }
+
+                                // check if creator has field isBlocked
+                                await sendToConsign({
+                                    creator,
+                                    asset,
+                                    requestConsignId:
+                                        change.fullDocument._id.toString(),
+                                });
+                            }
                         }
 
                         // OPERATION TYPE: INSERT REQUEST CONSIGN
                         if (change.operationType === 'insert') {
                             if (!change.fullDocument) return;
 
-                            const asset = await getDb()
-                                .collection(COLLECTION_ASSETS)
-                                .findOne(
-                                    {
-                                        _id: new ObjectId(
-                                            change.fullDocument.asset
-                                        ),
-                                    },
-                                    {
-                                        projection: {
-                                            _id: 1,
-                                            'assetMetadata.context.formData.title': 1,
-                                        },
-                                    }
-                                );
-                            const creator = await getDb()
-                                .collection(COLLECTION_CREATORS)
-                                .findOne(
-                                    {
-                                        _id: new ObjectId(
-                                            change.fullDocument.creator
-                                        ),
-                                    },
-                                    {
-                                        projection: {
-                                            _id: 1,
-                                            username: 1,
-                                            emails: 1,
-                                            vault: 1,
-                                        },
-                                    }
-                                );
+                            const asset = await getAsset(
+                                change.fullDocument.asset
+                            );
+                            const creator = await getCreator(
+                                change.fullDocument.creator
+                            );
 
                             if (!asset || !creator) return;
 
@@ -199,48 +285,12 @@ uniqueExecution({
                             logger(
                                 `Checking auto consign rules for asset: ${asset._id.toString()}`
                             );
-                            // check if status is pending
-                            if (change.fullDocument.status === 'pending') {
-                                if (!creator?.vault) {
-                                    logger(
-                                        `Creator vault is missing for ${creator._id.toString()}`
-                                    );
-                                    return;
-                                }
-
-                                // check if creator has field isBlocked
-                                if ('isBlocked' in creator.vault) {
-                                    // check if creator is not blocked
-                                    if (!creator.vault.isBlocked) {
-                                        const countAssetConsigned =
-                                            await countAssetConsignedByCreator({
-                                                creatorId:
-                                                    creator._id.toString(),
-                                            });
-
-                                        // check if creator has more than 1 asset consigned
-                                        if (countAssetConsigned >= 1) {
-                                            await sendToExchangeAutoConsign(
-                                                JSON.stringify({
-                                                    assetId:
-                                                        asset._id.toString(),
-                                                })
-                                            );
-
-                                            await updateRequestConsign({
-                                                id: change.fullDocument._id,
-                                                requestConsign: {
-                                                    status: 'queue',
-                                                },
-                                            });
-                                        } else {
-                                            logger(
-                                                `Creator ${creator._id.toString()} not have more than 1 asset consigned`
-                                            );
-                                        }
-                                    }
-                                }
-                            }
+                            await sendToConsign({
+                                creator,
+                                asset,
+                                requestConsignId:
+                                    change.fullDocument._id.toString(),
+                            });
                         }
 
                         // OPERATION TYPE: DELETE REQUEST CONSIGN
