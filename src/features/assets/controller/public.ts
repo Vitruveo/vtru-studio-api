@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { ObjectId, Sort } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -12,6 +12,11 @@ import {
     ResponseAssetsPaginated,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
+import {
+    queryByPrice,
+    queryByTitleOrDescOrCreator,
+    querySort,
+} from '../utils/queries';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -29,7 +34,6 @@ export const conditionsToShowAssets = {
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
-// TODO: ALTERAR COMPLETAMENTE FORMA DE BUSCA DE ASSETS E FILTRAR
 route.get('/search', async (req, res) => {
     try {
         const {
@@ -46,7 +50,6 @@ route.get('/search', async (req, res) => {
 
         const pageNumber = Number(page);
         const limitNumber = Number(limit);
-        const showAdditionalAssetsValue = showAdditionalAssets === 'true';
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -62,29 +65,27 @@ route.get('/search', async (req, res) => {
             ...conditionsToShowAssets,
         };
 
-        if (showAdditionalAssetsValue) {
+        if (showAdditionalAssets === 'true') {
             delete parsedQuery['consignArtwork.status'];
-
-            if (parsedQuery.$or) {
-                parsedQuery.$or.push(
-                    {
-                        'consignArtwork.status': 'active',
-                    },
-                    {
-                        'consignArtwork.status': 'blocked',
-                    }
-                );
-            } else {
-                parsedQuery.$or = [
-                    {
-                        'consignArtwork.status': 'active',
-                    },
-                    {
-                        'consignArtwork.status': 'blocked',
-                    },
-                ];
-            }
+            const statusCondition = [
+                { 'consignArtwork.status': 'active' },
+                { 'consignArtwork.status': 'blocked' },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(statusCondition)
+                : statusCondition;
         }
+
+        const addSearchByTitleDescCreator = (param: string) => {
+            const searchByTitleDescCreator = {
+                $or: queryByTitleOrDescOrCreator({ name: param }),
+            };
+            if (parsedQuery.$and) {
+                parsedQuery.$and.push(searchByTitleDescCreator);
+            } else {
+                parsedQuery.$and = [searchByTitleDescCreator];
+            }
+        };
 
         if (
             maxPrice &&
@@ -94,176 +95,46 @@ route.get('/search', async (req, res) => {
         ) {
             parsedQuery.$and = [
                 {
-                    $or: [
-                        {
-                            'licenses.nft.elastic.editionPrice': {
-                                $gte: Number(minPrice),
-                                $lte: Number(maxPrice),
-                            },
-                            'licenses.nft.editionOption': 'elastic',
-                        },
-                        {
-                            'licenses.nft.single.editionPrice': {
-                                $gte: Number(minPrice),
-                                $lte: Number(maxPrice),
-                            },
-                            'licenses.nft.editionOption': 'single',
-                        },
-                        {
-                            'licenses.nft.unlimited.editionPrice': {
-                                $gte: Number(minPrice),
-                                $lte: Number(maxPrice),
-                            },
-                            'licenses.nft.editionOption': 'unlimited',
-                        },
-                    ],
+                    $or: queryByPrice({
+                        min: Number(minPrice),
+                        max: Number(maxPrice),
+                    }),
                 },
             ];
 
-            if (name) {
-                parsedQuery.$and.push({
-                    $or: [
-                        {
-                            'assetMetadata.context.formData.title': {
-                                $regex: name,
-                                $options: 'i',
-                            },
-                        },
-                        {
-                            'assetMetadata.context.formData.description': {
-                                $regex: name,
-                                $options: 'i',
-                            },
-                        },
-                        {
-                            'assetMetadata.creators.formData': {
-                                $elemMatch: {
-                                    name: {
-                                        $regex: name,
-                                        $options: 'i',
-                                    },
-                                },
-                            },
-                        },
-                    ],
-                });
-            }
+            if (name) addSearchByTitleDescCreator(name);
         } else if (name) {
-            if (parsedQuery.$or) {
-                parsedQuery.$or.push(
-                    {
-                        'assetMetadata.context.formData.title': {
-                            $regex: name,
-                            $options: 'i',
-                        },
-                    },
-                    {
-                        'assetMetadata.context.formData.description': {
-                            $regex: name,
-                            $options: 'i',
-                        },
-                    },
-                    {
-                        'assetMetadata.creators.formData': {
-                            $elemMatch: {
-                                name: {
-                                    $regex: name,
-                                    $options: 'i',
-                                },
-                            },
-                        },
-                    }
-                );
-            } else {
-                parsedQuery.$or = [
-                    {
-                        'assetMetadata.context.formData.title': {
-                            $regex: name,
-                            $options: 'i',
-                        },
-                    },
-                    {
-                        'assetMetadata.context.formData.description': {
-                            $regex: name,
-                            $options: 'i',
-                        },
-                    },
-                    {
-                        'assetMetadata.creators.formData': {
-                            $elemMatch: {
-                                name: {
-                                    $regex: name,
-                                    $options: 'i',
-                                },
-                            },
-                        },
-                    },
-                ];
-            }
+            addSearchByTitleDescCreator(name);
         }
-
-        let sortQuery: Sort = {};
-
-        switch (sort?.order) {
-            case 'priceHighToLow':
-                sortQuery = {
-                    'licenses.nft.single.editionPrice': -1,
-                };
-                break;
-            case 'priceLowToHigh':
-                sortQuery = {
-                    'licenses.nft.single.editionPrice': 1,
-                };
-                break;
-            case 'creatorAZ':
-                sortQuery = {
-                    insensitiveCreator: 1,
-                };
-                break;
-            case 'creatorZA':
-                sortQuery = {
-                    insensitiveCreator: -1,
-                };
-                break;
-            case 'consignNewToOld':
-                sortQuery = { 'consignArtwork.listing': -1 };
-                break;
-            case 'consignOldToNew':
-                sortQuery = { 'consignArtwork.listing': 1 };
-                break;
-            default:
-                sortQuery = {
-                    'consignArtwork.status': 1,
-                    'licenses.nft.availableLicenses': -1,
-                    'consignArtwork.listing': -1,
-                };
-                break;
-        }
-        sortQuery =
-            sort?.isIncludeSold === 'true'
-                ? sortQuery
-                : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
 
         let filterColors: number[][] = [];
-
         if (query['assetMetadata.context.formData.colors']?.$in) {
             const colors = query['assetMetadata.context.formData.colors']
                 .$in as string[][];
-
             filterColors = colors.map((color) =>
                 color.map((rgb) => parseInt(rgb, 10))
             );
-
             delete parsedQuery['assetMetadata.context.formData.colors'];
+        }
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: creator, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
         }
 
         const maxAssetPrice = await model.findMaxPrice();
 
-        if (parsedQuery?._id?.$in) {
+        if (parsedQuery?._id?.$in)
             parsedQuery._id.$in = parsedQuery._id.$in.map(
                 (id: string) => new ObjectId(id)
             );
-        }
 
         const result = await model.countAssets({
             query: parsedQuery,
@@ -274,6 +145,8 @@ route.get('/search', async (req, res) => {
         const total = result[0]?.count ?? 0;
 
         const totalPage = Math.ceil(total / limitNumber);
+
+        const sortQuery = querySort(sort);
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
@@ -336,7 +209,8 @@ route.get('/carousel', async (req, res) => {
 
 route.get('/collections', async (req, res) => {
     try {
-        const { name } = req.query as unknown as QueryCollectionParams;
+        const { name, showAdditionalAssets } =
+            req.query as unknown as QueryCollectionParams;
 
         if (name.trim().length < 3) {
             res.status(400).json({
@@ -347,7 +221,10 @@ route.get('/collections', async (req, res) => {
             return;
         }
 
-        const collections = await model.findAssetsCollections({ name });
+        const collections = await model.findAssetsCollections({
+            name,
+            showAdditionalAssets,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.collections.success',
@@ -368,7 +245,8 @@ route.get('/collections', async (req, res) => {
 
 route.get('/subjects', async (req, res) => {
     try {
-        const { name } = req.query as unknown as QueryCollectionParams;
+        const { name, showAdditionalAssets } =
+            req.query as unknown as QueryCollectionParams;
 
         if (name.trim().length < 3) {
             res.status(400).json({
@@ -379,7 +257,10 @@ route.get('/subjects', async (req, res) => {
             return;
         }
 
-        const subjects = await model.findAssetsSubjects({ name });
+        const subjects = await model.findAssetsSubjects({
+            name,
+            showAdditionalAssets,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.subjects.success',
@@ -400,7 +281,8 @@ route.get('/subjects', async (req, res) => {
 
 route.get('/creators', async (req, res) => {
     try {
-        const { name } = req.query as unknown as QueryCollectionParams;
+        const { name, showAdditionalAssets } =
+            req.query as unknown as QueryCollectionParams;
 
         if (name.trim().length < 3) {
             res.status(400).json({
@@ -411,7 +293,10 @@ route.get('/creators', async (req, res) => {
             return;
         }
 
-        const creators = await model.findAssetsByCreatorName({ name });
+        const creators = await model.findAssetsByCreatorName({
+            name,
+            showAdditionalAssets,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.creators.success',
