@@ -495,7 +495,9 @@ export const findAssetsByCreatorId = async ({ id }: FindAssetsByIdParams) =>
                             then: {
                                 $size: {
                                     $filter: {
-                                        input: '$request.comments',
+                                        input: {
+                                            $ifNull: ['$request.comments', []],
+                                        },
                                         as: 'item',
                                         cond: {
                                             $eq: ['$$item.isPublic', true],
