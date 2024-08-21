@@ -29,6 +29,8 @@ route.post('/', async (req, res) => {
             transactionHash: nanoid(),
             vaultAddress: '',
             createdAt: new Date(),
+            isBlocked: false,
+            isTrusted: false,
         };
 
         await model.updateCreator({

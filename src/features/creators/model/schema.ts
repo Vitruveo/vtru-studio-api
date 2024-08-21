@@ -70,11 +70,15 @@ export const CreatorSchema = z.object({
             transactionHash: z.string().nullable().default(null),
             vaultAddress: z.string().nullable().default(null),
             createdAt: z.date().nullable().default(null),
+            isBlocked: z.boolean().default(false),
+            isTrusted: z.boolean().default(false),
         })
         .default({
             transactionHash: null,
             vaultAddress: null,
             createdAt: null,
+            isBlocked: false,
+            isTrusted: false,
         }),
     videoGallery: z
         .array(
