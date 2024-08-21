@@ -19,6 +19,8 @@ import type {
     FindAssetsCarouselParams,
     CountAssetByCreatorIdWithConsignParams,
     UpdateManyAssetsNudityParams,
+    FindAssetsGroupPaginatedParams,
+    CountAssetsByCreatorIdParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -30,6 +32,66 @@ const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 export const createAssets = async ({ asset }: CreateAssetsParams) => {
     const result = await assets().insertOne(asset);
     return result;
+};
+
+export const countAssetsGroup = async ({
+    query,
+}: CountAssetsByCreatorIdParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: '$framework.createdBy',
+                    count: {
+                        $sum: 1,
+                    },
+                },
+            },
+        ])
+        .toArray();
+
+export const findAssetGroupPaginated = ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindAssetsGroupPaginatedParams) => {
+    const aggregate = [
+        { $match: query },
+        {
+            $group: {
+                _id: '$framework.createdBy',
+                count: {
+                    $sum: 1,
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'assets',
+                let: { creatorId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ['$framework.createdBy', '$$creatorId'],
+                            },
+                        },
+                    },
+                    // { $sort: sort },
+                    { $limit: 1 },
+                ],
+                as: 'asset',
+            },
+        },
+        { $unwind: { path: '$asset' } },
+        { $sort: sort },
+        { $skip: skip },
+        { $limit: limit },
+    ];
+
+    return assets().aggregate(aggregate).toArray();
 };
 
 export const findAssetsPaginated = ({

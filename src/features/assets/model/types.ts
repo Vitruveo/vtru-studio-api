@@ -13,6 +13,16 @@ export interface FindAssetsParams {
     limit?: number;
 }
 
+export interface FindAssetsGroupPaginatedParams {
+    query: {
+        [key: string]: unknown;
+        _id?: { $in: string[] | ObjectId[] };
+    };
+    skip: number;
+    limit: number;
+    sort: Sort;
+}
+
 export interface FindAssetsPaginatedParams {
     query: {
         [key: string]: unknown;
@@ -42,6 +52,9 @@ export interface FindAssetsSubjectsParams {
     name: string;
     showAdditionalAssets: string;
 }
+
+export interface CountAssetsByCreatorIdParams
+    extends Pick<FindAssetsPaginatedParams, 'query'> {}
 export interface CountAssetsParams
     extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
 

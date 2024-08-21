@@ -16,6 +16,7 @@ import {
     queryByPrice,
     queryByTitleOrDescOrCreator,
     querySort,
+    querySortGroupByCreator,
 } from '../utils/queries';
 
 // this is used to filter assets that are not ready to be shown
@@ -33,6 +34,91 @@ export const conditionsToShowAssets = {
 
 const logger = debug('features:assets:controller:public');
 const route = Router();
+
+route.get('/groupByCreator', async (req, res) => {
+    try {
+        const {
+            query,
+            page = 1,
+            limit = 10,
+            name,
+            sort,
+        } = req.query as unknown as {
+            query: Record<string, string>;
+            page: string;
+            limit: string;
+            name: string;
+            sort: QueryPaginatedParams['sort'];
+        };
+
+        const pageNumber = Number(page);
+        const limitNumber = Number(limit);
+
+        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.search.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const parsedQuery: Record<string, unknown> = {
+            ...query,
+            ...conditionsToShowAssets,
+        };
+
+        const addSearchByTitleDescCreator = (param: string) => {
+            const searchByTitleDescCreator = {
+                $or: queryByTitleOrDescOrCreator({ name: param }),
+            };
+            if ('$and' in parsedQuery) {
+                if (Array.isArray(parsedQuery.$and)) {
+                    parsedQuery.$and.push(searchByTitleDescCreator);
+                }
+            } else {
+                parsedQuery.$and = [searchByTitleDescCreator];
+            }
+        };
+
+        if (name) addSearchByTitleDescCreator(name);
+
+        const sortQuery = querySortGroupByCreator(sort);
+
+        const assets = await model.findAssetGroupPaginated({
+            query: parsedQuery,
+            limit: limitNumber,
+            skip: (pageNumber - 1) * limitNumber,
+            sort: sortQuery,
+        });
+
+        const total = await model.countAssetsGroup({ query: parsedQuery });
+
+        const totalPage = Math.ceil(total.length / limitNumber);
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.search.success',
+            message: 'Reader search success',
+            transaction: nanoid(),
+            data: {
+                data: assets,
+                page: pageNumber,
+                totalPage,
+                total: total.length,
+                limit: limitNumber,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader search asset failed: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.search.failed',
+            message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.get('/search', async (req, res) => {
     try {
