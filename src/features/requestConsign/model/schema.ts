@@ -12,6 +12,7 @@ export const StatusSchema = z
         'running',
         'queue',
         'draft',
+        'canceled',
     ])
     .default('pending');
 
