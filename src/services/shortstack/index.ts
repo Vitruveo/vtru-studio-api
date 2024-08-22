@@ -103,7 +103,7 @@ export async function generateVideo({
         throw new Error('API Key is required');
     }
 
-    if (stackImages.length <= 15) {
+    if (stackImages.length <= 16) {
         const soundtrack = new Shotstack.Soundtrack();
 
         soundtrack
@@ -290,6 +290,6 @@ export async function generateVideo({
             }
         }
     } else {
-        throw new Error('Maximum 10 images');
+        throw new Error('Maximum 16 images');
     }
 }
