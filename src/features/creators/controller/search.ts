@@ -7,6 +7,7 @@ import { model } from '..';
 import { APIResponse } from '../../../services';
 import { createVideoGalleryHTML } from '../utils/createVideoGalleryHTML';
 import { GENERAL_STORAGE_URL, SEARCH_URL } from '../../../constants';
+import { Video } from '../model';
 
 const logger = debug('features:creators:controller:search');
 const route = Router();
@@ -71,6 +72,9 @@ route.get('/grid', async (req, res) => {
 route.get('/:id/html', async (req, res) => {
     try {
         const creator = await model.findCreatorById({ id: req.params.id });
+        const { timestamp } = req.query as {
+            timestamp: string;
+        };
 
         if (!creator) {
             res.status(404).json({
@@ -92,13 +96,27 @@ route.get('/:id/html', async (req, res) => {
             return;
         }
 
-        const lastGeneratedVideo = gallery[gallery.length - 1];
+        let video: Video[0] | null = null;
+
+        if (timestamp) {
+            const hasVideo = await model.findCreatorAssetsByVideoId({
+                id: timestamp,
+            });
+
+            if (!hasVideo || !hasVideo?.search?.video) {
+                video = gallery[gallery.length - 1];
+            } else {
+                video = hasVideo?.search?.video[0];
+            }
+        } else {
+            video = gallery[gallery.length - 1];
+        }
 
         const html = createVideoGalleryHTML({
-            id: lastGeneratedVideo.id,
-            video: lastGeneratedVideo.url,
-            thumbnail: lastGeneratedVideo.thumbnail ?? '',
-            title: lastGeneratedVideo.title,
+            id: video.id,
+            video: video.url,
+            thumbnail: video.thumbnail ?? '',
+            title: video.title,
         });
 
         res.send(html);
