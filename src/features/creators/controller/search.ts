@@ -98,10 +98,14 @@ route.get('/:id/html', async (req, res) => {
 
         let video: Video[0] | null = null;
 
+        logger('timestamp: %s', timestamp);
+
         if (timestamp) {
             const hasVideo = await model.findCreatorAssetsByVideoId({
                 id: timestamp,
             });
+
+            logger('hasVideo: %O', JSON.stringify(hasVideo, null, 2));
 
             if (!hasVideo || !hasVideo?.search?.video) {
                 video = gallery[gallery.length - 1];
