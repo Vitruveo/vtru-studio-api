@@ -3,6 +3,27 @@ import { ObjectId } from '../../../services';
 
 export const COLLECTION_CREATORS = 'creators';
 
+export const VideoSchema = z.array(
+    z.object({
+        id: z.string(),
+        url: z.string(),
+        thumbnail: z.string().nullable(),
+        title: z.string(),
+        sound: z.string(),
+        fees: z.number(),
+        assets: z.array(z.string()),
+    })
+);
+
+export const GridSchema = z.array(
+    z.object({
+        id: z.string(),
+        path: z.string(),
+        assets: z.array(z.string()).default([]),
+        createdAt: z.date().default(new Date()),
+    })
+);
+
 export const CreatorSchema = z.object({
     creatorRefId: z.number().nullable().default(null),
     name: z.string().default(''),
@@ -96,28 +117,13 @@ export const CreatorSchema = z.object({
         .default({}),
     search: z
         .object({
-            grid: z.array(
-                z.object({
-                    id: z.string(),
-                    path: z.string(),
-                    assets: z.array(z.string()).default([]),
-                    createdAt: z.date().default(new Date()),
-                })
-            ),
-            video: z.array(
-                z.object({
-                    id: z.string(),
-                    url: z.string(),
-                    thumbnail: z.string().nullable(),
-                    title: z.string(),
-                    sound: z.string(),
-                    fees: z.number(),
-                    assets: z.array(z.string()),
-                })
-            ),
+            grid: GridSchema,
+            video: VideoSchema,
         })
         .optional(),
 });
 
 export type Creator = z.infer<typeof CreatorSchema>;
+export type Video = z.infer<typeof VideoSchema>;
+export type Grid = z.infer<typeof GridSchema>;
 export type CreatorDocument = Creator & { _id: string | ObjectId };
