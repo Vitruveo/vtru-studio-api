@@ -59,3 +59,7 @@ export interface CarouselResponse {
         username: string;
     };
 }
+
+export interface QueryScopeNftParams {
+    sort: string;
+}
