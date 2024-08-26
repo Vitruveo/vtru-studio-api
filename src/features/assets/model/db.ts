@@ -62,9 +62,7 @@ export const findAssetGroupPaginated = ({
         {
             $group: {
                 _id: '$framework.createdBy',
-                count: {
-                    $sum: 1,
-                },
+                count: { $sum: 1 },
             },
         },
         {
@@ -79,13 +77,46 @@ export const findAssetGroupPaginated = ({
                             },
                         },
                     },
-                    // { $sort: sort },
-                    { $limit: 1 },
+                    {
+                        $project: {
+                            paths: {
+                                $cond: {
+                                    if: {
+                                        $isArray: '$formats.preview.path',
+                                    },
+                                    then: '$formats.preview.path',
+                                    else: {
+                                        $ifNull: [
+                                            ['$formats.preview.path'],
+                                            [],
+                                        ],
+                                    },
+                                },
+                            },
+                            assetData: '$$ROOT',
+                        },
+                    },
                 ],
-                as: 'asset',
+                as: 'assetsWithPaths',
             },
         },
-        { $unwind: { path: '$asset' } },
+        {
+            $addFields: {
+                paths: {
+                    $reduce: {
+                        input: '$assetsWithPaths',
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this.paths'],
+                        },
+                    },
+                },
+                asset: {
+                    $first: '$assetsWithPaths.assetData',
+                },
+            },
+        },
+        { $project: { assetsWithPaths: 0 } },
         { $sort: sort },
         { $skip: skip },
         { $limit: limit },
