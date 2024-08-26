@@ -75,6 +75,7 @@ export const findAssetGroupPaginated = ({
                             $expr: {
                                 $eq: ['$framework.createdBy', '$$creatorId'],
                             },
+                            ...query
                         },
                     },
                     {
