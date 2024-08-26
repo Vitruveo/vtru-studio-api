@@ -104,6 +104,7 @@ route.post(
                 metadata = {},
                 assets = [],
                 fees,
+                title,
             } = req.body as z.infer<typeof schemaValidationForRequestUpload>;
             const date = Date.now().toString();
 
@@ -120,7 +121,13 @@ route.post(
 
             await model.updateCreatorSearch({
                 id,
-                grid: { id: date, path: `${id}/grid/${date}`, assets, fees },
+                grid: {
+                    id: date,
+                    path: `${id}/grid/${date}`,
+                    assets,
+                    fees,
+                    title,
+                },
             });
 
             res.status(200).json({

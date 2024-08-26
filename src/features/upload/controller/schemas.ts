@@ -13,4 +13,5 @@ export const schemaValidationForRequestUpload = z.object({
     assets: z.array(z.string()),
     fees: z.number(),
     metadata: z.object({}).optional(),
+    title: z.string(),
 });
