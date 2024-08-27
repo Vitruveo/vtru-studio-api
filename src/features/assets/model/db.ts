@@ -79,6 +79,13 @@ export const findAssetGroupPaginated = ({
                         },
                     },
                     {
+                        $addFields: {
+                            'licenses.nft.availableLicenses': {
+                                $ifNull: ['$licenses.nft.availableLicenses', 1],
+                            },
+                        },
+                    },
+                    {
                         $project: {
                             paths: {
                                 $cond: {
@@ -113,7 +120,33 @@ export const findAssetGroupPaginated = ({
                     },
                 },
                 asset: {
-                    $first: '$assetsWithPaths.assetData',
+                    $let: {
+                        vars: {
+                            filteredAssets: {
+                                $filter: {
+                                    input: '$assetsWithPaths.assetData',
+                                    as: 'asset',
+                                    cond: {
+                                        $not: [
+                                            {
+                                                $ifNull: [
+                                                    '$$asset.mintExplorer',
+                                                    false,
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                        in: {
+                            $cond: {
+                                if: { $gt: [{ $size: '$$filteredAssets' }, 0] },
+                                then: { $last: '$$filteredAssets' },
+                                else: { $first: '$assetsWithPaths.assetData' },
+                            },
+                        },
+                    },
                 },
             },
         },
