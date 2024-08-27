@@ -94,7 +94,6 @@ export const querySort = (sort: QuerySortParams) => {
         default:
             sortQuery = {
                 'consignArtwork.status': 1,
-                'licenses.nft.availableLicenses': -1,
                 'consignArtwork.listing': -1,
             };
             break;
@@ -140,7 +139,6 @@ export const querySortGroupByCreator = (sort: QuerySortParams) => {
         default:
             sortQuery = {
                 'asset.consignArtwork.status': 1,
-                'asset.licenses.nft.availableLicenses': -1,
                 'asset.consignArtwork.listing': -1,
             };
             break;
