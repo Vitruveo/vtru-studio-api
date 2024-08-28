@@ -10,15 +10,19 @@ import {
     validateBodyForUpload,
     validateBodyForUploadWithFile,
 } from './rules';
-import { ASSET_TEMP_DIR, GENERAL_STORAGE_NAME } from '../../../constants';
+import {
+    ASSET_STORAGE_URL,
+    ASSET_TEMP_DIR,
+    GENERAL_STORAGE_NAME,
+} from '../../../constants';
 import { APIResponse } from '../../../services';
 import { download } from '../../../services/stream';
 import { upload } from '../../../services/aws';
 import * as multer from '../../../services/multer';
 import { checkAuth } from '../../users/middleware';
-import { sendToExchangeCreators } from '../../creators/upload';
 import { model } from '../../creators';
 import { schemaValidationForRequestUpload } from './schemas';
+import { sendToExchangeGrid } from '../../../services/grid';
 
 const logger = debug('features:upload:controller');
 const route = Router();
@@ -94,28 +98,31 @@ route.post(
 );
 
 route.post(
-    '/request',
+    '/grid',
     checkAuth,
     validateBodyForRequestUpload,
     async (req, res) => {
         try {
             const { id } = req.auth;
             const {
-                metadata = {},
+                assetsId,
                 assets = [],
                 fees,
                 title,
+                size,
             } = req.body as z.infer<typeof schemaValidationForRequestUpload>;
             const date = Date.now().toString();
 
-            await sendToExchangeCreators(
+            const path = `${id}/creators/${date}`;
+
+            await sendToExchangeGrid(
                 JSON.stringify({
+                    size,
+                    pathName: path,
+                    assets: assets.map(
+                        (item) => `${ASSET_STORAGE_URL}/${item}`
+                    ),
                     creatorId: id,
-                    origin: 'profile',
-                    method: 'PUT',
-                    transactionId: nanoid(),
-                    path: `${id}/grid/${date}`,
-                    metadata,
                 })
             );
 
@@ -123,8 +130,8 @@ route.post(
                 id,
                 grid: {
                     id: date,
-                    path: `${id}/grid/${date}`,
-                    assets,
+                    path,
+                    assets: assetsId,
                     fees,
                     title,
                 },
