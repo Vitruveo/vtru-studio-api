@@ -635,6 +635,7 @@ export const findLastSoldAssets = () =>
                 $match: {
                     mintExplorer: { $exists: true },
                     'assetMetadata.taxonomy.formData.nudity': 'no',
+                    'consignArtwork.status': 'active',
                 },
             },
             { $sort: { 'mintExplorer.createdAt': -1 } },
