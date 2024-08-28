@@ -23,6 +23,7 @@ import { checkAuth } from '../../users/middleware';
 import { model } from '../../creators';
 import { schemaValidationForRequestUpload } from './schemas';
 import { sendToExchangeGrid } from '../../../services/grid';
+import { videoExtension } from '../../assets/utils/videoExtensions';
 
 const logger = debug('features:upload:controller');
 const route = Router();
@@ -119,12 +120,18 @@ route.post(
                 JSON.stringify({
                     size,
                     pathName: path,
-                    assets: assets.map((item) =>
-                        `${ASSET_STORAGE_URL}/${item}`.replace(
-                            /\.(\w+)$/,
-                            '_thumb.jpg'
-                        )
-                    ),
+                    assets: assets.map((item) => {
+                        const isVideo = videoExtension.some((ext) =>
+                            item.endsWith(ext)
+                        );
+
+                        if (isVideo)
+                            return `${ASSET_STORAGE_URL}/${item}`.replace(
+                                /\.(\w+)$/,
+                                '_thumb.jpg'
+                            );
+                        return `${ASSET_STORAGE_URL}/${item}`;
+                    }),
                     creatorId: id,
                 })
             );
