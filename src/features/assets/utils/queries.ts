@@ -121,9 +121,17 @@ export const querySortGroupByCreator = (sort: querySortSearchParams) => {
             sortQuery = { 'asset.consignArtwork.listing': 1 };
             break;
         default:
-            sortQuery = { 'asset.consignArtwork.listing': -1 };
+            sortQuery = {
+                'asset.consignArtwork.status': 1,
+                'asset.consignArtwork.listing': -1,
+            };
             break;
     }
+
+    sortQuery =
+        sort?.isIncludeSold === 'true'
+            ? sortQuery
+            : { 'asset.licenses.nft.availableLicenses': -1, ...sortQuery };
 
     return sortQuery;
 };
