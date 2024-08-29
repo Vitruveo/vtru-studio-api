@@ -72,9 +72,6 @@ route.get('/grid', async (req, res) => {
 route.get('/:id/html', async (req, res) => {
     try {
         const creator = await model.findCreatorById({ id: req.params.id });
-        const { timestamp } = req.query as {
-            timestamp: string;
-        };
 
         if (!creator) {
             res.status(404).json({
@@ -84,6 +81,10 @@ route.get('/:id/html', async (req, res) => {
             } as APIResponse);
             return;
         }
+
+        const { timestamp } = req.query as {
+            timestamp: string;
+        };
 
         const gallery = creator.search?.video;
 
@@ -98,14 +99,10 @@ route.get('/:id/html', async (req, res) => {
 
         let video: Video[0] | null = null;
 
-        logger('timestamp: %s', timestamp);
-
         if (timestamp) {
             const hasVideo = await model.findCreatorAssetsByVideoId({
                 id: timestamp,
             });
-
-            logger('hasVideo: %O', JSON.stringify(hasVideo, null, 2));
 
             if (!hasVideo || !hasVideo?.search?.video) {
                 video = gallery[gallery.length - 1];

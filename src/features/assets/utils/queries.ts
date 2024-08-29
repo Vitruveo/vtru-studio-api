@@ -86,7 +86,6 @@ export const querySortSearch = (sort: querySortSearchParams) => {
         default:
             sortQuery = {
                 'consignArtwork.status': 1,
-                'licenses.nft.availableLicenses': -1,
                 'consignArtwork.listing': -1,
             };
             break;

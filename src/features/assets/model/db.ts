@@ -63,9 +63,7 @@ export const findAssetGroupPaginated = ({
         {
             $group: {
                 _id: '$framework.createdBy',
-                count: {
-                    $sum: 1,
-                },
+                count: { $sum: 1 },
             },
         },
         {
@@ -78,15 +76,82 @@ export const findAssetGroupPaginated = ({
                             $expr: {
                                 $eq: ['$framework.createdBy', '$$creatorId'],
                             },
+                            ...query,
                         },
                     },
-                    // { $sort: sort },
-                    { $limit: 1 },
+                    {
+                        $addFields: {
+                            'licenses.nft.availableLicenses': {
+                                $ifNull: ['$licenses.nft.availableLicenses', 1],
+                            },
+                        },
+                    },
+                    {
+                        $project: {
+                            paths: {
+                                $cond: {
+                                    if: {
+                                        $isArray: '$formats.preview.path',
+                                    },
+                                    then: '$formats.preview.path',
+                                    else: {
+                                        $ifNull: [
+                                            ['$formats.preview.path'],
+                                            [],
+                                        ],
+                                    },
+                                },
+                            },
+                            assetData: '$$ROOT',
+                        },
+                    },
                 ],
-                as: 'asset',
+                as: 'assetsWithPaths',
             },
         },
-        { $unwind: { path: '$asset' } },
+        {
+            $addFields: {
+                paths: {
+                    $reduce: {
+                        input: '$assetsWithPaths',
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this.paths'],
+                        },
+                    },
+                },
+                asset: {
+                    $let: {
+                        vars: {
+                            filteredAssets: {
+                                $filter: {
+                                    input: '$assetsWithPaths.assetData',
+                                    as: 'asset',
+                                    cond: {
+                                        $not: [
+                                            {
+                                                $ifNull: [
+                                                    '$$asset.mintExplorer',
+                                                    false,
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                        in: {
+                            $cond: {
+                                if: { $gt: [{ $size: '$$filteredAssets' }, 0] },
+                                then: { $last: '$$filteredAssets' },
+                                else: { $first: '$assetsWithPaths.assetData' },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        { $project: { assetsWithPaths: 0 } },
         { $sort: sort },
         { $skip: skip },
         { $limit: limit },
@@ -720,6 +785,7 @@ export const findLastSoldAssets = () =>
                 $match: {
                     mintExplorer: { $exists: true },
                     'assetMetadata.taxonomy.formData.nudity': 'no',
+                    'consignArtwork.status': 'active',
                 },
             },
             { $sort: { 'mintExplorer.createdAt': -1 } },

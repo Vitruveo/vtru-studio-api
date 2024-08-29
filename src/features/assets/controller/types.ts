@@ -63,3 +63,11 @@ export interface CarouselResponse {
 export interface QueryScopeNftParams {
     sort: string;
 }
+
+export interface ResponsePaginatedAdmin {
+    data: model.AssetsDocument[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
+}
