@@ -94,7 +94,6 @@ export const querySort = (sort: QuerySortParams) => {
         default:
             sortQuery = {
                 'consignArtwork.status': 1,
-                'licenses.nft.availableLicenses': -1,
                 'consignArtwork.listing': -1,
             };
             break;
@@ -104,5 +103,51 @@ export const querySort = (sort: QuerySortParams) => {
         sort?.isIncludeSold === 'true'
             ? sortQuery
             : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
+    return sortQuery;
+};
+
+export const querySortGroupByCreator = (sort: QuerySortParams) => {
+    let sortQuery: Sort = {};
+
+    switch (sort?.order) {
+        case 'priceHighToLow':
+            sortQuery = {
+                'asset.licenses.nft.single.editionPrice': -1,
+            };
+            break;
+        case 'priceLowToHigh':
+            sortQuery = {
+                'asset.licenses.nft.single.editionPrice': 1,
+            };
+            break;
+        case 'creatorAZ':
+            sortQuery = {
+                'asset.assetMetadata.creators.formData.name': 1,
+            };
+            break;
+        case 'creatorZA':
+            sortQuery = {
+                'asset.assetMetadata.creators.formData.name': -1,
+            };
+            break;
+        case 'consignNewToOld':
+            sortQuery = { 'asset.consignArtwork.listing': -1 };
+            break;
+        case 'consignOldToNew':
+            sortQuery = { 'asset.consignArtwork.listing': 1 };
+            break;
+        default:
+            sortQuery = {
+                'asset.consignArtwork.status': 1,
+                'asset.consignArtwork.listing': -1,
+            };
+            break;
+    }
+
+    sortQuery =
+        sort?.isIncludeSold === 'true'
+            ? sortQuery
+            : { 'asset.licenses.nft.availableLicenses': -1, ...sortQuery };
+
     return sortQuery;
 };

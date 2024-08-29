@@ -59,3 +59,11 @@ export interface CarouselResponse {
         username: string;
     };
 }
+
+export interface ResponsePaginatedAdmin {
+    data: model.AssetsDocument[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
+}

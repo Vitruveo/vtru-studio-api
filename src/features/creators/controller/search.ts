@@ -71,9 +71,6 @@ route.get('/grid', async (req, res) => {
 /* Route to generate twitter video gallery url */
 route.get('/:id/html', async (req, res) => {
     try {
-        const { timestamp } = req.query as {
-            timestamp: string;
-        };
         const creator = await model.findCreatorById({ id: req.params.id });
 
         if (!creator) {
@@ -84,6 +81,10 @@ route.get('/:id/html', async (req, res) => {
             } as APIResponse);
             return;
         }
+
+        const { timestamp } = req.query as {
+            timestamp: string;
+        };
 
         const gallery = creator.search?.video;
 

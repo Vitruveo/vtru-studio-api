@@ -138,7 +138,13 @@ route.post(
 
             await model.updateCreatorSearch({
                 id,
-                grid: { id: date, path, assets: assetsId, fees, title },
+                grid: {
+                    id: date,
+                    path,
+                    assets: assetsId,
+                    fees,
+                    title,
+                },
             });
 
             res.status(200).json({

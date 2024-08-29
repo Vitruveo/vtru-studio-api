@@ -19,6 +19,8 @@ import type {
     FindAssetsCarouselParams,
     CountAssetByCreatorIdWithConsignParams,
     UpdateManyAssetsNudityParams,
+    FindAssetsGroupPaginatedParams,
+    CountAssetsByCreatorIdParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -30,6 +32,131 @@ const assets = () => getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
 export const createAssets = async ({ asset }: CreateAssetsParams) => {
     const result = await assets().insertOne(asset);
     return result;
+};
+
+export const countAssetsGroup = async ({
+    query,
+}: CountAssetsByCreatorIdParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            {
+                $group: {
+                    _id: '$framework.createdBy',
+                    count: {
+                        $sum: 1,
+                    },
+                },
+            },
+        ])
+        .toArray();
+
+export const findAssetGroupPaginated = ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindAssetsGroupPaginatedParams) => {
+    const aggregate = [
+        { $match: query },
+        {
+            $group: {
+                _id: '$framework.createdBy',
+                count: { $sum: 1 },
+            },
+        },
+        {
+            $lookup: {
+                from: 'assets',
+                let: { creatorId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ['$framework.createdBy', '$$creatorId'],
+                            },
+                            ...query,
+                        },
+                    },
+                    {
+                        $addFields: {
+                            'licenses.nft.availableLicenses': {
+                                $ifNull: ['$licenses.nft.availableLicenses', 1],
+                            },
+                        },
+                    },
+                    {
+                        $project: {
+                            paths: {
+                                $cond: {
+                                    if: {
+                                        $isArray: '$formats.preview.path',
+                                    },
+                                    then: '$formats.preview.path',
+                                    else: {
+                                        $ifNull: [
+                                            ['$formats.preview.path'],
+                                            [],
+                                        ],
+                                    },
+                                },
+                            },
+                            assetData: '$$ROOT',
+                        },
+                    },
+                ],
+                as: 'assetsWithPaths',
+            },
+        },
+        {
+            $addFields: {
+                paths: {
+                    $reduce: {
+                        input: '$assetsWithPaths',
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this.paths'],
+                        },
+                    },
+                },
+                asset: {
+                    $let: {
+                        vars: {
+                            filteredAssets: {
+                                $filter: {
+                                    input: '$assetsWithPaths.assetData',
+                                    as: 'asset',
+                                    cond: {
+                                        $not: [
+                                            {
+                                                $ifNull: [
+                                                    '$$asset.mintExplorer',
+                                                    false,
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                        in: {
+                            $cond: {
+                                if: { $gt: [{ $size: '$$filteredAssets' }, 0] },
+                                then: { $last: '$$filteredAssets' },
+                                else: { $first: '$assetsWithPaths.assetData' },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        { $project: { assetsWithPaths: 0 } },
+        { $sort: sort },
+        { $skip: skip },
+        { $limit: limit },
+    ];
+
+    return assets().aggregate(aggregate).toArray();
 };
 
 export const findAssetsPaginated = ({
