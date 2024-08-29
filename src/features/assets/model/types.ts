@@ -109,3 +109,8 @@ export interface FindAssetsCarouselParams {
 export interface CountAssetByCreatorIdWithConsignParams {
     creatorId: string;
 }
+
+export interface findAssetMintedByAddressParams {
+    address: string;
+    sort: Sort;
+}

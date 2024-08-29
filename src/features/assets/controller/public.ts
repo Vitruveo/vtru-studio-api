@@ -15,7 +15,7 @@ import { FindAssetsCarouselParams } from '../model/types';
 import {
     queryByPrice,
     queryByTitleOrDescOrCreator,
-    querySort,
+    querySortSearch,
     querySortGroupByCreator,
 } from '../utils/queries';
 
@@ -232,7 +232,7 @@ route.get('/search', async (req, res) => {
 
         const totalPage = Math.ceil(total / limitNumber);
 
-        const sortQuery = querySort(sort);
+        const sortQuery = querySortSearch(sort);
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,

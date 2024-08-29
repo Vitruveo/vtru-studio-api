@@ -57,33 +57,25 @@ export const queryByTitleOrDescOrCreator = ({
         },
     },
 ];
-export interface QuerySortParams {
+export interface querySortSearchParams {
     order: string;
     isIncludeSold: string;
 }
-export const querySort = (sort: QuerySortParams) => {
+export const querySortSearch = (sort: querySortSearchParams) => {
     let sortQuery: Sort = {};
 
     switch (sort?.order) {
         case 'priceHighToLow':
-            sortQuery = {
-                'licenses.nft.single.editionPrice': -1,
-            };
+            sortQuery = { 'licenses.nft.single.editionPrice': -1 };
             break;
         case 'priceLowToHigh':
-            sortQuery = {
-                'licenses.nft.single.editionPrice': 1,
-            };
+            sortQuery = { 'licenses.nft.single.editionPrice': 1 };
             break;
         case 'creatorAZ':
-            sortQuery = {
-                insensitiveCreator: 1,
-            };
+            sortQuery = { insensitiveCreator: 1 };
             break;
         case 'creatorZA':
-            sortQuery = {
-                insensitiveCreator: -1,
-            };
+            sortQuery = { insensitiveCreator: -1 };
             break;
         case 'consignNewToOld':
             sortQuery = { 'consignArtwork.listing': -1 };
@@ -106,29 +98,21 @@ export const querySort = (sort: QuerySortParams) => {
     return sortQuery;
 };
 
-export const querySortGroupByCreator = (sort: QuerySortParams) => {
+export const querySortGroupByCreator = (sort: querySortSearchParams) => {
     let sortQuery: Sort = {};
 
     switch (sort?.order) {
         case 'priceHighToLow':
-            sortQuery = {
-                'asset.licenses.nft.single.editionPrice': -1,
-            };
+            sortQuery = { 'asset.licenses.nft.single.editionPrice': -1 };
             break;
         case 'priceLowToHigh':
-            sortQuery = {
-                'asset.licenses.nft.single.editionPrice': 1,
-            };
+            sortQuery = { 'asset.licenses.nft.single.editionPrice': 1 };
             break;
         case 'creatorAZ':
-            sortQuery = {
-                'asset.assetMetadata.creators.formData.name': 1,
-            };
+            sortQuery = { 'asset.assetMetadata.creators.formData.name': 1 };
             break;
         case 'creatorZA':
-            sortQuery = {
-                'asset.assetMetadata.creators.formData.name': -1,
-            };
+            sortQuery = { 'asset.assetMetadata.creators.formData.name': -1 };
             break;
         case 'consignNewToOld':
             sortQuery = { 'asset.consignArtwork.listing': -1 };
@@ -148,6 +132,36 @@ export const querySortGroupByCreator = (sort: QuerySortParams) => {
         sort?.isIncludeSold === 'true'
             ? sortQuery
             : { 'asset.licenses.nft.availableLicenses': -1, ...sortQuery };
+
+    return sortQuery;
+};
+
+export const querySortScopeNft = (sort: string) => {
+    let sortQuery: Sort = {};
+
+    switch (sort) {
+        case 'mintNewToOld':
+            sortQuery = { 'mintExplorer.createdAt': -1 };
+            break;
+        case 'mintOldToNew':
+            sortQuery = { 'mintExplorer.createdAt': 1 };
+            break;
+        case 'creatorAZ':
+            sortQuery = { insensitiveCreator: 1 };
+            break;
+        case 'creatorZA':
+            sortQuery = { insensitiveCreator: -1 };
+            break;
+        case 'titleAZ':
+            sortQuery = { insensitiveTitle: 1 };
+            break;
+        case 'titleZA':
+            sortQuery = { insensitiveTitle: -1 };
+            break;
+        default:
+            sortQuery = { 'mintExplorer.createdAt': -1 };
+            break;
+    }
 
     return sortQuery;
 };

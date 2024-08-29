@@ -21,6 +21,7 @@ import type {
     UpdateManyAssetsNudityParams,
     FindAssetsGroupPaginatedParams,
     CountAssetsByCreatorIdParams,
+    findAssetMintedByAddressParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -531,9 +532,8 @@ export const findAssetsById = async ({ id }: FindAssetsByIdParams) => {
 
 export const findAssetMintedByAddress = async ({
     address,
-}: {
-    address: string;
-}) =>
+    sort,
+}: findAssetMintedByAddressParams) =>
     assets()
         .aggregate([
             {
@@ -547,8 +547,31 @@ export const findAssetMintedByAddress = async ({
                     creatorId: {
                         $toObjectId: '$framework.createdBy',
                     },
+                    insensitiveCreator: {
+                        $cond: {
+                            if: {
+                                $isArray:
+                                    '$assetMetadata.creators.formData.name',
+                            },
+                            then: {
+                                $map: {
+                                    input: '$assetMetadata.creators.formData.name',
+                                    as: 'name',
+                                    in: { $toLower: '$$name' },
+                                },
+                            },
+                            else: {
+                                $toLower:
+                                    '$assetMetadata.creators.formData.name',
+                            },
+                        },
+                    },
+                    insensitiveTitle: {
+                        $toLower: '$assetMetadata.context.formData.title',
+                    },
                 },
             },
+            { $sort: sort },
             {
                 $lookup: {
                     from: 'creators',
