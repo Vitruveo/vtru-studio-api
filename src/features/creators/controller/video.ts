@@ -4,7 +4,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 
 import { model } from '..';
-import { GENERAL_STORAGE_URL, SEARCH_URL } from '../../../constants';
+import { SEARCH_URL } from '../../../constants';
 
 const DIST = join(__dirname, '..', '..', '..', '..', 'static');
 const logger = debug('features:creators:controller:video');
@@ -16,7 +16,6 @@ route.get('/:timestamp', async (req, res) => {
 
         const video = await model.findCreatorAssetsByVideoId({ id: timestamp });
         const title = video?.search?.video[0].title;
-        const path = `${video?._id}/creators/${timestamp}`;
         const domain = `${req.protocol}://${req.get('host')}`;
 
         const params = [
@@ -28,7 +27,7 @@ route.get('/:timestamp', async (req, res) => {
             { name: '__META_OG_DESCRIPTION__', value: title },
             {
                 name: '__META_OG_IMAGE__',
-                value: `${GENERAL_STORAGE_URL}/${path}`,
+                value: video?.search?.video[0].thumbnail,
             },
 
             // from twitter
