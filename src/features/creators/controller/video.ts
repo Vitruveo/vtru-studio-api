@@ -19,18 +19,6 @@ route.get('/:timestamp', async (req, res) => {
         const domain = `${req.protocol}://${req.get('host')}`;
 
         const params = [
-            {
-                name: '__META_OG_URL__',
-                value: `${SEARCH_URL}?video=${timestamp}`,
-            },
-            { name: '__META_OG_TITLE__', value: title },
-            { name: '__META_OG_DESCRIPTION__', value: title },
-            {
-                name: '__META_OG_IMAGE__',
-                value: video?.search?.video[0].thumbnail,
-            },
-
-            // from twitter
             { name: '__META_OG_TWITTER_DOMAIN__', value: domain },
             {
                 name: '__META_OG_TWITTER_URL__',
