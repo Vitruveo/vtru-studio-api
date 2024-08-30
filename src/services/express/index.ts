@@ -38,6 +38,18 @@ app.use(
     )
 );
 
+app.use(
+    express.static(
+        path.join(__dirname, '..', '..', '..', 'static', 'grid.html')
+    )
+);
+
+app.use(
+    express.static(
+        path.join(__dirname, '..', '..', '..', 'static', 'video.html')
+    )
+);
+
 app.get('/', (_req, res) => {
     res.status(200).json({
         code: 'echo',
