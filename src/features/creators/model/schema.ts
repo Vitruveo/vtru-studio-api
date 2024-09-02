@@ -19,6 +19,7 @@ export const GridSchema = z.array(
     z.object({
         id: z.string(),
         path: z.string(),
+        title: z.string(),
         assets: z.array(z.string()).default([]),
         createdAt: z.date().default(new Date()),
     })

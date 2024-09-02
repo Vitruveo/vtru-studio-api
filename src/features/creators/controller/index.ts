@@ -5,6 +5,9 @@ import { route as connectRouter } from './connect';
 import { route as avatarRouter } from './avatar';
 import { route as vaultRouter } from './vault';
 import { route as searchRouter } from './search';
+import { route as gridRouter } from './grid';
+import { route as videoRouter } from './video';
+import { route as galleryRouter } from './gallery';
 import {
     route as socialsRouter,
     xCallback,
@@ -15,6 +18,10 @@ import {
 const router = Router();
 
 router.use('/search', searchRouter);
+router.use('/grid', gridRouter);
+router.use('/video', videoRouter);
+router.use('/gallery', galleryRouter);
+
 router.use('/x/callback', xCallback);
 router.use('/facebook/callback', facebookCallback);
 router.use('/google/callback', googleCallback);

@@ -38,13 +38,13 @@ const route = Router();
 route.get('/groupByCreator', async (req, res) => {
     try {
         const {
-            query,
+            query = {} as any,
             page = 1,
             limit = 10,
             name,
             sort,
         } = req.query as unknown as {
-            query: Record<string, string>;
+            query: Record<string, unknown>;
             page: string;
             limit: string;
             name: string;
@@ -84,6 +84,18 @@ route.get('/groupByCreator', async (req, res) => {
         if (name) addSearchByTitleDescCreator(name);
 
         const sortQuery = querySortGroupByCreator(sort);
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: creator, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
 
         const assets = await model.findAssetGroupPaginated({
             query: parsedQuery,
