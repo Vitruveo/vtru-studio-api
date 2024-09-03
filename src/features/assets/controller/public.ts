@@ -96,6 +96,32 @@ route.get('/groupByCreator', async (req, res) => {
             };
             delete parsedQuery['assetMetadata.creators.formData.name'];
         }
+        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
+            const subjects =
+                query['assetMetadata.taxonomy.formData.subject'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
+            if (Array.isArray(parsedQuery.$or)) {
+                subjects.forEach((subject: string) => {
+                    [parsedQuery.$or].push({
+                        'assetMetadata.taxonomy.formData.subject': {
+                            $elemMatch: {
+                                $regex: subject,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$or = subjects.map((subject: string) => ({
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $elemMatch: {
+                            $regex: subject,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
 
         const assets = await model.findAssetGroupPaginated({
             query: parsedQuery,
