@@ -39,7 +39,11 @@ export const findRequestConsignsPaginated = ({
 }: FindRequestConsignsPaginatedParams) =>
     requestConsigns()
         .aggregate([
-            { $match: query },
+            {
+                $match: {
+                    status: query.status,
+                },
+            },
             {
                 $addFields: {
                     asset: { $toObjectId: '$asset' },
@@ -64,6 +68,32 @@ export const findRequestConsignsPaginated = ({
             },
             { $unwind: '$asset' },
             { $unwind: '$creator' },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'asset.assetMetadata.context.formData.title': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.username': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.emails': {
+                                $elemMatch: {
+                                    $regex: query.search ?? '.*',
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
             {
                 $project: {
                     _id: 1,

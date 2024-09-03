@@ -37,10 +37,11 @@ route.get('/', async (req, res) => {
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 10;
         const status = req.query.status as string;
+        const search = req.query.search as string;
 
         const total = await model.countRequestConsigns({ query: { status } });
         const data = await model.findRequestConsignsPaginated({
-            query: { status },
+            query: { status, search },
             limit,
             skip: (page - 1) * limit,
             sort: { when: -1 },
