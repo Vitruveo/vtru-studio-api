@@ -100,9 +100,10 @@ route.get('/groupByCreator', async (req, res) => {
             const subjects =
                 query['assetMetadata.taxonomy.formData.subject'].$in;
             delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
-            if (Array.isArray(parsedQuery.$or)) {
+            if (Array.isArray(parsedQuery.$and)) {
                 subjects.forEach((subject: string) => {
-                    [parsedQuery.$or].push({
+                    // @ts-ignore
+                    parsedQuery.$and.push({
                         'assetMetadata.taxonomy.formData.subject': {
                             $elemMatch: {
                                 $regex: subject,
@@ -112,7 +113,7 @@ route.get('/groupByCreator', async (req, res) => {
                     });
                 });
             } else {
-                parsedQuery.$or = subjects.map((subject: string) => ({
+                parsedQuery.$and = subjects.map((subject: string) => ({
                     'assetMetadata.taxonomy.formData.subject': {
                         $elemMatch: {
                             $regex: subject,
@@ -126,9 +127,10 @@ route.get('/groupByCreator', async (req, res) => {
             const collections =
                 query['assetMetadata.taxonomy.formData.collections'].$in;
             delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
-            if (Array.isArray(parsedQuery.$or)) {
+            if (Array.isArray(parsedQuery.$and)) {
                 collections.forEach((collection: string) => {
-                    [parsedQuery.$or].push({
+                    // @ts-ignore
+                    parsedQuery.$and.push({
                         'assetMetadata.taxonomy.formData.collections': {
                             $elemMatch: {
                                 $regex: collection,
@@ -138,7 +140,7 @@ route.get('/groupByCreator', async (req, res) => {
                     });
                 });
             } else {
-                parsedQuery.$or = collections.map((collection: string) => ({
+                parsedQuery.$and = collections.map((collection: string) => ({
                     'assetMetadata.taxonomy.formData.collections': {
                         $elemMatch: {
                             $regex: collection,
@@ -282,9 +284,10 @@ route.get('/search', async (req, res) => {
             const subjects =
                 query['assetMetadata.taxonomy.formData.subject'].$in;
             delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
-            if (Array.isArray(parsedQuery.$or)) {
+            if (Array.isArray(parsedQuery.$and)) {
                 subjects.forEach((subject: string) => {
-                    [parsedQuery.$or].push({
+                    // @ts-ignore
+                    parsedQuery.$and.push({
                         'assetMetadata.taxonomy.formData.subject': {
                             $elemMatch: {
                                 $regex: subject,
@@ -294,7 +297,7 @@ route.get('/search', async (req, res) => {
                     });
                 });
             } else {
-                parsedQuery.$or = subjects.map((subject: string) => ({
+                parsedQuery.$and = subjects.map((subject: string) => ({
                     'assetMetadata.taxonomy.formData.subject': {
                         $elemMatch: {
                             $regex: subject,
@@ -308,9 +311,10 @@ route.get('/search', async (req, res) => {
             const collections =
                 query['assetMetadata.taxonomy.formData.collections'].$in;
             delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
-            if (Array.isArray(parsedQuery.$or)) {
+            if (Array.isArray(parsedQuery.$and)) {
                 collections.forEach((collection: string) => {
-                    [parsedQuery.$or].push({
+                    // @ts-ignore
+                    parsedQuery.$and.push({
                         'assetMetadata.taxonomy.formData.collections': {
                             $elemMatch: {
                                 $regex: collection,
@@ -320,7 +324,7 @@ route.get('/search', async (req, res) => {
                     });
                 });
             } else {
-                parsedQuery.$or = collections.map((collection: string) => ({
+                parsedQuery.$and = collections.map((collection: string) => ({
                     'assetMetadata.taxonomy.formData.collections': {
                         $elemMatch: {
                             $regex: collection,
