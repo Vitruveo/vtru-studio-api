@@ -4,11 +4,26 @@ export interface CreateRequestConsignParams {
     requestConsign: RequestConsign;
 }
 
+export interface FindRequestConsignsPaginatedParams {
+    query: any;
+    sort: any;
+    skip: number;
+    limit: number;
+}
+
 export interface FindRequestConsignsParams {
     query: any;
     sort: any;
     skip: number;
     limit?: number;
+}
+
+export interface RequestConsignsPaginatedResponse {
+    data: RequestConsign[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
 }
 
 export interface FindRequestConsignByIdParams {

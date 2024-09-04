@@ -369,8 +369,10 @@ export const findAssetsCollections = ({
             {
                 $group: {
                     _id: {
-                        $trim: {
-                            input: '$assetMetadata.taxonomy.formData.collections',
+                        $toLower: {
+                            $trim: {
+                                input: '$assetMetadata.taxonomy.formData.collections',
+                            },
                         },
                     },
                     count: { $sum: 1 },
@@ -407,8 +409,10 @@ export const findAssetsSubjects = ({
             {
                 $group: {
                     _id: {
-                        $trim: {
-                            input: '$assetMetadata.taxonomy.formData.subject',
+                        $toLower: {
+                            $trim: {
+                                input: '$assetMetadata.taxonomy.formData.subject',
+                            },
                         },
                     },
                     count: { $sum: 1 },
