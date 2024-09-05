@@ -120,6 +120,9 @@ export const querySortGroupByCreator = (sort: querySortSearchParams) => {
         case 'consignOldToNew':
             sortQuery = { 'asset.consignArtwork.listing': 1 };
             break;
+        case 'mintNewToOld':
+            sortQuery = { 'asset.mintExplorer.createdAt': -1 };
+            break;
         default:
             sortQuery = {
                 'asset.consignArtwork.status': 1,

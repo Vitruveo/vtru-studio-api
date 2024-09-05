@@ -83,6 +83,10 @@ route.get('/groupByCreator', async (req, res) => {
 
         if (name) addSearchByTitleDescCreator(name);
 
+        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
+            sort.order = 'mintNewToOld';
+        }
+
         const sortQuery = querySortGroupByCreator(sort);
 
         if (query['assetMetadata.creators.formData.name']) {
