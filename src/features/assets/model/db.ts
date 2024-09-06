@@ -158,7 +158,16 @@ export const findAssetGroupPaginated = ({
         {
             $addFields: {
                 creatorId: {
-                    $toObjectId: '$asset.framework.createdBy',
+                    $cond: {
+                        if: {
+                            $regexMatch: {
+                                input: '$framework.createdBy',
+                                regex: /^[0-9a-fA-F]{24}$/,
+                            },
+                        },
+                        then: { $toObjectId: '$asset.framework.createdBy' },
+                        else: null,
+                    },
                 },
             },
         },
@@ -264,7 +273,16 @@ export const findAssetsPaginated = ({
         {
             $addFields: {
                 creatorId: {
-                    $toObjectId: '$framework.createdBy',
+                    $cond: {
+                        if: {
+                            $regexMatch: {
+                                input: '$framework.createdBy',
+                                regex: /^[0-9a-fA-F]{24}$/,
+                            },
+                        },
+                        then: { $toObjectId: '$framework.createdBy' },
+                        else: null,
+                    },
                 },
             },
         },
@@ -615,7 +633,16 @@ export const findAssetMintedByAddress = async ({
             {
                 $addFields: {
                     creatorId: {
-                        $toObjectId: '$framework.createdBy',
+                        $cond: {
+                            if: {
+                                $regexMatch: {
+                                    input: '$framework.createdBy',
+                                    regex: /^[0-9a-fA-F]{24}$/,
+                                },
+                            },
+                            then: { $toObjectId: '$framework.createdBy' },
+                            else: null,
+                        },
                     },
                     insensitiveCreator: {
                         $cond: {
@@ -863,7 +890,16 @@ export const findLastSoldAssets = () =>
             {
                 $addFields: {
                     creatorId: {
-                        $toObjectId: '$framework.createdBy',
+                        $cond: {
+                            if: {
+                                $regexMatch: {
+                                    input: '$framework.createdBy',
+                                    regex: /^[0-9a-fA-F]{24}$/,
+                                },
+                            },
+                            then: { $toObjectId: '$framework.createdBy' },
+                            else: null,
+                        },
                     },
                 },
             },
@@ -902,7 +938,16 @@ export const findAssetsCarousel = ({
                 $addFields: {
                     randomField: { $rand: {} },
                     createdBy: {
-                        $toObjectId: '$framework.createdBy',
+                        $cond: {
+                            if: {
+                                $regexMatch: {
+                                    input: '$framework.createdBy',
+                                    regex: /^[0-9a-fA-F]{24}$/,
+                                },
+                            },
+                            then: { $toObjectId: '$framework.createdBy' },
+                            else: null,
+                        },
                     },
                 },
             },
