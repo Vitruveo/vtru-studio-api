@@ -32,6 +32,38 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
+route.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const data = await model.findRequestConsignsById({ id });
+
+        if (!data) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consign success',
+            transaction: nanoid(),
+            data,
+        } as APIResponse<model.RequestConsign>);
+    } catch (error) {
+        logger('Get request consign failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consign failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page as string, 10) || 1;
