@@ -142,16 +142,51 @@ export const findAssetGroupPaginated = ({
                         },
                         in: {
                             $cond: {
-                                if: { $gt: [{ $size: '$$filteredAssets' }, 0] },
+                                if: {
+                                    $gt: [{ $size: '$$filteredAssets' }, 0],
+                                },
                                 then: { $last: '$$filteredAssets' },
-                                else: { $first: '$assetsWithPaths.assetData' },
+                                else: {
+                                    $first: '$assetsWithPaths.assetData',
+                                },
                             },
                         },
                     },
                 },
             },
         },
-        { $project: { assetsWithPaths: 0 } },
+        {
+            $addFields: {
+                creatorId: {
+                    $toObjectId: '$asset.framework.createdBy',
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'creatorId',
+                foreignField: '_id',
+                as: 'creator',
+            },
+        },
+        {
+            $unwind: {
+                path: '$creator',
+            },
+        },
+        {
+            $addFields: {
+                username: '$creator.username',
+            },
+        },
+        {
+            $project: {
+                assetsWithPaths: 0,
+                creatorId: 0,
+                creator: 0,
+            },
+        },
         { $sort: sort },
         { $skip: skip },
         { $limit: limit },
@@ -224,6 +259,37 @@ export const findAssetsPaginated = ({
         {
             $match: {
                 exists: true,
+            },
+        },
+        {
+            $addFields: {
+                creatorId: {
+                    $toObjectId: '$framework.createdBy',
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'creatorId',
+                foreignField: '_id',
+                as: 'creator',
+            },
+        },
+        {
+            $unwind: {
+                path: '$creator',
+            },
+        },
+        {
+            $addFields: {
+                username: '$creator.username',
+            },
+        },
+        {
+            $project: {
+                creatorId: 0,
+                creator: 0,
             },
         },
         { $sort: sort },
