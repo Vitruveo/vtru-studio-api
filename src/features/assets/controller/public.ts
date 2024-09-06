@@ -356,6 +356,10 @@ route.get('/search', async (req, res) => {
 
         const totalPage = Math.ceil(total / limitNumber);
 
+        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
+            sort.order = 'mintNewToOld';
+        }
+
         const sortQuery = querySortSearch(sort);
 
         const assets = await model.findAssetsPaginated({

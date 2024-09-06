@@ -83,6 +83,9 @@ export const querySortSearch = (sort: querySortSearchParams) => {
         case 'consignOldToNew':
             sortQuery = { 'consignArtwork.listing': 1 };
             break;
+        case 'mintNewToOld':
+            sortQuery = { 'mintExplorer.createdAt': -1 };
+            break;
         default:
             sortQuery = {
                 'consignArtwork.status': 1,
