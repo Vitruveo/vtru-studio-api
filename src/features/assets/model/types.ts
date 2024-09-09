@@ -114,3 +114,7 @@ export interface findAssetMintedByAddressParams {
     address: string;
     sort: Sort;
 }
+
+export interface FindAssetsFromSlideshowParams {
+    query: any;
+}

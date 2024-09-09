@@ -3,6 +3,7 @@ import { ObjectId } from '../../../services';
 
 export const COLLECTION_CREATORS = 'creators';
 
+// TODO: adicionar o createdAt
 export const VideoSchema = z.array(
     z.object({
         id: z.string(),
@@ -15,12 +16,25 @@ export const VideoSchema = z.array(
     })
 );
 
+// TODO: adicionar o fees
 export const GridSchema = z.array(
     z.object({
         id: z.string(),
         path: z.string(),
         title: z.string(),
         assets: z.array(z.string()).default([]),
+        createdAt: z.date().default(new Date()),
+    })
+);
+
+export const SlidehowSchema = z.array(
+    z.object({
+        id: z.string(),
+        assets: z.array(z.string()).default([]),
+        title: z.string(),
+        fees: z.number(),
+        interval: z.number().default(0),
+        display: z.string().default(''),
         createdAt: z.date().default(new Date()),
     })
 );
@@ -120,6 +134,7 @@ export const CreatorSchema = z.object({
         .object({
             grid: GridSchema,
             video: VideoSchema,
+            slideshow: SlidehowSchema,
         })
         .optional(),
 });

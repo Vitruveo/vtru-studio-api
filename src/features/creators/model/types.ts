@@ -32,6 +32,9 @@ export interface FindCreatorAssetsByGridId {
 export interface FindCreatorAssetsByVideoId {
     id: string;
 }
+export interface FindCreatorAssetsBySlideshowId {
+    id: string;
+}
 
 export interface FindOneCreatorParams {
     query: any;

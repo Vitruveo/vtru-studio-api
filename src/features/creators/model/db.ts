@@ -19,6 +19,7 @@ import type {
     UpdateCreatorSearch,
     FindCreatorAssetsByGridId,
     FindCreatorAssetsByVideoId,
+    FindCreatorAssetsBySlideshowId,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -219,6 +220,14 @@ export const findCreatorAssetsByVideoId = async ({
     creators().findOne(
         { 'search.video.id': id },
         { projection: { 'search.video.$': 1 } }
+    );
+
+export const findCreatorAssetsBySlideshowId = async ({
+    id,
+}: FindCreatorAssetsBySlideshowId) =>
+    creators().findOne(
+        { 'search.slideshow.id': id },
+        { projection: { 'search.slideshow.$': 1 } }
     );
 
 export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
