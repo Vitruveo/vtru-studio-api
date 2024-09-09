@@ -48,12 +48,22 @@ route.get('/:timestamp', async (req, res) => {
             },
         });
 
+        const data = {
+            display: slideshow.search.slideshow[0].display,
+            interval: slideshow.search.slideshow[0].interval,
+            assets,
+        };
+
         res.json({
             code: 'vitruveo.studio.api.assets.get.slideshow.success',
             message: 'Get slideshow success',
             transaction: nanoid(),
-            data: assets,
-        } as APIResponse<Document[]>);
+            data,
+        } as APIResponse<{
+            display: string;
+            interval: number;
+            assets: Document[];
+        }>);
     } catch (error) {
         logger('Get slideshow failed: %O', error);
         res.status(500).json({
