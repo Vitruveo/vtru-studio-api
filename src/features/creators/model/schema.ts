@@ -27,7 +27,7 @@ export const GridSchema = z.array(
     })
 );
 
-export const SlidehowSchema = z.array(
+export const SlideshowSchema = z.array(
     z.object({
         id: z.string(),
         assets: z.array(z.string()).default([]),
@@ -134,7 +134,7 @@ export const CreatorSchema = z.object({
         .object({
             grid: GridSchema,
             video: VideoSchema,
-            slideshow: SlidehowSchema,
+            slideshow: SlideshowSchema,
         })
         .optional(),
 });

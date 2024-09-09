@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
-import { Document } from 'mongodb';
+import { Document, ObjectId } from 'mongodb';
 
 import { Router } from 'express';
 
@@ -40,7 +40,11 @@ route.get('/:timestamp', async (req, res) => {
 
         const assets = await model.findAssetsFromSlideshow({
             query: {
-                _id: { $in: slideshow.search.slideshow[0].assets },
+                _id: {
+                    $in: slideshow.search.slideshow[0].assets.map(
+                        (id) => new ObjectId(id)
+                    ),
+                },
             },
         });
 
