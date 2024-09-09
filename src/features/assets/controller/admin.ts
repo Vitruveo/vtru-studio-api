@@ -18,6 +18,14 @@ const defaultSort: Sort = {
     'contractExplorer.createdAt': -1,
 };
 
+export const defaultQuery = {
+    'framework.createdBy': {
+        $exists: true,
+        $ne: null,
+        $nin: [''],
+    },
+};
+
 route.get(
     '/',
     needsToBeOwner({ permissions: ['asset:admin'] }),
@@ -39,8 +47,13 @@ route.get(
 
             if (name) addSearchByTitleDescCreator(name);
 
+            const parsedQuery = {
+                ...query,
+                ...defaultQuery,
+            };
+
             const result = await model.countAssets({
-                query,
+                query: parsedQuery,
                 colors: [],
                 precision: 0.7,
             });
@@ -50,7 +63,7 @@ route.get(
             const assets = await model.findAssetsPaginated({
                 limit,
                 skip: (page - 1) * limit,
-                query,
+                query: parsedQuery,
                 sort: sort || defaultSort,
                 precision: 0.7,
                 colors: [],
