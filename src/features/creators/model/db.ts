@@ -13,13 +13,14 @@ import type {
     AddEmailCreatorParams,
     UpdateAvatarParams,
     CheckWalletExistsParams,
-    AddVideoToGalleryParams,
+    updateCreatorSearchVideoParams,
     UpdateCreatorSocialById,
     RemoveCreatorSocialById,
-    UpdateCreatorSearch,
+    PpdateCreatorSearchGridParams,
     FindCreatorAssetsByGridId,
     FindCreatorAssetsByVideoId,
     FindCreatorAssetsBySlideshowId,
+    UpdateCreatorSearchSlideshowParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -166,7 +167,10 @@ export const checkWalletExists = async ({
     return !!result;
 };
 
-export const addToVideoGallery = ({ id, video }: AddVideoToGalleryParams) =>
+export const updateCreatorSearchVideo = ({
+    id,
+    video,
+}: updateCreatorSearchVideoParams) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
         {
@@ -193,13 +197,32 @@ export const updateCreatorSocialById = ({
         }
     );
 
-export const updateCreatorSearch = ({ id, grid }: UpdateCreatorSearch) =>
+export const updateCreatorSearchGrid = ({
+    id,
+    grid,
+}: PpdateCreatorSearchGridParams) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
         {
             $push: {
                 'search.grid': {
                     ...grid,
+                    createdAt: new Date(),
+                },
+            },
+        }
+    );
+
+export const updateCreatorSearchSlideshow = ({
+    id,
+    slideshow,
+}: UpdateCreatorSearchSlideshowParams) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $push: {
+                'search.slideshow': {
+                    ...slideshow,
                     createdAt: new Date(),
                 },
             },
