@@ -62,3 +62,11 @@ export const schemaValidationForPutAvatar = z.object({
 export const schemaValidationForRequestConnect = z.object({
     wallet: z.string().min(3).max(255),
 });
+
+export const schemaValidationForGenerateStackSlideshow = z.object({
+    assets: z.array(z.string()),
+    title: z.string(),
+    fees: z.number(),
+    display: z.string(),
+    interval: z.number(),
+});

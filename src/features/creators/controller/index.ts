@@ -7,7 +7,8 @@ import { route as vaultRouter } from './vault';
 import { route as searchRouter } from './search';
 import { route as gridRouter } from './grid';
 import { route as videoRouter } from './video';
-import { route as galleryRouter } from './gallery';
+import { route as slideshowRouter } from './slideshow';
+import { route as stackRouter } from './stack';
 import {
     route as socialsRouter,
     xCallback,
@@ -20,13 +21,14 @@ const router = Router();
 router.use('/search', searchRouter);
 router.use('/grid', gridRouter);
 router.use('/video', videoRouter);
-router.use('/gallery', galleryRouter);
+router.use('/slideshow', slideshowRouter);
 
 router.use('/x/callback', xCallback);
 router.use('/facebook/callback', facebookCallback);
 router.use('/google/callback', googleCallback);
 
 router.use('/creators/socials', socialsRouter);
+router.use('/creators/stack', stackRouter);
 router.use('/creators/vault', vaultRouter);
 router.use('/creators/avatar', avatarRouter);
 router.use('/creators/login', loginRouter);

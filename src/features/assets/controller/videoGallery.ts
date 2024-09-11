@@ -115,7 +115,7 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             ? clip.replace(/\.(\w+)$/, '_thumb.jpg')
             : clip;
 
-        await model.addToVideoGallery({
+        await model.updateCreatorSearchVideo({
             id: req.auth.id,
             video: {
                 id: timestamp,

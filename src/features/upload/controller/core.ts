@@ -136,7 +136,7 @@ route.post(
                 })
             );
 
-            await model.updateCreatorSearch({
+            await model.updateCreatorSearchGrid({
                 id,
                 grid: {
                     id: date,

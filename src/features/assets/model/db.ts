@@ -22,6 +22,7 @@ import type {
     FindAssetsGroupPaginatedParams,
     CountAssetsByCreatorIdParams,
     findAssetMintedByAddressParams,
+    FindAssetsFromSlideshowParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -966,3 +967,41 @@ export const countAssetConsignedByCreator = ({
         'consignArtwork.status': 'active',
         'framework.createdBy': creatorId,
     });
+
+export const findAssetsFromSlideshow = ({
+    query,
+}: FindAssetsFromSlideshowParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            {
+                $addFields: {
+                    createdBy: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'createdBy',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $project: {
+                    title: '$assetMetadata.context.formData.title',
+                    image: '$formats.exhibition.path',
+                    orientation: '$assetMetadata.context.formData.orientation',
+                    username: '$creator.username',
+                    avatar: '$creator.profile.avatar',
+                },
+            },
+        ])
+        .toArray();

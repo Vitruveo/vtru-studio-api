@@ -1,6 +1,6 @@
 {
     "name": "vtru-studio-api",
-    "version": "1.0.480",
+    "version": "1.0.484",
     "description": "",
     "main": "index.js",
     "scripts": {
