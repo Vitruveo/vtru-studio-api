@@ -23,6 +23,7 @@ import {
 import {
     validateBodyForCreate,
     validateBodyForDeleteFile,
+    validateBodyForPatchAssetPrice,
     validateBodyForUpdate,
     validateBodyForUpdateManyNudity,
     validateBodyForUpdateManyStatus,
@@ -34,6 +35,7 @@ import { handleExtractColor } from '../../../services/extractColor';
 import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
 import { download } from '../../../services/stream';
 import { schemaAssetUpdateManyNudity } from './schemas';
+import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -439,6 +441,57 @@ route.put(
         }
     }
 );
+
+route.patch('/:id/price', validateBodyForPatchAssetPrice, async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const { price } = req.body as z.infer<
+            typeof schemaValidationForPatchAssetPrice
+        >;
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset.framework.createdBy !== id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notAllowed',
+                message: 'You are not allowed to update price',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const result = await model.updateAssets({
+            id: asset._id,
+            asset: {
+                'licenses.nft.single.editionPrice': price,
+            },
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.price.success',
+            message: 'Update price success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult>);
+    } catch (error) {
+        logger('Update price assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.price.failed',
+            message: `Update price failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.delete(
     '/request/deleteFile/:assetId',
