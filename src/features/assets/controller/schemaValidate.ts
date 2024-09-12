@@ -351,3 +351,7 @@ export const schemaAssetValidation = z.object({
 
     status: z.string(),
 });
+
+export const schemaValidationForPatchAssetPrice = z.object({
+    price: z.number().min(0),
+});

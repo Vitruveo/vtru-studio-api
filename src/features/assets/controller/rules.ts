@@ -25,6 +25,7 @@ import {
     schemaValidationForCreate,
     schemaAssetUpdateManyNudity,
 } from './schemas';
+import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 
 export const validateBodyForCreate = async (
     req: Request,
@@ -336,6 +337,34 @@ export const validateBodyForDeleteFile = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForDeleteFile.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForPatchAssetPrice = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'PATCH') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForPatchAssetPrice.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForPatchAssetPrice.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForPatchAssetPrice.failed',
             message: '',
             transaction: nanoid(),
             args: error,

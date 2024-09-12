@@ -22,3 +22,5 @@ export * from './x';
 export * from './google';
 export * from './search';
 export * from './facebook';
+export * from './slideshow';
+export * from './batch';

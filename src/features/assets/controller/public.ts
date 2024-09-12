@@ -650,4 +650,28 @@ route.get('/video/:id', async (req, res) => {
     }
 });
 
+route.get('/slideshow/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const slideshow = await creatorModel.findCreatorAssetsBySlideshowId({
+            id,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.slideshow.success',
+            message: 'Reader slideshow success',
+            transaction: nanoid(),
+            data: { slideshow },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader get slideshow failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.slideshow.get.failed',
+            message: `Reader get slideshow failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 export { route };
