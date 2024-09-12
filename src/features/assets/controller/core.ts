@@ -1,9 +1,11 @@
 import debug from 'debug';
 import fs from 'fs/promises';
+import axios from 'axios';
 import { z } from 'zod';
 import { join, parse } from 'path';
 import { customAlphabet, nanoid } from 'nanoid';
 import { Request, Router } from 'express';
+
 import * as model from '../model';
 import * as modelRequestConsign from '../../requestConsign/model';
 import { middleware } from '../../users';
@@ -32,7 +34,11 @@ import {
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
 import { handleExtractColor } from '../../../services/extractColor';
-import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
+import {
+    ASSET_STORAGE_URL,
+    ASSET_TEMP_DIR,
+    BATCH_URL,
+} from '../../../constants';
 import { download } from '../../../services/stream';
 import { schemaAssetUpdateManyNudity } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
@@ -442,6 +448,58 @@ route.put(
     }
 );
 
+route.get('/:id/isLicenseEditable', async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset.framework.createdBy !== id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notAllowed',
+                message: 'You are not allowed to update price',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const response = await axios.get(
+            `${BATCH_URL}/assets/isLicenseEditable/${asset._id.toString()}`
+        );
+
+        if (response.status !== 200) {
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.price.failed',
+                message: `Get isLicenseEditable failed: ${response.data}`,
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.price.success',
+            message: 'Get isLicenseEditable success',
+            transaction: nanoid(),
+            data: response.data.data,
+        } as APIResponse);
+    } catch (error) {
+        logger('Get isLicenseEditable assets failed: %O', error);
+        res.status(400).json({
+            code: 'vitruveo.studio.api.admin.assets.price.failed',
+            message: `Get isLicenseEditable failed: ${error}`,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.patch('/:id/price', validateBodyForPatchAssetPrice, async (req, res) => {
     try {
         const { id } = req.auth;
@@ -464,6 +522,23 @@ route.patch('/:id/price', validateBodyForPatchAssetPrice, async (req, res) => {
             res.status(403).json({
                 code: 'vitruveo.studio.api.admin.assets.price.notAllowed',
                 message: 'You are not allowed to update price',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const response = await axios.patch(
+            `${BATCH_URL}/assets/updatedLicensePrice`,
+            {
+                assetKey: asset._id.toString(),
+                editionCents: price,
+            }
+        );
+
+        if (response.status !== 200) {
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.price.failed',
+                message: `Update price failed: ${response.data}`,
                 transaction: nanoid(),
             } as APIResponse);
             return;
