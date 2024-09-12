@@ -531,7 +531,7 @@ route.patch('/:id/price', validateBodyForPatchAssetPrice, async (req, res) => {
             `${BATCH_URL}/assets/updatedLicensePrice`,
             {
                 assetKey: asset._id.toString(),
-                editionCents: price,
+                editionPrice: price,
             }
         );
 
