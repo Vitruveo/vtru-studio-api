@@ -23,6 +23,7 @@ import type {
     CountAssetsByCreatorIdParams,
     findAssetMintedByAddressParams,
     FindAssetsFromSlideshowParams,
+    findAssetsByCreatorIdPaginatedParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -300,6 +301,73 @@ export const findAssetsPaginated = ({
 
     return assets().aggregate(aggregate).toArray();
 };
+
+export const findAssetsByCreatorIdPaginated = ({
+    query,
+    skip,
+    limit,
+}: findAssetsByCreatorIdPaginatedParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'framework.createdBy': query.id,
+                },
+            },
+            {
+                $addFields: {
+                    assetId: { $toString: '$_id' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'requestConsigns',
+                    localField: 'assetId',
+                    foreignField: 'asset',
+                    as: 'request',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$request',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $addFields: {
+                    countComments: {
+                        $cond: {
+                            if: {
+                                $gt: [{ $type: '$request' }, 'missing'],
+                            },
+                            then: {
+                                $size: {
+                                    $filter: {
+                                        input: {
+                                            $ifNull: ['$request.comments', []],
+                                        },
+                                        as: 'item',
+                                        cond: {
+                                            $eq: ['$$item.isPublic', true],
+                                        },
+                                    },
+                                },
+                            },
+                            else: 0,
+                        },
+                    },
+                },
+            },
+            {
+                $project: {
+                    request: 0,
+                    assetId: 0,
+                },
+            },
+            { $skip: skip },
+            { $limit: limit },
+        ])
+        .toArray();
 
 export const findMaxPrice = () =>
     assets()
@@ -678,6 +746,9 @@ export const findAssetMintedByAddress = async ({
             },
         ])
         .toArray();
+
+export const countAssetsByCreator = ({ query }: CountAssetsByCreatorIdParams) =>
+    assets().countDocuments(query);
 
 export const findAssetsByCreatorId = async ({ id }: FindAssetsByIdParams) =>
     assets()

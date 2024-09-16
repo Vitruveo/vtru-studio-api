@@ -42,6 +42,7 @@ import {
 import { download } from '../../../services/stream';
 import { schemaAssetUpdateManyNudity } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
+import { AssetsPaginatedResponse } from '../model/types';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -53,6 +54,13 @@ route.use(middleware.checkAuth);
 route.get('/', async (req, res) => {
     try {
         const creatorId = req.query?.creatorId as string;
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 24;
+
+        const total = await model.countAssetsByCreator({
+            query: { 'framework.createdBy': creatorId || req.auth.id },
+        });
+        const totalPage = Math.ceil(total / limit);
 
         if (creatorId && req.auth.type !== 'user') {
             res.status(403).json({
@@ -63,16 +71,24 @@ route.get('/', async (req, res) => {
             return;
         }
 
-        const assets = await model.findAssetsByCreatorId({
-            id: creatorId || req.auth.id,
+        const data = await model.findAssetsByCreatorIdPaginated({
+            query: { id: creatorId || req.auth.id },
+            skip: (page - 1) * limit,
+            limit,
         });
 
         res.json({
             code: 'vitruveo.studio.api.assets.reader.success',
             message: 'Reader success',
             transaction: nanoid(),
-            data: assets,
-        } as APIResponse<model.AssetsDocument[]>);
+            data: {
+                data,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+        } as APIResponse<AssetsPaginatedResponse>);
     } catch (error) {
         logger('Reader assets failed: %O', error);
         res.status(500).json({

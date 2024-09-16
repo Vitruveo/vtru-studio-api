@@ -35,6 +35,22 @@ export interface FindAssetsPaginatedParams {
     precision: number;
 }
 
+export interface findAssetsByCreatorIdPaginatedParams {
+    query: {
+        id: string;
+    };
+    skip: number;
+    limit: number;
+}
+
+export interface AssetsPaginatedResponse {
+    data: Assets[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
+}
+
 export interface FindAssetsTagsParams {
     query: Record<string, unknown>;
 }
