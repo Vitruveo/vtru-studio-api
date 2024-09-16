@@ -36,9 +36,7 @@ export interface FindAssetsPaginatedParams {
 }
 
 export interface findAssetsByCreatorIdPaginatedParams {
-    query: {
-        id: string;
-    };
+    query: any;
     skip: number;
     limit: number;
 }

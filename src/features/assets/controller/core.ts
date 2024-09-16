@@ -51,15 +51,32 @@ const tempFilename = customAlphabet('1234567890abcdefg', 10);
 
 route.use(middleware.checkAuth);
 
+const statusMapper = {
+    draft: { contractExplorer: { $exists: false } },
+    pending: {
+        'consignArtwork.status': 'pending',
+    },
+    listed: {
+        'consignArtwork.status': 'active',
+        mintExplorer: { $exists: false },
+    },
+    sold: { mintExplorer: { $exists: true } },
+    all: {},
+};
+
 route.get('/', async (req, res) => {
     try {
         const creatorId = req.query?.creatorId as string;
+        const status = req.query.status as keyof typeof statusMapper;
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 24;
 
-        const total = await model.countAssetsByCreator({
-            query: { 'framework.createdBy': creatorId || req.auth.id },
-        });
+        const query = {
+            'framework.createdBy': creatorId || req.auth.id,
+            ...(statusMapper[status] || statusMapper.all),
+        };
+
+        const total = await model.countAssetsByCreator({ query });
         const totalPage = Math.ceil(total / limit);
 
         if (creatorId && req.auth.type !== 'user') {
@@ -72,7 +89,7 @@ route.get('/', async (req, res) => {
         }
 
         const data = await model.findAssetsByCreatorIdPaginated({
-            query: { id: creatorId || req.auth.id },
+            query,
             skip: (page - 1) * limit,
             limit,
         });

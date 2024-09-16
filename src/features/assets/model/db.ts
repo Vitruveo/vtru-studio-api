@@ -309,11 +309,7 @@ export const findAssetsByCreatorIdPaginated = ({
 }: findAssetsByCreatorIdPaginatedParams) =>
     assets()
         .aggregate([
-            {
-                $match: {
-                    'framework.createdBy': query.id,
-                },
-            },
+            { $match: query },
             {
                 $addFields: {
                     assetId: { $toString: '$_id' },
