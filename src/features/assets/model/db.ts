@@ -307,6 +307,7 @@ export const findAssetsByCreatorIdPaginated = ({
     query,
     skip,
     limit,
+    sort,
 }: findAssetsByCreatorIdPaginatedParams) =>
     assets()
         .aggregate([
@@ -363,6 +364,7 @@ export const findAssetsByCreatorIdPaginated = ({
             },
             { $skip: skip },
             { $limit: limit },
+            { $sort: sort },
         ])
         .toArray();
 

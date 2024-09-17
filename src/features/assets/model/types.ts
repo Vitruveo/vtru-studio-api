@@ -39,6 +39,7 @@ export interface findAssetsByCreatorIdPaginatedParams {
     query: any;
     skip: number;
     limit: number;
+    sort: Sort;
 }
 
 export interface AssetsPaginatedResponse {

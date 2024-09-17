@@ -43,6 +43,7 @@ import { download } from '../../../services/stream';
 import { schemaAssetUpdateManyNudity } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 import { AssetsPaginatedResponse } from '../model/types';
+import { querySortStudioCreatorById } from '../utils/queries';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -71,14 +72,12 @@ route.get('/', async (req, res) => {
         const collection = req.query.collection as string;
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 24;
+        const sort = req.query.sort as string;
 
         const query: any = {
             'framework.createdBy': creatorId || req.auth.id,
             ...(statusMapper[status] || statusMapper.all),
         };
-
-        const total = await model.countAssetsByCreator({ query });
-        const totalPage = Math.ceil(total / limit);
 
         if (collection && collection !== 'all') {
             query['assetMetadata.taxonomy.formData.collections'] = {
@@ -95,10 +94,15 @@ route.get('/', async (req, res) => {
             return;
         }
 
+        const sortQuery = querySortStudioCreatorById(sort);
+        const total = await model.countAssetsByCreator({ query });
+        const totalPage = Math.ceil(total / limit);
+
         const data = await model.findAssetsByCreatorIdPaginated({
             query,
             skip: (page - 1) * limit,
             limit,
+            sort: sortQuery,
         });
 
         const collections = await model.findCollectionsByCreatorId({
