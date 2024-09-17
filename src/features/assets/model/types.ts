@@ -1,4 +1,4 @@
-import { Sort } from 'mongodb';
+import { Document, Sort } from 'mongodb';
 import { Assets, AssetsDocument } from './schema';
 import { ObjectId } from '../../../services';
 
@@ -47,6 +47,8 @@ export interface AssetsPaginatedResponse {
     totalPage: number;
     total: number;
     limit: number;
+    collection: string;
+    collections: Document[];
 }
 
 export interface FindAssetsTagsParams {
@@ -55,6 +57,10 @@ export interface FindAssetsTagsParams {
 export interface FindAssetsByCreatorName {
     name: string;
     showAdditionalAssets: string;
+}
+
+export interface FindCollectionsByCreatorParams {
+    creatorId: string;
 }
 
 export interface FindAssetsCollectionsParams {

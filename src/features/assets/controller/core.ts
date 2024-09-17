@@ -68,16 +68,23 @@ route.get('/', async (req, res) => {
     try {
         const creatorId = req.query?.creatorId as string;
         const status = req.query.status as keyof typeof statusMapper;
+        const collection = req.query.collection as string;
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 24;
 
-        const query = {
+        const query: any = {
             'framework.createdBy': creatorId || req.auth.id,
             ...(statusMapper[status] || statusMapper.all),
         };
 
         const total = await model.countAssetsByCreator({ query });
         const totalPage = Math.ceil(total / limit);
+
+        if (collection && collection !== 'all') {
+            query['assetMetadata.taxonomy.formData.collections'] = {
+                $elemMatch: { $eq: collection },
+            };
+        }
 
         if (creatorId && req.auth.type !== 'user') {
             res.status(403).json({
@@ -94,6 +101,10 @@ route.get('/', async (req, res) => {
             limit,
         });
 
+        const collections = await model.findCollectionsByCreatorId({
+            creatorId: creatorId || req.auth.id,
+        });
+
         res.json({
             code: 'vitruveo.studio.api.assets.reader.success',
             message: 'Reader success',
@@ -104,6 +115,8 @@ route.get('/', async (req, res) => {
                 totalPage,
                 total,
                 limit,
+                collection,
+                collections,
             },
         } as APIResponse<AssetsPaginatedResponse>);
     } catch (error) {

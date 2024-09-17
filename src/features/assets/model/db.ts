@@ -24,6 +24,7 @@ import type {
     findAssetMintedByAddressParams,
     FindAssetsFromSlideshowParams,
     findAssetsByCreatorIdPaginatedParams,
+    FindCollectionsByCreatorParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -477,6 +478,37 @@ export const countAssets = async ({
         [{ count?: number }]
     >;
 };
+
+export const findCollectionsByCreatorId = async ({
+    creatorId,
+}: FindCollectionsByCreatorParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'framework.createdBy': creatorId,
+                },
+            },
+            {
+                $unwind: '$assetMetadata.taxonomy.formData.collections',
+            },
+            {
+                $group: {
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.collections',
+                        },
+                    },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
+                },
+            },
+        ])
+        .toArray();
 
 export const findAssetsCollections = ({
     name,
