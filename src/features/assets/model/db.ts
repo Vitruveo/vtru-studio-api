@@ -61,6 +61,7 @@ export const findAssetGroupPaginated = ({
     skip,
     limit,
     sort,
+    grouped,
 }: FindAssetsGroupPaginatedParams) => {
     const aggregate = [
         { $match: query },
@@ -68,6 +69,18 @@ export const findAssetGroupPaginated = ({
             $group: {
                 _id: '$framework.createdBy',
                 count: { $sum: 1 },
+                countWithSold: {
+                    $sum: {
+                        $cond: [{ $ifNull: ['$mintExplorer', false] }, 1, 0],
+                    },
+                },
+            },
+        },
+        {
+            $match: {
+                ...(grouped === 'noSales'
+                    ? { countWithSold: 0 }
+                    : { countWithSold: { $gte: 0 } }),
             },
         },
         {

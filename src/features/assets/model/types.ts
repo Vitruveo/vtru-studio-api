@@ -21,6 +21,7 @@ export interface FindAssetsGroupPaginatedParams {
     skip: number;
     limit: number;
     sort: Sort;
+    grouped: string;
 }
 
 export interface FindAssetsPaginatedParams {

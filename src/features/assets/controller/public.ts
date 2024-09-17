@@ -35,6 +35,8 @@ export const conditionsToShowAssets = {
     },
 };
 
+const groupedOptions = ['all', 'noSales'];
+
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
@@ -158,11 +160,18 @@ route.get('/groupByCreator', async (req, res) => {
             }
         }
 
+        const grouped = groupedOptions.includes(query.grouped as string)
+            ? (query.grouped as string)
+            : 'all';
+
+        delete parsedQuery.grouped;
+
         const assets = await model.findAssetGroupPaginated({
             query: parsedQuery,
             limit: limitNumber,
             skip: (pageNumber - 1) * limitNumber,
             sort: sortQuery,
+            grouped,
         });
 
         const total = await model.countAssetsGroup({ query: parsedQuery });
