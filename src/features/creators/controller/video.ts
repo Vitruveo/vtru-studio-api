@@ -4,9 +4,8 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 
 import { model } from '..';
-import { SEARCH_URL } from '../../../constants';
+import { DIST, SEARCH_URL } from '../../../constants';
 
-const DIST = join(__dirname, '..', '..', '..', '..', 'static');
 const logger = debug('features:creators:controller:video');
 const route = Router();
 

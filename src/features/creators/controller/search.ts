@@ -6,12 +6,11 @@ import { join } from 'path';
 import { model } from '..';
 import { APIResponse } from '../../../services';
 import { createVideoGalleryHTML } from '../utils/createVideoGalleryHTML';
-import { GENERAL_STORAGE_URL, SEARCH_URL } from '../../../constants';
+import { GENERAL_STORAGE_URL, SEARCH_URL, DIST } from '../../../constants';
 import { Video } from '../model';
 
 const logger = debug('features:creators:controller:search');
 const route = Router();
-const DIST = join(__dirname, '..', '..', '..', '..', 'static');
 
 /* Route to generate twitter grid stack url */
 route.get('/grid', async (req, res) => {

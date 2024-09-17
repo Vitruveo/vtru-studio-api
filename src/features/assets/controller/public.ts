@@ -20,6 +20,7 @@ import {
     querySortSearch,
     querySortGroupByCreator,
 } from '../utils/queries';
+import { DIST } from '../../../constants/static';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -34,15 +35,6 @@ export const conditionsToShowAssets = {
     },
 };
 
-const DIST = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    'static',
-    'spotlight.json'
-);
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
@@ -563,7 +555,7 @@ route.get('/lastSold', async (req, res) => {
 
 route.get('/spotlight', async (req, res) => {
     try {
-        const spotlight = await readFile(DIST, 'utf-8');
+        const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
 
         res.json({
             code: 'vitruveo.studio.api.assets.spotlight.success',

@@ -4,9 +4,8 @@ import { join } from 'path';
 import { Router } from 'express';
 
 import { model } from '..';
-import { GENERAL_STORAGE_URL, SEARCH_URL } from '../../../constants';
+import { DIST, GENERAL_STORAGE_URL, SEARCH_URL } from '../../../constants';
 
-const DIST = join(__dirname, '..', '..', '..', '..', 'static');
 const logger = debug('features:creators:controller:grid');
 const route = Router();
 

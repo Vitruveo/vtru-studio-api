@@ -24,3 +24,4 @@ export * from './search';
 export * from './facebook';
 export * from './slideshow';
 export * from './batch';
+export * from './static';
