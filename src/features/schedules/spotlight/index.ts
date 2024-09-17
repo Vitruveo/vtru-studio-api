@@ -2,11 +2,14 @@ import debug from 'debug';
 import { join } from 'path';
 import { writeFile, access } from 'fs/promises';
 import { uniqueExecution } from '@nsfilho/unique';
-import { findAssetsForSpotlight } from '../assets/model';
-import { exitWithDelay, retry } from '../../utils';
-import { DIST } from '../../constants';
+
+import { findAssetsForSpotlight } from '../../assets/model';
+import { exitWithDelay, retry } from '../../../utils';
+import { DIST } from '../../../constants';
+import { start } from './queue';
 
 const logger = debug('features:schedules:updateSpotlight');
+const spotlightPath = join(DIST, 'spotlight.json');
 
 export const updateSpotlight = async () => {
     try {
@@ -20,7 +23,7 @@ export const updateSpotlight = async () => {
         };
         const limit = 50;
         const assets = await findAssetsForSpotlight({ query, limit });
-        await writeFile(join(DIST, 'spotlight.json'), JSON.stringify(assets));
+        await writeFile(spotlightPath, JSON.stringify(assets));
 
         logger('Spotlight data updated successfully');
     } catch (error) {
@@ -33,12 +36,13 @@ uniqueExecution({
     callback: () =>
         retry(
             async () => {
-                const existsLocalFile = await access(DIST)
+                const existsLocalFile = await access(spotlightPath)
                     .then(() => true)
                     .catch(() => false);
                 if (!existsLocalFile) {
-                    await writeFile(DIST, JSON.stringify([]));
+                    await writeFile(spotlightPath, JSON.stringify([]));
                 }
+                await start();
                 await updateSpotlight();
             },
             5,
