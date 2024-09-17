@@ -42,6 +42,8 @@ import {
 import { download } from '../../../services/stream';
 import { schemaAssetUpdateManyNudity } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
+import { AssetsPaginatedResponse } from '../model/types';
+import { querySortStudioCreatorById } from '../utils/queries';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -50,9 +52,38 @@ const tempFilename = customAlphabet('1234567890abcdefg', 10);
 
 route.use(middleware.checkAuth);
 
+const statusMapper = {
+    draft: { contractExplorer: { $exists: false } },
+    pending: {
+        'consignArtwork.status': 'pending',
+    },
+    listed: {
+        'consignArtwork.status': 'active',
+        mintExplorer: { $exists: false },
+    },
+    sold: { mintExplorer: { $exists: true } },
+    all: {},
+};
+
 route.get('/', async (req, res) => {
     try {
         const creatorId = req.query?.creatorId as string;
+        const status = req.query.status as keyof typeof statusMapper;
+        const collection = req.query.collection as string;
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 24;
+        const sort = req.query.sort as string;
+
+        const query: any = {
+            'framework.createdBy': creatorId || req.auth.id,
+            ...(statusMapper[status] || statusMapper.all),
+        };
+
+        if (collection && collection !== 'all') {
+            query['assetMetadata.taxonomy.formData.collections'] = {
+                $elemMatch: { $eq: collection },
+            };
+        }
 
         if (creatorId && req.auth.type !== 'user') {
             res.status(403).json({
@@ -63,16 +94,35 @@ route.get('/', async (req, res) => {
             return;
         }
 
-        const assets = await model.findAssetsByCreatorId({
-            id: creatorId || req.auth.id,
+        const sortQuery = querySortStudioCreatorById(sort);
+        const total = await model.countAssetsByCreator({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const data = await model.findAssetsByCreatorIdPaginated({
+            query,
+            skip: (page - 1) * limit,
+            limit,
+            sort: sortQuery,
+        });
+
+        const collections = await model.findCollectionsByCreatorId({
+            creatorId: creatorId || req.auth.id,
         });
 
         res.json({
             code: 'vitruveo.studio.api.assets.reader.success',
             message: 'Reader success',
             transaction: nanoid(),
-            data: assets,
-        } as APIResponse<model.AssetsDocument[]>);
+            data: {
+                data,
+                page,
+                totalPage,
+                total,
+                limit,
+                collection,
+                collections,
+            },
+        } as APIResponse<AssetsPaginatedResponse>);
     } catch (error) {
         logger('Reader assets failed: %O', error);
         res.status(500).json({
