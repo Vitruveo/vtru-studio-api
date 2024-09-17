@@ -1140,7 +1140,7 @@ export const findAssetsForSpotlight = ({
                 $project: {
                     _id: '$_id',
                     title: '$assetMetadata.context.formData.title',
-                    price: '$licenses.nft.single.editionPrice',
+                    license: '$licenses.nft',
                     preview: '$formats.preview.path',
                     author: '$creator.username',
                 },
