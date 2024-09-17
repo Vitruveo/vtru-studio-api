@@ -27,3 +27,6 @@ app.use(features.waitingList.controller.router);
 app.use(features.upload.controller.router);
 app.use(features.requestConsign.controller.router);
 app.use(features.events.controller.router);
+
+// start schedules
+features.schedules.start();

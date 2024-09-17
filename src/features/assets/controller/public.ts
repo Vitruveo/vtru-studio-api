@@ -1,7 +1,9 @@
 import debug from 'debug';
+import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
+import { join } from 'path';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -32,6 +34,15 @@ export const conditionsToShowAssets = {
     },
 };
 
+const DIST = join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    '..',
+    'static',
+    'spotlight.json'
+);
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
@@ -544,6 +555,27 @@ route.get('/lastSold', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.lastSold.failed',
             message: `Reader last sold failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/spotlight', async (req, res) => {
+    try {
+        const spotlight = await readFile(DIST, 'utf-8');
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.spotlight.success',
+            message: 'Reader spotlight success',
+            transaction: nanoid(),
+            data: JSON.parse(spotlight),
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader spotlight failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.spotlight.failed',
+            message: `Reader spotlight failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

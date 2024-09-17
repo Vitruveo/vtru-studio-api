@@ -139,3 +139,8 @@ export interface findAssetMintedByAddressParams {
 export interface FindAssetsFromSlideshowParams {
     query: any;
 }
+
+export interface FindAssetsForSpotlightParams {
+    query: any;
+    limit: number;
+}
