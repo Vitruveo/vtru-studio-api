@@ -66,8 +66,18 @@ export const findRequestConsignsPaginated = ({
                     as: 'creator',
                 },
             },
-            { $unwind: '$asset' },
-            { $unwind: '$creator' },
+            {
+                $unwind: {
+                    path: '$asset',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
             {
                 $match: {
                     $or: [
