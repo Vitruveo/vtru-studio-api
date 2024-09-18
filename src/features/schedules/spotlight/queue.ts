@@ -48,6 +48,8 @@ export const start = async () => {
             );
 
             await writeFile(spotlightPath, JSON.stringify(filteredSpotlight));
+
+            channel.ack(data);
         } catch (error) {
             logger('Error processing message', error);
 
