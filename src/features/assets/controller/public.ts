@@ -12,6 +12,7 @@ import {
     QueryCollectionParams,
     QueryPaginatedParams,
     ResponseAssetsPaginated,
+    Spotlight,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
 import {
@@ -564,13 +565,25 @@ route.get('/lastSold', async (req, res) => {
 
 route.get('/spotlight', async (req, res) => {
     try {
+        const nudity = req.query.nudity ?? 'no';
+
         const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
+
+        const payload = JSON.parse(spotlight) as Spotlight[];
+
+        let response: Spotlight[] = [];
+
+        if (nudity === 'no') {
+            response = payload.filter((asset) => asset.nudity === nudity);
+        } else {
+            response = payload;
+        }
 
         res.json({
             code: 'vitruveo.studio.api.assets.spotlight.success',
             message: 'Reader spotlight success',
             transaction: nanoid(),
-            data: JSON.parse(spotlight),
+            data: response,
         } as APIResponse);
     } catch (error) {
         logger('Reader spotlight failed: %O', error);

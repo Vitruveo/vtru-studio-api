@@ -1156,6 +1156,7 @@ export const findAssetsForSpotlight = ({
                     licenses: '$licenses.nft',
                     preview: '$formats.preview.path',
                     author: '$creator.username',
+                    nudity: '$assetMetadata.taxonomy.formData.nudity',
                 },
             },
         ])

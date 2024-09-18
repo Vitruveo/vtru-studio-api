@@ -16,7 +16,6 @@ export const updateSpotlight = async () => {
         logger('starting schedule updateSpotlight');
 
         const query: any = {
-            'assetMetadata.taxonomy.formData.nudity': 'no',
             'consignArtwork.status': 'active',
             mintExplorer: { $exists: false },
             contractExplorer: { $exists: true },
