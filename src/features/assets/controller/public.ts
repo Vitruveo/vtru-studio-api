@@ -1,7 +1,9 @@
 import debug from 'debug';
+import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
+import { join } from 'path';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -18,6 +20,7 @@ import {
     querySortSearch,
     querySortGroupByCreator,
 } from '../utils/queries';
+import { DIST } from '../../../constants/static';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -553,6 +556,27 @@ route.get('/lastSold', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.lastSold.failed',
             message: `Reader last sold failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/spotlight', async (req, res) => {
+    try {
+        const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.spotlight.success',
+            message: 'Reader spotlight success',
+            transaction: nanoid(),
+            data: JSON.parse(spotlight),
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader spotlight failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.spotlight.failed',
+            message: `Reader spotlight failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

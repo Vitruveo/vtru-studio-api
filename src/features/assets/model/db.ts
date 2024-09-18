@@ -25,6 +25,7 @@ import type {
     FindAssetsFromSlideshowParams,
     findAssetsByCreatorIdPaginatedParams,
     FindCollectionsByCreatorParams,
+    FindAssetsForSpotlightParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1115,6 +1116,46 @@ export const findAssetsFromSlideshow = ({
                     orientation: '$assetMetadata.context.formData.orientation',
                     username: '$creator.username',
                     avatar: '$creator.profile.avatar',
+                },
+            },
+        ])
+        .toArray();
+
+export const findAssetsForSpotlight = ({
+    query,
+    limit,
+}: FindAssetsForSpotlightParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            { $sample: { size: limit } },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $project: {
+                    _id: '$_id',
+                    title: '$assetMetadata.context.formData.title',
+                    licenses: '$licenses.nft',
+                    preview: '$formats.preview.path',
+                    author: '$creator.username',
                 },
             },
         ])

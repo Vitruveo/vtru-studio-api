@@ -3,9 +3,8 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { Router } from 'express';
 
-import { SLIDESHOW_URL } from '../../../constants';
+import { SLIDESHOW_URL, DIST } from '../../../constants';
 
-const DIST = join(__dirname, '..', '..', '..', '..', 'static');
 const logger = debug('features:creators:controller:slideshow');
 const route = Router();
 
