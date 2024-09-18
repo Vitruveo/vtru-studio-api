@@ -573,11 +573,10 @@ route.get('/spotlight', async (req, res) => {
 
         let response: Spotlight[] = [];
 
-        // if nudity is not 'yes' or 'no' then we filter by 'no'
-        if (nudity === 'no' || !['no', 'yes'].includes(nudity as string)) {
-            response = payload.filter((asset) => asset.nudity === 'no');
-        } else {
+        if (nudity === 'yes') {
             response = payload;
+        } else {
+            response = payload.filter((asset) => asset.nudity === 'no');
         }
 
         res.json({
