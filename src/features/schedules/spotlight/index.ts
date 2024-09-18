@@ -42,8 +42,8 @@ uniqueExecution({
                 if (!existsLocalFile) {
                     await writeFile(spotlightPath, JSON.stringify([]));
                 }
-                await start();
                 await updateSpotlight();
+                await start();
             },
             5,
             1000,
