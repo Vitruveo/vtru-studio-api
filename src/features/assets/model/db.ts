@@ -1129,7 +1129,6 @@ export const findAssetsForSpotlight = ({
     assets()
         .aggregate([
             { $match: query },
-            { $sample: { size: limit } },
             {
                 $addFields: {
                     creatorId: {
@@ -1151,13 +1150,38 @@ export const findAssetsForSpotlight = ({
                 },
             },
             {
+                $group: {
+                    _id: '$creatorId',
+                    assets: { $push: '$$ROOT' },
+                },
+            },
+            {
                 $project: {
-                    _id: '$_id',
-                    title: '$assetMetadata.context.formData.title',
-                    licenses: '$licenses.nft',
-                    preview: '$formats.preview.path',
-                    author: '$creator.username',
-                    nudity: '$assetMetadata.taxonomy.formData.nudity',
+                    _id: 1,
+                    randomArt: {
+                        $arrayElemAt: [
+                            '$assets',
+                            {
+                                $floor: {
+                                    $multiply: [
+                                        { $rand: {} },
+                                        { $size: '$assets' },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            { $limit: limit },
+            {
+                $project: {
+                    _id: '$randomArt._id',
+                    title: '$randomArt.assetMetadata.context.formData.title',
+                    licenses: '$randomArt.licenses.nft',
+                    preview: '$randomArt.formats.preview.path',
+                    author: '$randomArt.creator.username',
+                    nudity: '$randomArt.assetMetadata.taxonomy.formData.nudity',
                 },
             },
         ])
