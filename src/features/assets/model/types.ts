@@ -93,6 +93,10 @@ export interface UpdateAssetsParams {
     asset: Assets | { [key: string]: unknown };
 }
 
+export interface UpdateManyAssetSpotlightParams {
+    ids: string[];
+}
+
 export interface UpdateManyAssetsStatusParams {
     ids: string[] | ObjectId[];
     status: string;

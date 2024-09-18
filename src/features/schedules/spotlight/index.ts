@@ -3,7 +3,11 @@ import { join } from 'path';
 import { writeFile, access } from 'fs/promises';
 import { uniqueExecution } from '@nsfilho/unique';
 
-import { findAssetsForSpotlight } from '../../assets/model';
+import {
+    findAssetsForSpotlight,
+    updateManyAssetSpotlight,
+    updateManyAssetSpotlightClear,
+} from '../../assets/model';
 import { exitWithDelay, retry } from '../../../utils';
 import { DIST } from '../../../constants';
 import { start } from './queue';
@@ -19,10 +23,21 @@ export const updateSpotlight = async () => {
             'consignArtwork.status': 'active',
             mintExplorer: { $exists: false },
             contractExplorer: { $exists: true },
+            'actions.displaySpotlight': {
+                $exists: false,
+            },
         };
         const limit = 50;
         const assets = await findAssetsForSpotlight({ query, limit });
         await writeFile(spotlightPath, JSON.stringify(assets));
+
+        // remover a flag de displaySpotlight dos assets
+        await updateManyAssetSpotlightClear();
+
+        // adicionar a flag de displaySpotlight nos novos assets
+        await updateManyAssetSpotlight({
+            ids: assets.map((asset) => asset._id),
+        });
 
         logger('Spotlight data updated successfully');
     } catch (error) {

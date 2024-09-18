@@ -26,6 +26,7 @@ import type {
     findAssetsByCreatorIdPaginatedParams,
     FindCollectionsByCreatorParams,
     FindAssetsForSpotlightParams,
+    UpdateManyAssetSpotlightParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1161,3 +1162,17 @@ export const findAssetsForSpotlight = ({
             },
         ])
         .toArray();
+
+export const updateManyAssetSpotlight = async ({
+    ids,
+}: UpdateManyAssetSpotlightParams) =>
+    assets().updateMany(
+        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+        { $set: { 'actions.displaySpotlight': true } }
+    );
+
+export const updateManyAssetSpotlightClear = async () =>
+    assets().updateMany(
+        { 'actions.displaySpotlight': { $exists: true } },
+        { $unset: { 'actions.displaySpotlight': '' } }
+    );
