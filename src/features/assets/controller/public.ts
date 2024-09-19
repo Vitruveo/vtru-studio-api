@@ -1,7 +1,9 @@
 import debug from 'debug';
+import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
+import { join } from 'path';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -10,6 +12,7 @@ import {
     QueryCollectionParams,
     QueryPaginatedParams,
     ResponseAssetsPaginated,
+    Spotlight,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
 import {
@@ -18,6 +21,7 @@ import {
     querySortSearch,
     querySortGroupByCreator,
 } from '../utils/queries';
+import { DIST } from '../../../constants/static';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -31,6 +35,8 @@ export const conditionsToShowAssets = {
         $ne: null,
     },
 };
+
+const groupedOptions = ['all', 'noSales'];
 
 const logger = debug('features:assets:controller:public');
 const route = Router();
@@ -52,7 +58,7 @@ route.get('/groupByCreator', async (req, res) => {
         };
 
         const pageNumber = Number(page);
-        const limitNumber = Number(limit);
+        let limitNumber = Number(limit);
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -61,6 +67,11 @@ route.get('/groupByCreator', async (req, res) => {
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+
+        // limit the number of assets to 200
+        if (limitNumber > 200) {
+            limitNumber = 200;
         }
 
         const parsedQuery: Record<string, unknown> = {
@@ -155,14 +166,24 @@ route.get('/groupByCreator', async (req, res) => {
             }
         }
 
+        const grouped = groupedOptions.includes(query.grouped as string)
+            ? (query.grouped as string)
+            : 'all';
+
+        delete parsedQuery.grouped;
+
         const assets = await model.findAssetGroupPaginated({
             query: parsedQuery,
             limit: limitNumber,
             skip: (pageNumber - 1) * limitNumber,
             sort: sortQuery,
+            grouped,
         });
 
-        const total = await model.countAssetsGroup({ query: parsedQuery });
+        const total = await model.countAssetsGroup({
+            query: parsedQuery,
+            grouped,
+        });
 
         const totalPage = Math.ceil(total.length / limitNumber);
 
@@ -205,7 +226,7 @@ route.get('/search', async (req, res) => {
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
-        const limitNumber = Number(limit);
+        let limitNumber = Number(limit);
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -214,6 +235,11 @@ route.get('/search', async (req, res) => {
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+
+        // limit the number of assets to 200
+        if (limitNumber > 200) {
+            limitNumber = 200;
         }
 
         const parsedQuery = {
@@ -544,6 +570,39 @@ route.get('/lastSold', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.lastSold.failed',
             message: `Reader last sold failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/spotlight', async (req, res) => {
+    try {
+        const nudity = req.query.nudity ?? 'no';
+
+        const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
+
+        const payload = JSON.parse(spotlight) as Spotlight[];
+
+        let response: Spotlight[] = [];
+
+        if (nudity === 'yes') {
+            response = payload;
+        } else {
+            response = payload.filter((asset) => asset.nudity === 'no');
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.spotlight.success',
+            message: 'Reader spotlight success',
+            transaction: nanoid(),
+            data: response,
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader spotlight failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.spotlight.failed',
+            message: `Reader spotlight failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

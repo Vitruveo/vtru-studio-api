@@ -71,3 +71,12 @@ export interface ResponsePaginatedAdmin {
     total: number;
     limit: number;
 }
+
+export interface Spotlight {
+    _id: string;
+    title: string;
+    licenses: string;
+    preview: string;
+    author: string;
+    nudity: string;
+}

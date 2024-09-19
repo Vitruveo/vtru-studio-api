@@ -171,3 +171,19 @@ export const querySortScopeNft = (sort: string) => {
 
     return sortQuery;
 };
+
+export const querySortStudioCreatorById = (sort: string) => {
+    let sortQuery: Sort = {};
+    switch (sort) {
+        case 'consignNewToOld':
+            sortQuery = { 'consignArtwork.listing': -1 };
+            break;
+        case 'consignOldToNew':
+            sortQuery = { 'consignArtwork.listing': 1 };
+            break;
+        default:
+            sortQuery = { 'consignArtwork.listing': -1 };
+            break;
+    }
+    return sortQuery;
+};

@@ -29,7 +29,31 @@ export const createRequestConsign = ({
 export const countRequestConsigns = ({
     query,
 }: Pick<FindRequestConsignsParams, 'query'>) =>
-    requestConsigns().countDocuments(query);
+    requestConsigns().countDocuments({
+        status: query.status,
+        $or: [
+            {
+                'asset.assetMetadata.context.formData.title': {
+                    $regex: query.search ?? '.*',
+                    $options: 'i',
+                },
+            },
+            {
+                'creator.username': {
+                    $regex: query.search ?? '.*',
+                    $options: 'i',
+                },
+            },
+            {
+                'creator.emails': {
+                    $elemMatch: {
+                        $regex: query.search ?? '.*',
+                        $options: 'i',
+                    },
+                },
+            },
+        ],
+    });
 
 export const findRequestConsignsPaginated = ({
     query,

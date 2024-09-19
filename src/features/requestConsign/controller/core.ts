@@ -71,7 +71,9 @@ route.get('/', async (req, res) => {
         const status = req.query.status as string;
         const search = req.query.search as string;
 
-        const total = await model.countRequestConsigns({ query: { status } });
+        const total = await model.countRequestConsigns({
+            query: { status, search },
+        });
         const data = await model.findRequestConsignsPaginated({
             query: { status, search },
             limit,

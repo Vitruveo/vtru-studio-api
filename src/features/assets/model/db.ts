@@ -23,6 +23,10 @@ import type {
     CountAssetsByCreatorIdParams,
     findAssetMintedByAddressParams,
     FindAssetsFromSlideshowParams,
+    findAssetsByCreatorIdPaginatedParams,
+    FindCollectionsByCreatorParams,
+    FindAssetsForSpotlightParams,
+    UpdateManyAssetSpotlightParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -38,6 +42,7 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
 
 export const countAssetsGroup = async ({
     query,
+    grouped,
 }: CountAssetsByCreatorIdParams) =>
     assets()
         .aggregate([
@@ -48,6 +53,22 @@ export const countAssetsGroup = async ({
                     count: {
                         $sum: 1,
                     },
+                    countWithSold: {
+                        $sum: {
+                            $cond: [
+                                { $ifNull: ['$mintExplorer', false] },
+                                1,
+                                0,
+                            ],
+                        },
+                    },
+                },
+            },
+            {
+                $match: {
+                    ...(grouped === 'noSales'
+                        ? { countWithSold: 0 }
+                        : { countWithSold: { $gte: 0 } }),
                 },
             },
         ])
@@ -58,6 +79,7 @@ export const findAssetGroupPaginated = ({
     skip,
     limit,
     sort,
+    grouped,
 }: FindAssetsGroupPaginatedParams) => {
     const aggregate = [
         { $match: query },
@@ -65,6 +87,18 @@ export const findAssetGroupPaginated = ({
             $group: {
                 _id: '$framework.createdBy',
                 count: { $sum: 1 },
+                countWithSold: {
+                    $sum: {
+                        $cond: [{ $ifNull: ['$mintExplorer', false] }, 1, 0],
+                    },
+                },
+            },
+        },
+        {
+            $match: {
+                ...(grouped === 'noSales'
+                    ? { countWithSold: 0 }
+                    : { countWithSold: { $gte: 0 } }),
             },
         },
         {
@@ -301,6 +335,71 @@ export const findAssetsPaginated = ({
     return assets().aggregate(aggregate).toArray();
 };
 
+export const findAssetsByCreatorIdPaginated = ({
+    query,
+    skip,
+    limit,
+    sort,
+}: findAssetsByCreatorIdPaginatedParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            {
+                $addFields: {
+                    assetId: { $toString: '$_id' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'requestConsigns',
+                    localField: 'assetId',
+                    foreignField: 'asset',
+                    as: 'request',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$request',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $addFields: {
+                    countComments: {
+                        $cond: {
+                            if: {
+                                $gt: [{ $type: '$request' }, 'missing'],
+                            },
+                            then: {
+                                $size: {
+                                    $filter: {
+                                        input: {
+                                            $ifNull: ['$request.comments', []],
+                                        },
+                                        as: 'item',
+                                        cond: {
+                                            $eq: ['$$item.isPublic', true],
+                                        },
+                                    },
+                                },
+                            },
+                            else: 0,
+                        },
+                    },
+                },
+            },
+            {
+                $project: {
+                    request: 0,
+                    assetId: 0,
+                },
+            },
+            { $skip: skip },
+            { $limit: limit },
+            { $sort: sort },
+        ])
+        .toArray();
+
 export const findMaxPrice = () =>
     assets()
         .aggregate([
@@ -413,6 +512,37 @@ export const countAssets = async ({
         [{ count?: number }]
     >;
 };
+
+export const findCollectionsByCreatorId = async ({
+    creatorId,
+}: FindCollectionsByCreatorParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'framework.createdBy': creatorId,
+                },
+            },
+            {
+                $unwind: '$assetMetadata.taxonomy.formData.collections',
+            },
+            {
+                $group: {
+                    _id: {
+                        $trim: {
+                            input: '$assetMetadata.taxonomy.formData.collections',
+                        },
+                    },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    collection: '$_id',
+                },
+            },
+        ])
+        .toArray();
 
 export const findAssetsCollections = ({
     name,
@@ -678,6 +808,9 @@ export const findAssetMintedByAddress = async ({
             },
         ])
         .toArray();
+
+export const countAssetsByCreator = ({ query }: CountAssetsByCreatorIdParams) =>
+    assets().countDocuments(query);
 
 export const findAssetsByCreatorId = async ({ id }: FindAssetsByIdParams) =>
     assets()
@@ -1005,3 +1138,82 @@ export const findAssetsFromSlideshow = ({
             },
         ])
         .toArray();
+
+export const findAssetsForSpotlight = ({
+    query,
+    limit,
+}: FindAssetsForSpotlightParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $group: {
+                    _id: '$creatorId',
+                    assets: { $push: '$$ROOT' },
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    randomArt: {
+                        $arrayElemAt: [
+                            '$assets',
+                            {
+                                $floor: {
+                                    $multiply: [
+                                        { $rand: {} },
+                                        { $size: '$assets' },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            { $limit: limit },
+            {
+                $project: {
+                    _id: '$randomArt._id',
+                    title: '$randomArt.assetMetadata.context.formData.title',
+                    licenses: '$randomArt.licenses.nft',
+                    preview: '$randomArt.formats.preview.path',
+                    author: '$randomArt.creator.username',
+                    nudity: '$randomArt.assetMetadata.taxonomy.formData.nudity',
+                },
+            },
+        ])
+        .toArray();
+
+export const updateManyAssetSpotlight = async ({
+    ids,
+}: UpdateManyAssetSpotlightParams) =>
+    assets().updateMany(
+        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+        { $set: { 'actions.displaySpotlight': true } }
+    );
+
+export const updateManyAssetSpotlightClear = async () =>
+    assets().updateMany(
+        { 'actions.displaySpotlight': { $exists: true } },
+        { $unset: { 'actions.displaySpotlight': '' } }
+    );

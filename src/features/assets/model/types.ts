@@ -1,4 +1,4 @@
-import { Sort } from 'mongodb';
+import { Document, Sort } from 'mongodb';
 import { Assets, AssetsDocument } from './schema';
 import { ObjectId } from '../../../services';
 
@@ -21,6 +21,7 @@ export interface FindAssetsGroupPaginatedParams {
     skip: number;
     limit: number;
     sort: Sort;
+    grouped: string;
 }
 
 export interface FindAssetsPaginatedParams {
@@ -35,12 +36,33 @@ export interface FindAssetsPaginatedParams {
     precision: number;
 }
 
+export interface findAssetsByCreatorIdPaginatedParams {
+    query: any;
+    skip: number;
+    limit: number;
+    sort: Sort;
+}
+
+export interface AssetsPaginatedResponse {
+    data: Assets[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
+    collection: string;
+    collections: Document[];
+}
+
 export interface FindAssetsTagsParams {
     query: Record<string, unknown>;
 }
 export interface FindAssetsByCreatorName {
     name: string;
     showAdditionalAssets: string;
+}
+
+export interface FindCollectionsByCreatorParams {
+    creatorId: string;
 }
 
 export interface FindAssetsCollectionsParams {
@@ -54,7 +76,9 @@ export interface FindAssetsSubjectsParams {
 }
 
 export interface CountAssetsByCreatorIdParams
-    extends Pick<FindAssetsPaginatedParams, 'query'> {}
+    extends Pick<FindAssetsPaginatedParams, 'query'> {
+    grouped?: string;
+}
 export interface CountAssetsParams
     extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
 
@@ -69,6 +93,10 @@ export interface FindOneAssetsParams {
 export interface UpdateAssetsParams {
     id: string | ObjectId;
     asset: Assets | { [key: string]: unknown };
+}
+
+export interface UpdateManyAssetSpotlightParams {
+    ids: string[];
 }
 
 export interface UpdateManyAssetsStatusParams {
@@ -117,4 +145,9 @@ export interface findAssetMintedByAddressParams {
 
 export interface FindAssetsFromSlideshowParams {
     query: any;
+}
+
+export interface FindAssetsForSpotlightParams {
+    query: any;
+    limit: number;
 }
