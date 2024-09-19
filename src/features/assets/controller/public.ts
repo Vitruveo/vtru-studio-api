@@ -58,7 +58,7 @@ route.get('/groupByCreator', async (req, res) => {
         };
 
         const pageNumber = Number(page);
-        const limitNumber = Number(limit);
+        let limitNumber = Number(limit);
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -67,6 +67,11 @@ route.get('/groupByCreator', async (req, res) => {
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+
+        // limit the number of assets to 200
+        if (limitNumber > 200) {
+            limitNumber = 200;
         }
 
         const parsedQuery: Record<string, unknown> = {
@@ -221,7 +226,7 @@ route.get('/search', async (req, res) => {
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
-        const limitNumber = Number(limit);
+        let limitNumber = Number(limit);
 
         if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
             res.status(400).json({
@@ -230,6 +235,11 @@ route.get('/search', async (req, res) => {
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+
+        // limit the number of assets to 200
+        if (limitNumber > 200) {
+            limitNumber = 200;
         }
 
         const parsedQuery = {
