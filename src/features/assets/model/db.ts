@@ -42,6 +42,7 @@ export const createAssets = async ({ asset }: CreateAssetsParams) => {
 
 export const countAssetsGroup = async ({
     query,
+    grouped,
 }: CountAssetsByCreatorIdParams) =>
     assets()
         .aggregate([
@@ -52,6 +53,22 @@ export const countAssetsGroup = async ({
                     count: {
                         $sum: 1,
                     },
+                    countWithSold: {
+                        $sum: {
+                            $cond: [
+                                { $ifNull: ['$mintExplorer', false] },
+                                1,
+                                0,
+                            ],
+                        },
+                    },
+                },
+            },
+            {
+                $match: {
+                    ...(grouped === 'noSales'
+                        ? { countWithSold: 0 }
+                        : { countWithSold: { $gte: 0 } }),
                 },
             },
         ])

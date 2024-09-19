@@ -175,7 +175,10 @@ route.get('/groupByCreator', async (req, res) => {
             grouped,
         });
 
-        const total = await model.countAssetsGroup({ query: parsedQuery });
+        const total = await model.countAssetsGroup({
+            query: parsedQuery,
+            grouped,
+        });
 
         const totalPage = Math.ceil(total.length / limitNumber);
 
