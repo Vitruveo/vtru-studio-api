@@ -78,7 +78,7 @@ route.get('/', async (req, res) => {
             query: { status, search },
             limit,
             skip: (page - 1) * limit,
-            sort: { when: -1 },
+            sort: { when: 1 },
         });
 
         const totalPage = Math.ceil(total / limit);
