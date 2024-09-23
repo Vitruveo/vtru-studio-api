@@ -1017,9 +1017,9 @@ export const findLastSoldAssets = () =>
             {
                 $project: {
                     _id: '$_id',
-                    assetMetadata: '$assetMetadata',
-                    formats: '$formats.preview',
-                    licenses: '$licenses.nft',
+                    title: '$assetMetadata.context.formData.title',
+                    preview: '$formats.preview.path',
+                    price: '$licenses.nft.single.editionPrice',
                     username: '$creator.username',
                 },
             },
@@ -1195,7 +1195,7 @@ export const findAssetsForSpotlight = ({
                 $project: {
                     _id: '$randomArt._id',
                     title: '$randomArt.assetMetadata.context.formData.title',
-                    licenses: '$randomArt.licenses.nft',
+                    price: '$randomArt.licenses.nft.single.editionPrice',
                     preview: '$randomArt.formats.preview.path',
                     author: '$randomArt.creator.username',
                     nudity: '$randomArt.assetMetadata.taxonomy.formData.nudity',
