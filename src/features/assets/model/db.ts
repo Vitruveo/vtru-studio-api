@@ -1197,7 +1197,7 @@ export const findAssetsForSpotlight = ({
                     title: '$randomArt.assetMetadata.context.formData.title',
                     price: '$randomArt.licenses.nft.single.editionPrice',
                     preview: '$randomArt.formats.preview.path',
-                    author: '$randomArt.creator.username',
+                    username: '$randomArt.creator.username',
                     nudity: '$randomArt.assetMetadata.taxonomy.formData.nudity',
                 },
             },
