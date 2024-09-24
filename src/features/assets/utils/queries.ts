@@ -66,10 +66,10 @@ export const querySortSearch = (sort: querySortSearchParams) => {
 
     switch (sort?.order) {
         case 'priceHighToLow':
-            sortQuery = { 'licenses.nft.single.editionPrice': -1 };
+            sortQuery = { 'licenses.nft.single.editionPrice': -1, 'consignArtwork.listing': -1 };
             break;
         case 'priceLowToHigh':
-            sortQuery = { 'licenses.nft.single.editionPrice': 1 };
+            sortQuery = { 'licenses.nft.single.editionPrice': 1, 'consignArtwork.listing': -1 };
             break;
         case 'creatorAZ':
             sortQuery = { insensitiveCreator: 1 };
@@ -106,10 +106,10 @@ export const querySortGroupByCreator = (sort: querySortSearchParams) => {
 
     switch (sort?.order) {
         case 'priceHighToLow':
-            sortQuery = { 'asset.licenses.nft.single.editionPrice': -1 };
+            sortQuery = { 'asset.licenses.nft.single.editionPrice': -1, 'consignArtwork.listing': -1  };
             break;
         case 'priceLowToHigh':
-            sortQuery = { 'asset.licenses.nft.single.editionPrice': 1 };
+            sortQuery = { 'asset.licenses.nft.single.editionPrice': 1, 'consignArtwork.listing': -1 };
             break;
         case 'creatorAZ':
             sortQuery = { 'asset.assetMetadata.creators.formData.name': 1 };
