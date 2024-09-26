@@ -26,3 +26,4 @@ export * from './slideshow';
 export * from './batch';
 export * from './static';
 export * from './spotlight';
+export * from './discord';

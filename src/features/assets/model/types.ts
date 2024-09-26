@@ -109,6 +109,10 @@ export interface UpdateManyAssetsNudityParams {
     nudity: boolean;
 }
 
+export interface CountAllAssetsParams {
+    query?: any;
+}
+
 export interface DeleteAssetsParams {
     id: string | ObjectId;
 }
