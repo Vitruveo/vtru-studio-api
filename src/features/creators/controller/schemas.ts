@@ -41,6 +41,29 @@ export const schemaValidationForPut = z.object({
         })
         .nullable()
         .default({}),
+    careerAchievements: z
+        .object({
+            exhibitions: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                    })
+                )
+                .nullable()
+                .default([]),
+            awards: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .nullable()
+        .default({}),
     profile: z.object({
         avatar: z.string().nullable().default(null),
         phone: z.string().nullable().default(null),
