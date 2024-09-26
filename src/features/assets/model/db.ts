@@ -1217,3 +1217,24 @@ export const updateManyAssetSpotlightClear = async () =>
         { 'actions.displaySpotlight': { $exists: true } },
         { $unset: { 'actions.displaySpotlight': '' } }
     );
+
+export const countAllAssets = async (query = {}) =>
+    assets().countDocuments(query);
+
+export const getTotalPrice = async () =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'contractExplorer.explorer': { $exists: true },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalPrice: { $sum: '$licenses.nft.single.editionPrice' },
+                },
+            },
+        ])
+        .toArray()
+        .then((result) => (result.length > 0 ? result[0].totalPrice : 0));
