@@ -1017,9 +1017,9 @@ export const findLastSoldAssets = () =>
             {
                 $project: {
                     _id: '$_id',
-                    assetMetadata: '$assetMetadata',
-                    formats: '$formats.preview',
-                    licenses: '$licenses.nft',
+                    title: '$assetMetadata.context.formData.title',
+                    preview: '$formats.preview.path',
+                    price: '$licenses.nft.single.editionPrice',
                     username: '$creator.username',
                 },
             },
@@ -1195,9 +1195,9 @@ export const findAssetsForSpotlight = ({
                 $project: {
                     _id: '$randomArt._id',
                     title: '$randomArt.assetMetadata.context.formData.title',
-                    licenses: '$randomArt.licenses.nft',
+                    price: '$randomArt.licenses.nft.single.editionPrice',
                     preview: '$randomArt.formats.preview.path',
-                    author: '$randomArt.creator.username',
+                    username: '$randomArt.creator.username',
                     nudity: '$randomArt.assetMetadata.taxonomy.formData.nudity',
                 },
             },
@@ -1217,3 +1217,24 @@ export const updateManyAssetSpotlightClear = async () =>
         { 'actions.displaySpotlight': { $exists: true } },
         { $unset: { 'actions.displaySpotlight': '' } }
     );
+
+export const countAllAssets = async (query = {}) =>
+    assets().countDocuments(query);
+
+export const getTotalPrice = async () =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'contractExplorer.explorer': { $exists: true },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalPrice: { $sum: '$licenses.nft.single.editionPrice' },
+                },
+            },
+        ])
+        .toArray()
+        .then((result) => (result.length > 0 ? result[0].totalPrice : 0));

@@ -262,3 +262,6 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
             },
         }
     );
+
+export const countAllCreators = async () =>
+    getDb().collection(COLLECTION_CREATORS).countDocuments();
