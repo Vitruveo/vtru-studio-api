@@ -29,31 +29,76 @@ export const createRequestConsign = ({
 export const countRequestConsigns = ({
     query,
 }: Pick<FindRequestConsignsParams, 'query'>) =>
-    requestConsigns().countDocuments({
-        status: query.status,
-        $or: [
+    requestConsigns()
+        .aggregate([
             {
-                'asset.assetMetadata.context.formData.title': {
-                    $regex: query.search ?? '.*',
-                    $options: 'i',
+                $match: {
+                    status: query.status,
                 },
             },
             {
-                'creator.username': {
-                    $regex: query.search ?? '.*',
-                    $options: 'i',
+                $addFields: {
+                    asset: { $toObjectId: '$asset' },
+                    creator: { $toObjectId: '$creator' },
                 },
             },
             {
-                'creator.emails': {
-                    $elemMatch: {
-                        $regex: query.search ?? '.*',
-                        $options: 'i',
-                    },
+                $lookup: {
+                    from: 'assets',
+                    localField: 'asset',
+                    foreignField: '_id',
+                    as: 'asset',
                 },
             },
-        ],
-    });
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creator',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$asset',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'asset.assetMetadata.context.formData.title': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.username': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.emails': {
+                                $elemMatch: {
+                                    $regex: query.search ?? '.*',
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        ])
+        .toArray()
+        .then((result) => result.length);
 
 export const findRequestConsignsPaginated = ({
     query,
@@ -134,6 +179,7 @@ export const findRequestConsignsPaginated = ({
                     status: 1,
                     logs: 1,
                     comments: 1,
+                    when: 1,
                     asset: {
                         _id: 1,
                         title: '$asset.assetMetadata.context.formData.title',
