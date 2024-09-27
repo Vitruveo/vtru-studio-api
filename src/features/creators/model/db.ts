@@ -263,5 +263,5 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
         }
     );
 
-export const countAllCreators = async () =>
-    getDb().collection(COLLECTION_CREATORS).countDocuments();
+export const countAllCreators = async (query = {}) =>
+    getDb().collection(COLLECTION_CREATORS).countDocuments(query);
