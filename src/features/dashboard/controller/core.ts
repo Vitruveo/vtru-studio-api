@@ -7,7 +7,7 @@ import timezone from 'dayjs/plugin/timezone';
 import { APIResponse } from '../../../services';
 import { countAllCreators } from '../../creators/model';
 import { countAllAssets, getTotalPrice } from '../../assets/model';
-// import { sendMessageDiscord } from '../../../services/discord';
+import { sendMessageDiscord } from '../../../services/discord';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -18,6 +18,25 @@ const route = Router();
 route.get('/', async (req, res) => {
     try {
         const date = req.query.date as string;
+        const start = req.query.start as string;
+        const end = req.query.end as string;
+
+        if ((start && !end) || (!start && end)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.admin.dashboard.reader.one.failed',
+                message: 'Invalid date range, missing some parameter',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+        if (start && end && dayjs(start).isAfter(dayjs(end))) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.admin.dashboard.reader.one.failed',
+                message: 'Invalid date range, start date is after end date',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
 
         const dateFormatted = date
             ? dayjs(date).utc().endOf('day').toDate()
@@ -26,28 +45,31 @@ route.get('/', async (req, res) => {
             ? dayjs(date).utc().subtract(1, 'day').startOf('day').toDate()
             : dayjs().utc().subtract(1, 'day').startOf('day').toDate();
 
-        const buildQuery = (key: string, prop: 'total' | 'new') => ({
-            $or: [
-                {
-                    [key]: {
-                        $gte:
-                            prop === 'total'
-                                ? dayjs(0).utc().toDate()
-                                : yesterdayFormatted,
-                        $lt: dateFormatted,
+        const buildQuery = (key: string, prop: 'total' | 'new') => {
+            let startDate;
+            if (prop === 'total') {
+                startDate = dayjs(0).utc().toDate();
+            } else if (start) {
+                startDate = dayjs(start).utc().toDate();
+            } else {
+                startDate = yesterdayFormatted;
+            }
+            const endDate = end
+                ? dayjs(end).utc().endOf('day').toDate()
+                : dateFormatted;
+
+            return {
+                $or: [
+                    { [key]: { $gte: startDate, $lt: endDate } },
+                    {
+                        [key]: {
+                            $gte: startDate.toISOString(),
+                            $lt: endDate.toISOString(),
+                        },
                     },
-                },
-                {
-                    [key]: {
-                        $gte:
-                            prop === 'total'
-                                ? dayjs(0).utc().toISOString()
-                                : yesterdayFormatted.toISOString(),
-                        $lt: dateFormatted.toISOString(),
-                    },
-                },
-            ],
-        });
+                ],
+            };
+        };
 
         const totalCreators = await countAllCreators({
             ...buildQuery('framework.createdAt', 'total'),
@@ -92,19 +114,31 @@ route.get('/', async (req, res) => {
         const periodTotalPrice = '';
         const periodAveragePrice = '';
 
-        // await sendMessageDiscord({
-        //     message: `Vitruveo Dashboard:\n
-        //         creators: ${creators}
-        //         arts: ${arts}
-        //         consigned: ${consigned}
-        //         activeConsigned: ${activeConsigned}
-        //         totalPrice: ${totalPrice}
-        //         artsSold: ${artsSold}
-        //         averagePrice: ${averagePrice}`,
-        // });
+        await sendMessageDiscord({
+            message: `Vitruveo Dashboard:\n
+                date: ${date},
+                start: ${start},
+                end: ${end},
+                totalCreators: ${totalCreators},
+                newCreators: ${newCreators},
+                totalArts: ${totalArts},
+                newArts: ${newArts},
+                totalConsigned: ${totalConsigned},
+                newConsigned: ${newConsigned},
+                totalActiveConsigned: ${totalActiveConsigned},
+                newActiveConsigned: ${newActiveConsigned},
+                totalArtsSold: ${totalArtsSold},
+                newArtsSold: ${newArtsSold},
+                totalPrice: ${totalPrice},
+                averagePrice: ${averagePrice},
+                periodTotalPrice: ${periodTotalPrice},
+                periodAveragePrice: ${periodAveragePrice}`,
+        });
 
         const response = {
             date,
+            start,
+            end,
             totalCreators,
             newCreators,
             totalArts,
