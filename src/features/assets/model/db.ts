@@ -27,6 +27,7 @@ import type {
     FindCollectionsByCreatorParams,
     FindAssetsForSpotlightParams,
     UpdateManyAssetSpotlightParams,
+    FindMyAssetsParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -877,6 +878,11 @@ export const findAssetCreatedBy = async ({ id }: FindAssetsByIdParams) => {
     const result = await assets().findOne({
         'framework.createdBy': id,
     });
+    return result;
+};
+
+export const findMyAssets = async ({ query }: FindMyAssetsParams) => {
+    const result = await assets().find(query).toArray();
     return result;
 };
 
