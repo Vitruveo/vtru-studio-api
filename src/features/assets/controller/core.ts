@@ -134,9 +134,65 @@ route.get('/', async (req, res) => {
     }
 });
 
+route.get('/myAssets', validateQueries, async (req, res) => {
+    try {
+        let query = { 'framework.createdBy': req.auth.id } as any;
+        const title = req.query?.title;
+        if (title) {
+            query = {
+                ...query,
+                $or: [
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: title,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: title,
+                            $options: 'i',
+                        },
+                    },
+                ],
+            };
+        }
+
+        const assets = await model.findMyAssets({ query });
+
+        if (!assets) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.myAssets.failed',
+                message: `Asset not found`,
+                args: [],
+                transaction: nanoid(),
+            } as APIResponse);
+
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.myAssets.success',
+            message: 'Reader success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader asset failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.myAssets.failed',
+            message: `Reader failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/creatorMy', validateQueries, async (req, res) => {
     try {
-        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+        const query = { id: req.auth.id } as any;
+
+        const asset = await model.findAssetCreatedBy(query);
 
         if (!asset) {
             res.status(404).json({
