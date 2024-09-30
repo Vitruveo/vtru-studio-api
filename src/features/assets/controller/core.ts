@@ -81,7 +81,7 @@ route.get('/', async (req, res) => {
 
         if (collection && collection !== 'all') {
             query['assetMetadata.taxonomy.formData.collections'] = {
-                $elemMatch: { $eq: collection },
+                $elemMatch: { $regex: collection.replace(/\+/g, '\\+') },
             };
         }
 
