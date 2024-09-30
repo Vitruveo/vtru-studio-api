@@ -51,6 +51,7 @@ export const schemaValidationForPut = z.object({
                         artwork: z.object({
                             type: z.enum(['assetRef', 'upload']),
                             value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
                         }),
                     })
                 )
@@ -64,6 +65,7 @@ export const schemaValidationForPut = z.object({
                         artwork: z.object({
                             type: z.enum(['assetRef', 'upload']),
                             value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
                         }),
                     })
                 )
