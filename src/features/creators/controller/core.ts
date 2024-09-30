@@ -422,7 +422,7 @@ route.post('/request/upload', async (req, res) => {
     const transactionApiId = nanoid();
 
     try {
-        const { mimetype, transactionId } = req.body;
+        const { mimetype, transactionId, origin } = req.body;
         const { id } = req.auth;
 
         const extension = mimetype.split('/')[1];
@@ -433,7 +433,7 @@ route.post('/request/upload', async (req, res) => {
                 path,
                 creatorId: id,
                 transactionId,
-                origin: 'profile',
+                origin: origin || 'profile',
                 method: 'PUT',
             })
         );
