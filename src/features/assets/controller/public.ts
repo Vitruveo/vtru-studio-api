@@ -367,6 +367,223 @@ route.get('/search', async (req, res) => {
 
         const maxAssetPrice = await model.findMaxPrice();
 
+        console.log('parsedQuery', JSON.stringify(parsedQuery, null, 2));
+
+        if (parsedQuery?._id?.$in)
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
+
+        const result = await model.countAssets({
+            query: parsedQuery,
+            colors: filterColors,
+            precision: Number(precision),
+        });
+
+        const total = result[0]?.count ?? 0;
+
+        const totalPage = Math.ceil(total / limitNumber);
+
+        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
+            sort.order = 'mintNewToOld';
+        }
+
+        const sortQuery = querySortSearch(sort);
+
+        const assets = await model.findAssetsPaginated({
+            query: parsedQuery,
+            skip: (pageNumber - 1) * limitNumber,
+            limit: limitNumber,
+            sort: sortQuery,
+            colors: filterColors,
+            precision: Number(precision),
+        });
+
+        const tags = await model.findAssetsTags({ query: parsedQuery });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.search.success',
+            message: 'Reader search success',
+            transaction: nanoid(),
+            data: {
+                data: assets,
+                tags,
+                page: pageNumber,
+                totalPage,
+                total,
+                limit: limitNumber,
+                maxPrice: maxAssetPrice || 0,
+            },
+        } as APIResponse<ResponseAssetsPaginated>);
+    } catch (error) {
+        logger('Reader search asset failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.search.failed',
+            message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/search', async (req, res) => {
+    try {
+        const {
+            query = {} as any,
+            page = 1,
+            limit = 10,
+            minPrice,
+            maxPrice,
+            name,
+            sort,
+            precision = '0.7',
+            showAdditionalAssets,
+        } = req.body as unknown as QueryPaginatedParams;
+
+        const pageNumber = Number(page);
+        let limitNumber = Number(limit);
+
+        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.search.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        // limit the number of assets to 200
+        if (limitNumber > 200) {
+            limitNumber = 200;
+        }
+
+        const parsedQuery = {
+            ...query,
+            ...conditionsToShowAssets,
+        };
+
+        if (showAdditionalAssets === 'true') {
+            delete parsedQuery['consignArtwork.status'];
+            const statusCondition = [
+                { 'consignArtwork.status': 'active' },
+                { 'consignArtwork.status': 'blocked' },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(statusCondition)
+                : statusCondition;
+        }
+
+        const addSearchByTitleDescCreator = (param: string) => {
+            const searchByTitleDescCreator = {
+                $or: queryByTitleOrDescOrCreator({ name: param }),
+            };
+            if (parsedQuery.$and) {
+                parsedQuery.$and.push(searchByTitleDescCreator);
+            } else {
+                parsedQuery.$and = [searchByTitleDescCreator];
+            }
+        };
+
+        if (
+            maxPrice &&
+            minPrice &&
+            Number(minPrice) >= 0 &&
+            Number(maxPrice) > 0
+        ) {
+            parsedQuery.$and = [
+                {
+                    $or: queryByPrice({
+                        min: Number(minPrice),
+                        max: Number(maxPrice),
+                    }),
+                },
+            ];
+
+            if (name) addSearchByTitleDescCreator(name);
+        } else if (name) {
+            addSearchByTitleDescCreator(name);
+        }
+
+        let filterColors: number[][] = [];
+        if (query['assetMetadata.context.formData.colors']?.$in) {
+            const colors = query['assetMetadata.context.formData.colors']
+                .$in as string[][];
+            filterColors = colors.map((color) =>
+                color.map((rgb) => parseInt(rgb, 10))
+            );
+            delete parsedQuery['assetMetadata.context.formData.colors'];
+        }
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: creator, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
+            const subjects =
+                query['assetMetadata.taxonomy.formData.subject'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
+            if (Array.isArray(parsedQuery.$and)) {
+                subjects.forEach((subject: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.subject': {
+                            $elemMatch: {
+                                $regex: subject,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = subjects.map((subject: string) => ({
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $elemMatch: {
+                            $regex: subject,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
+            const collections =
+                query['assetMetadata.taxonomy.formData.collections'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
+            if (Array.isArray(parsedQuery.$and)) {
+                collections.forEach((collection: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.collections': {
+                            $elemMatch: {
+                                $regex: collection,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = collections.map((collection: string) => ({
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $elemMatch: {
+                            $regex: collection,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+
+        const maxAssetPrice = await model.findMaxPrice();
+
+        console.log('parsedQuerypost', JSON.stringify(parsedQuery, null, 2));
+
         if (parsedQuery?._id?.$in)
             parsedQuery._id.$in = parsedQuery._id.$in.map(
                 (id: string) => new ObjectId(id)
