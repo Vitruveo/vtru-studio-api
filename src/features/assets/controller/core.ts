@@ -224,7 +224,7 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
 
 route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
     try {
-        const asset = await model.findAssetsById({ id: req.params.id });
+        let asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
             res.status(404).json({
@@ -233,6 +233,21 @@ route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+
+        // TODO: investigar por que as propriedades do campo terms esta sendo setado como falso
+        if (asset?.consignArtwork && !asset?.terms?.contract) {
+            await model.updateAssets({
+                id: asset._id,
+                asset: {
+                    'terms.contract': true,
+                    'terms.generatedArtworkAI': true,
+                    'terms.isOriginal': true,
+                    'terms.notMintedOtherBlockchain': true,
+                },
+            });
+
+            asset = await model.findAssetsById({ id: req.params.id });
         }
 
         res.json({
@@ -266,7 +281,12 @@ route.post('/', validateBodyForCreate, async (req, res) => {
             });
 
             if (asset) {
-                asset.actions = asset.actions || { countClone: 0 };
+                if (!asset?.actions) {
+                    asset.actions = { countClone: 0 };
+                } else if (!asset.actions?.countClone) {
+                    asset.actions.countClone = 0;
+                }
+
                 asset.actions.countClone += 1;
 
                 await model.updateAssets({
