@@ -143,3 +143,12 @@ export interface UpdateCreatorSearchSlideshowParams {
         display: string;
     };
 }
+
+export interface FindArtistsForSpotlightParams {
+    query?: any;
+    limit: number;
+}
+
+export interface UpdateManyArtistSpotlightParams {
+    ids: string[];
+}
