@@ -86,6 +86,10 @@ export interface FindAssetsByIdParams {
     id: string | ObjectId;
 }
 
+export interface FindMyAssetsParams {
+    query: { [key: string]: unknown };
+}
+
 export interface FindOneAssetsParams {
     query: any;
 }

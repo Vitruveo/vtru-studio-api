@@ -41,13 +41,18 @@ export const schemaValidationForPut = z.object({
         })
         .nullable()
         .default({}),
-    careerAchievements: z
+    artworkRecognition: z
         .object({
             exhibitions: z
                 .array(
                     z.object({
                         name: z.string(),
                         url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
                     })
                 )
                 .nullable()
@@ -57,6 +62,11 @@ export const schemaValidationForPut = z.object({
                     z.object({
                         name: z.string(),
                         url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
                     })
                 )
                 .nullable()

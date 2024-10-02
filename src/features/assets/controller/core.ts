@@ -134,9 +134,65 @@ route.get('/', async (req, res) => {
     }
 });
 
+route.get('/myAssets', validateQueries, async (req, res) => {
+    try {
+        let query = { 'framework.createdBy': req.auth.id } as any;
+        const title = req.query?.title;
+        if (title) {
+            query = {
+                ...query,
+                $or: [
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: title,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: title,
+                            $options: 'i',
+                        },
+                    },
+                ],
+            };
+        }
+
+        const assets = await model.findMyAssets({ query });
+
+        if (!assets) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.myAssets.failed',
+                message: `Asset not found`,
+                args: [],
+                transaction: nanoid(),
+            } as APIResponse);
+
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.myAssets.success',
+            message: 'Reader success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader asset failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.myAssets.failed',
+            message: `Reader failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/creatorMy', validateQueries, async (req, res) => {
     try {
-        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+        const query = { id: req.auth.id } as any;
+
+        const asset = await model.findAssetCreatedBy(query);
 
         if (!asset) {
             res.status(404).json({
@@ -168,7 +224,7 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
 
 route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
     try {
-        const asset = await model.findAssetsById({ id: req.params.id });
+        let asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
             res.status(404).json({
@@ -177,6 +233,21 @@ route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+
+        // TODO: investigar por que as propriedades do campo terms esta sendo setado como falso
+        if (asset?.consignArtwork && !asset?.terms?.contract) {
+            await model.updateAssets({
+                id: asset._id,
+                asset: {
+                    'terms.contract': true,
+                    'terms.generatedArtworkAI': true,
+                    'terms.isOriginal': true,
+                    'terms.notMintedOtherBlockchain': true,
+                },
+            });
+
+            asset = await model.findAssetsById({ id: req.params.id });
         }
 
         res.json({
@@ -210,7 +281,12 @@ route.post('/', validateBodyForCreate, async (req, res) => {
             });
 
             if (asset) {
-                asset.actions = asset.actions || { countClone: 0 };
+                if (!asset?.actions) {
+                    asset.actions = { countClone: 0 };
+                } else if (!asset.actions?.countClone) {
+                    asset.actions.countClone = 0;
+                }
+
                 asset.actions.countClone += 1;
 
                 await model.updateAssets({
