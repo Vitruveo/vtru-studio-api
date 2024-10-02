@@ -81,7 +81,7 @@ route.get('/', async (req, res) => {
 
         if (collection && collection !== 'all') {
             query['assetMetadata.taxonomy.formData.collections'] = {
-                $elemMatch: { $elemMatch: { $eq: collection } },
+                $elemMatch: { $eq: collection },
             };
         }
 
