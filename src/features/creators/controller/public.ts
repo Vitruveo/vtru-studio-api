@@ -10,7 +10,7 @@ import { ArtistSpotlight } from './types';
 const logger = debug('features:creators:controller:public');
 const route = Router();
 
-route.get('/artistSpotlight', async (req, res) => {
+route.get('/spotlight', async (req, res) => {
     try {
         const artistSpotlight = await readFile(
             join(DIST, 'artistSpotlight.json'),
