@@ -19,6 +19,19 @@ export const updateArtistSpotlight = async () => {
 
         const limit = 50;
         const query: any = {
+            $and: [
+                {
+                    'framework.createdBy': {
+                        $exists: true,
+                    },
+                },
+                {
+                    'framework.createdBy': {
+                        $ne: null,
+                        $nin: [''],
+                    },
+                },
+            ],
             'consignArtwork.status': 'active',
             mintExplorer: { $exists: false },
             contractExplorer: { $exists: true },

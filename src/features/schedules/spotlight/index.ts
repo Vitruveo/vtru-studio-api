@@ -20,6 +20,19 @@ export const updateSpotlight = async () => {
         logger('starting schedule updateSpotlight');
 
         const query: any = {
+            $and: [
+                {
+                    'framework.createdBy': {
+                        $exists: true,
+                    },
+                },
+                {
+                    'framework.createdBy': {
+                        $ne: null,
+                        $nin: [''],
+                    },
+                },
+            ],
             'consignArtwork.status': 'active',
             mintExplorer: { $exists: false },
             contractExplorer: { $exists: true },

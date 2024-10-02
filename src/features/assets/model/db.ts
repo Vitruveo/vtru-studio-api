@@ -1272,7 +1272,6 @@ export const findArtistsForSpotlight = async ({
             {
                 $match: {
                     'creator.profile.avatar': { $ne: null },
-                    'creator.username': { $ne: null },
                 },
             },
             {
@@ -1308,7 +1307,7 @@ export const findArtistsForSpotlight = async ({
             {
                 $project: {
                     _id: '$randomArt._id',
-                    username: '$randomArt.creator.username',
+                    name: '$randomArt.assetMetadata.creators.formData.name',
                     avatar: '$randomArt.creator.profile.avatar',
                 },
             },
