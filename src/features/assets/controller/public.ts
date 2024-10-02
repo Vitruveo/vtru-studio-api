@@ -367,8 +367,6 @@ route.get('/search', async (req, res) => {
 
         const maxAssetPrice = await model.findMaxPrice();
 
-        console.log('parsedQuery', JSON.stringify(parsedQuery, null, 2));
-
         if (parsedQuery?._id?.$in)
             parsedQuery._id.$in = parsedQuery._id.$in.map(
                 (id: string) => new ObjectId(id)
@@ -581,8 +579,6 @@ route.post('/search', async (req, res) => {
         }
 
         const maxAssetPrice = await model.findMaxPrice();
-
-        console.log('parsedQuerypost', JSON.stringify(parsedQuery, null, 2));
 
         if (parsedQuery?._id?.$in)
             parsedQuery._id.$in = parsedQuery._id.$in.map(
