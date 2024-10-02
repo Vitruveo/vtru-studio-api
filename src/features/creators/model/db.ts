@@ -21,8 +21,6 @@ import type {
     FindCreatorAssetsByVideoId,
     FindCreatorAssetsBySlideshowId,
     UpdateCreatorSearchSlideshowParams,
-    FindArtistsForSpotlightParams,
-    UpdateManyArtistSpotlightParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -267,35 +265,3 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
 
 export const countAllCreators = async () =>
     getDb().collection(COLLECTION_CREATORS).countDocuments();
-
-export const findArtistsForSpotlight = async ({
-    query = {},
-    limit,
-}: FindArtistsForSpotlightParams) =>
-    creators()
-        .aggregate([
-            { $match: query },
-            { $sample: { size: limit } },
-            {
-                $project: {
-                    _id: 1,
-                    avatar: '$profile.avatar',
-                    username: '$username',
-                },
-            },
-        ])
-        .toArray();
-
-export const updateManyArtistsSpotlightClear = async () =>
-    creators().updateMany(
-        { 'actions.displaySpotlight': { $exists: true } },
-        { $unset: { 'actions.displaySpotlight': '' } }
-    );
-
-export const updateManyArtistSpotlight = async ({
-    ids,
-}: UpdateManyArtistSpotlightParams) =>
-    creators().updateMany(
-        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
-        { $set: { 'actions.displaySpotlight': true } }
-    );

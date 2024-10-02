@@ -3,12 +3,12 @@ import { join } from 'path';
 import { writeFile, access } from 'fs/promises';
 import { uniqueExecution } from '@nsfilho/unique';
 import { DIST } from '../../../constants';
+import { exitWithDelay, retry } from '../../../utils';
 import {
     findArtistsForSpotlight,
     updateManyArtistSpotlight,
     updateManyArtistsSpotlightClear,
-} from '../../creators/model';
-import { exitWithDelay, retry } from '../../../utils';
+} from '../../assets/model';
 
 const logger = debug('features:schedules:artistSpotlight');
 const artistSpotlightPath = join(DIST, 'artistSpotlight.json');
@@ -19,8 +19,12 @@ export const updateArtistSpotlight = async () => {
 
         const limit = 50;
         const query: any = {
-            'profile.avatar': { $exists: true, $ne: null },
-            username: { $exists: true, $ne: null },
+            'consignArtwork.status': 'active',
+            mintExplorer: { $exists: false },
+            contractExplorer: { $exists: true },
+            'actions.displayArtistSpotlight': {
+                $exists: false,
+            },
         };
         const artistSpotlight = await findArtistsForSpotlight({ query, limit });
         await writeFile(artistSpotlightPath, JSON.stringify(artistSpotlight));

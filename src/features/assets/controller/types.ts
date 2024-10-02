@@ -80,3 +80,9 @@ export interface Spotlight {
     author: string;
     nudity: string;
 }
+
+export interface ArtistSpotlight {
+    _id: string;
+    avatar: string;
+    username: string;
+}

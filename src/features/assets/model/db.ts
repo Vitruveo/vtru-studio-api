@@ -28,6 +28,8 @@ import type {
     FindAssetsForSpotlightParams,
     UpdateManyAssetSpotlightParams,
     FindMyAssetsParams,
+    UpdateManyArtistSpotlightParams,
+    FindArtistsForSpotlightParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1244,3 +1246,85 @@ export const getTotalPrice = async () =>
         ])
         .toArray()
         .then((result) => (result.length > 0 ? result[0].totalPrice : 0));
+
+export const findArtistsForSpotlight = async ({
+    query = {},
+    limit,
+}: FindArtistsForSpotlightParams) =>
+    assets()
+        .aggregate([
+            { $match: query },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $match: {
+                    'creator.profile.avatar': { $ne: null },
+                    'creator.username': { $ne: null },
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $group: {
+                    _id: '$creatorId',
+                    assets: { $push: '$$ROOT' },
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    randomArt: {
+                        $arrayElemAt: [
+                            '$assets',
+                            {
+                                $floor: {
+                                    $multiply: [
+                                        { $rand: {} },
+                                        { $size: '$assets' },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            { $limit: limit },
+            {
+                $project: {
+                    _id: '$randomArt._id',
+                    username: '$randomArt.creator.username',
+                    avatar: '$randomArt.creator.profile.avatar',
+                },
+            },
+        ])
+        .toArray();
+
+export const updateManyArtistsSpotlightClear = async () =>
+    assets().updateMany(
+        { 'actions.displayArtistSpotlight': { $exists: true } },
+        { $unset: { 'actions.displayArtistSpotlight': '' } }
+    );
+
+export const updateManyArtistSpotlight = async ({
+    ids,
+}: UpdateManyArtistSpotlightParams) =>
+    assets().updateMany(
+        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+        { $set: { 'actions.displayArtistSpotlight': true } }
+    );
