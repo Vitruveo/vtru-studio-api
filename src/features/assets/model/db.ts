@@ -397,9 +397,9 @@ export const findAssetsByCreatorIdPaginated = ({
                     assetId: 0,
                 },
             },
+            { $sort: sort },
             { $skip: skip },
             { $limit: limit },
-            { $sort: sort },
         ])
         .toArray();
 

@@ -305,7 +305,7 @@ route.get('/search', async (req, res) => {
             parsedQuery['assetMetadata.creators.formData'] = {
                 $elemMatch: {
                     $or: creators.map((creator: string) => ({
-                        name: { $regex: creator, $options: 'i' },
+                        name: { $regex: `^${creator}$`, $options: 'i' },
                     })),
                 },
             };
