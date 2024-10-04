@@ -1306,7 +1306,7 @@ export const findArtistsForSpotlight = async ({
             { $limit: limit },
             {
                 $project: {
-                    _id: '$randomArt._id',
+                    _id: '$randomArt.creator._id',
                     name: '$randomArt.assetMetadata.creators.formData.name',
                     avatar: '$randomArt.creator.profile.avatar',
                 },
