@@ -224,6 +224,7 @@ route.get('/search', async (req, res) => {
             sort,
             precision = '0.7',
             showAdditionalAssets,
+            hasBts,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -366,6 +367,16 @@ route.get('/search', async (req, res) => {
             }
         }
 
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
+        }
+
         const maxAssetPrice = await model.findMaxPrice();
 
         if (parsedQuery?._id?.$in)
@@ -437,6 +448,7 @@ route.post('/search', async (req, res) => {
             sort,
             precision = '0.7',
             showAdditionalAssets,
+            hasBts,
         } = req.body as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -577,6 +589,16 @@ route.post('/search', async (req, res) => {
                     },
                 }));
             }
+        }
+
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
         }
 
         const maxAssetPrice = await model.findMaxPrice();
