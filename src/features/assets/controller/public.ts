@@ -106,7 +106,7 @@ route.get('/groupByCreator', async (req, res) => {
             parsedQuery['assetMetadata.creators.formData'] = {
                 $elemMatch: {
                     $or: creators.map((creator: string) => ({
-                        name: { $regex: creator, $options: 'i' },
+                        name: { $regex: `^${creator}$`, $options: 'i' },
                     })),
                 },
             };
@@ -518,7 +518,7 @@ route.post('/search', async (req, res) => {
             parsedQuery['assetMetadata.creators.formData'] = {
                 $elemMatch: {
                     $or: creators.map((creator: string) => ({
-                        name: { $regex: creator, $options: 'i' },
+                        name: { $regex: `^${creator}$`, $options: 'i' },
                     })),
                 },
             };
