@@ -50,12 +50,14 @@ route.get('/groupByCreator', async (req, res) => {
             limit = 10,
             name,
             sort,
+            hasBts,
         } = req.query as unknown as {
             query: Record<string, unknown>;
             page: string;
             limit: string;
             name: string;
             sort: QueryPaginatedParams['sort'];
+            hasBts: string;
         };
 
         const pageNumber = Number(page);
@@ -75,7 +77,7 @@ route.get('/groupByCreator', async (req, res) => {
             limitNumber = 200;
         }
 
-        const parsedQuery: Record<string, unknown> = {
+        const parsedQuery = {
             ...query,
             ...conditionsToShowAssets,
         };
@@ -165,6 +167,16 @@ route.get('/groupByCreator', async (req, res) => {
                     },
                 }));
             }
+        }
+
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
