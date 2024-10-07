@@ -4,6 +4,60 @@ import { schemaParamsEmail, schemaParamsObjectId, schemaQuery } from './schema';
 import { APIResponse } from '../../services';
 import { NeedsToBeOwnerPermissions } from './types';
 import { checkUserPermission } from './permission';
+import * as model from '../assets/model';
+
+export const mustBeOwner = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { type: authType } = req.auth;
+
+        if (authType === 'user') {
+            next();
+            return;
+        }
+
+        const assetId = req.params?.id || req.params?.assetId;
+
+        if (!assetId) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.common.mustBeOwner.failed',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const asset = await model.findAssetsById({ id: assetId });
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.common.mustBeOwner.failed',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset?.framework.createdBy !== req.auth.id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.common.mustBeOwner.failed',
+                message: 'You are not allowed to change this',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.common.mustBeOwner.failed',
+            message: 'You are not allowed to change this',
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+};
 
 export const needsToBeOwner =
     ({ permissions }: NeedsToBeOwnerPermissions) =>

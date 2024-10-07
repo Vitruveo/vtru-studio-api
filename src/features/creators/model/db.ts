@@ -13,9 +13,14 @@ import type {
     AddEmailCreatorParams,
     UpdateAvatarParams,
     CheckWalletExistsParams,
-    AddVideoToGalleryParams,
+    updateCreatorSearchVideoParams,
     UpdateCreatorSocialById,
     RemoveCreatorSocialById,
+    PpdateCreatorSearchGridParams,
+    FindCreatorAssetsByGridId,
+    FindCreatorAssetsByVideoId,
+    FindCreatorAssetsBySlideshowId,
+    UpdateCreatorSearchSlideshowParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -162,21 +167,17 @@ export const checkWalletExists = async ({
     return !!result;
 };
 
-export const addToVideoGallery = ({
+export const updateCreatorSearchVideo = ({
     id,
-    url,
-    thumbnail,
-    title,
-}: AddVideoToGalleryParams) =>
+    video,
+}: updateCreatorSearchVideoParams) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
         {
             $push: {
-                videoGallery: {
-                    url,
+                'search.video': {
+                    ...video,
                     createdAt: new Date(),
-                    thumbnail,
-                    title,
                 },
             },
         }
@@ -196,6 +197,62 @@ export const updateCreatorSocialById = ({
         }
     );
 
+export const updateCreatorSearchGrid = ({
+    id,
+    grid,
+}: PpdateCreatorSearchGridParams) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $push: {
+                'search.grid': {
+                    ...grid,
+                    createdAt: new Date(),
+                },
+            },
+        }
+    );
+
+export const updateCreatorSearchSlideshow = ({
+    id,
+    slideshow,
+}: UpdateCreatorSearchSlideshowParams) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $push: {
+                'search.slideshow': {
+                    ...slideshow,
+                    createdAt: new Date(),
+                },
+            },
+        }
+    );
+
+export const findCreatorAssetsByGridId = async ({
+    id,
+}: FindCreatorAssetsByGridId) =>
+    creators().findOne(
+        { 'search.grid.id': id },
+        { projection: { 'search.grid.$': 1 } }
+    );
+
+export const findCreatorAssetsByVideoId = async ({
+    id,
+}: FindCreatorAssetsByVideoId) =>
+    creators().findOne(
+        { 'search.video.id': id },
+        { projection: { 'search.video.$': 1 } }
+    );
+
+export const findCreatorAssetsBySlideshowId = async ({
+    id,
+}: FindCreatorAssetsBySlideshowId) =>
+    creators().findOne(
+        { 'search.slideshow.id': id },
+        { projection: { 'search.slideshow.$': 1 } }
+    );
+
 export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
@@ -205,3 +262,6 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
             },
         }
     );
+
+export const countAllCreators = async () =>
+    getDb().collection(COLLECTION_CREATORS).countDocuments();

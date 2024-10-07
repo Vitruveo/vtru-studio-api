@@ -17,11 +17,10 @@ export const schemaValidationForPatch = z.object({
 });
 
 export const schemaValidationForPatchComments = z.object({
-    comments: z
-        .array(
-            z.object({
-                comment: z.string(),
-            })
-        )
-        .optional(),
+    comment: z.string(),
+});
+
+export const schemaValidationForPatchCommentsVisility = z.object({
+    commentId: z.string(),
+    isPublic: z.boolean().default(false),
 });

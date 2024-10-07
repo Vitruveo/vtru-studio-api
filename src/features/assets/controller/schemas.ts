@@ -2,20 +2,7 @@ import { z } from 'zod';
 import { ColorsSchema } from '../model';
 
 export const schemaValidationForCreate = z.object({
-    domain: z.string().default(''),
-    media: z.object({
-        path: z.string().default(''),
-        originalName: z.string().default(''),
-        mimetype: z.string().default(''),
-        size: z.number().default(0),
-    }),
-    formats: z.array(
-        z.object({
-            definition: z.string().default(''),
-            name: z.string().default(''),
-            path: z.string().default(''),
-        })
-    ),
+    cloneId: z.string().optional(),
 });
 
 export const schemaValidationForUpdate = z.object({
@@ -60,10 +47,17 @@ export const schemaAssetUpdateManyStatus = z.object({
     ids: z.array(z.string()),
 });
 
+export const schemaAssetUpdateManyNudity = z.object({
+    nudity: z.boolean(),
+    ids: z.array(z.string()),
+});
+
 export const schemaValidationForVideoGallery = z.object({
-    artworks: z.array(z.string()).max(15),
+    artworks: z.array(z.string()).max(16),
     title: z.string().default(''),
     sound: z.string(),
+    fees: z.number(),
+    timestamp: z.string(),
 });
 
 export const schemaAssetUpload = z.object({
@@ -79,6 +73,12 @@ export const schemaAssetUpload = z.object({
                     .enum(['landscape', 'portrait', 'square'])
                     .nullable()
                     .default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -87,6 +87,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -95,6 +101,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -103,6 +115,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -111,6 +129,12 @@ export const schemaAssetUpload = z.object({
                 name: z.string(),
                 path: z.string(),
                 size: z.number().nullable().default(null),
+                validation: z
+                    .object({
+                        isValid: z.boolean(),
+                        message: z.string().default(''),
+                    })
+                    .optional(),
             })
             .nullable()
             .default(null),
@@ -256,7 +280,7 @@ export const schemaAssetMetadata = z.object({
             formData: z.array(
                 z
                     .object({
-                        name: z.string().or(z.null()),
+                        name: z.string().trim().or(z.null()),
                         roles: z.array(z.string().or(z.null())),
                         bio: z.string().or(z.null()),
                         birthDate: z.string().or(z.null()),

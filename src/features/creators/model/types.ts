@@ -25,6 +25,17 @@ export interface FindCreatorByIdParams {
     id: string | ObjectId;
 }
 
+export interface FindCreatorAssetsByGridId {
+    id: string;
+}
+
+export interface FindCreatorAssetsByVideoId {
+    id: string;
+}
+export interface FindCreatorAssetsBySlideshowId {
+    id: string;
+}
+
 export interface FindOneCreatorParams {
     query: any;
 }
@@ -79,11 +90,17 @@ export interface CheckWalletExistsParams {
     id: string;
 }
 
-export interface AddVideoToGalleryParams {
+export interface updateCreatorSearchVideoParams {
     id: string | ObjectId;
-    url: string;
-    thumbnail: string | null;
-    title: string;
+    video: {
+        id: string;
+        url: string;
+        thumbnail: string | null;
+        title: string;
+        sound: string;
+        fees: number;
+        assets: string[];
+    };
 }
 
 export interface UpdateCreatorSocialById {
@@ -102,4 +119,27 @@ export interface RemoveCreatorSocialById {
 
 export interface FindCreatorsByName {
     name: string;
+}
+
+export interface PpdateCreatorSearchGridParams {
+    id: string;
+    grid: {
+        id: string;
+        path: string;
+        fees: number;
+        assets: string[];
+        title: string;
+    };
+}
+
+export interface UpdateCreatorSearchSlideshowParams {
+    id: string;
+    slideshow: {
+        id: string;
+        assets: string[];
+        fees: number;
+        title: string;
+        interval: number;
+        display: string;
+    };
 }

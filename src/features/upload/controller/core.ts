@@ -1,15 +1,29 @@
 import debug from 'debug';
 import fs from 'fs/promises';
+import { z } from 'zod';
 import { join } from 'path';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 
-import { validateBodyForUpload, validateBodyForUploadWithFile } from './rules';
-import { ASSET_TEMP_DIR, GENERAL_STORAGE_NAME } from '../../../constants';
+import {
+    validateBodyForRequestUpload,
+    validateBodyForUpload,
+    validateBodyForUploadWithFile,
+} from './rules';
+import {
+    ASSET_STORAGE_URL,
+    ASSET_TEMP_DIR,
+    GENERAL_STORAGE_NAME,
+} from '../../../constants';
 import { APIResponse } from '../../../services';
 import { download } from '../../../services/stream';
 import { upload } from '../../../services/aws';
 import * as multer from '../../../services/multer';
+import { checkAuth } from '../../users/middleware';
+import { model } from '../../creators';
+import { schemaValidationForRequestUpload } from './schemas';
+import { sendToExchangeGrid } from '../../../services/grid';
+import { videoExtension } from '../../assets/utils/videoExtensions';
 
 const logger = debug('features:upload:controller');
 const route = Router();
@@ -80,6 +94,72 @@ route.post(
                 fs.unlink(fileName).then(() =>
                     logger('File removed: %s', fileName)
                 );
+        }
+    }
+);
+
+route.post(
+    '/grid',
+    checkAuth,
+    validateBodyForRequestUpload,
+    async (req, res) => {
+        try {
+            const { id } = req.auth;
+            const {
+                assetsId,
+                assets = [],
+                fees,
+                title,
+                size,
+            } = req.body as z.infer<typeof schemaValidationForRequestUpload>;
+            const date = Date.now().toString();
+
+            const path = `${id}/creators/${date}`;
+
+            await sendToExchangeGrid(
+                JSON.stringify({
+                    size,
+                    pathName: path,
+                    assets: assets.map((item) => {
+                        const isVideo = videoExtension.some((ext) =>
+                            item.endsWith(ext)
+                        );
+
+                        if (isVideo)
+                            return `${ASSET_STORAGE_URL}/${item}`.replace(
+                                /\.(\w+)$/,
+                                '_thumb.jpg'
+                            );
+                        return `${ASSET_STORAGE_URL}/${item}`;
+                    }),
+                    creatorId: id,
+                })
+            );
+
+            await model.updateCreatorSearchGrid({
+                id,
+                grid: {
+                    id: date,
+                    path,
+                    assets: assetsId,
+                    fees,
+                    title,
+                },
+            });
+
+            res.status(200).json({
+                code: 'vitruveo.studio.api.upload.request.success',
+                message: `Request Upload success`,
+                transaction: nanoid(),
+            } as APIResponse);
+        } catch (error) {
+            logger('Request upload failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.upload.request.failed',
+                message: `Request Upload failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
         }
     }
 );

@@ -3,10 +3,46 @@ import { ObjectId } from '../../../services';
 
 export const COLLECTION_CREATORS = 'creators';
 
+// TODO: adicionar o createdAt
+export const VideoSchema = z.array(
+    z.object({
+        id: z.string(),
+        url: z.string(),
+        thumbnail: z.string().nullable(),
+        title: z.string(),
+        sound: z.string(),
+        fees: z.number(),
+        assets: z.array(z.string()),
+    })
+);
+
+// TODO: adicionar o fees
+export const GridSchema = z.array(
+    z.object({
+        id: z.string(),
+        path: z.string(),
+        title: z.string(),
+        assets: z.array(z.string()).default([]),
+        createdAt: z.date().default(new Date()),
+    })
+);
+
+export const SlideshowSchema = z.array(
+    z.object({
+        id: z.string(),
+        assets: z.array(z.string()).default([]),
+        title: z.string(),
+        fees: z.number(),
+        interval: z.number().default(0),
+        display: z.string().default(''),
+        createdAt: z.date().default(new Date()),
+    })
+);
+
 export const CreatorSchema = z.object({
     creatorRefId: z.number().nullable().default(null),
     name: z.string().default(''),
-    username: z.string().or(z.undefined()),
+    username: z.string().trim().or(z.undefined()),
     login: z
         .object({
             loginHistory: z
@@ -94,7 +130,16 @@ export const CreatorSchema = z.object({
             updatedBy: z.string().nullable().default(null),
         })
         .default({}),
+    search: z
+        .object({
+            grid: GridSchema,
+            video: VideoSchema,
+            slideshow: SlideshowSchema,
+        })
+        .optional(),
 });
 
 export type Creator = z.infer<typeof CreatorSchema>;
+export type Video = z.infer<typeof VideoSchema>;
+export type Grid = z.infer<typeof GridSchema>;
 export type CreatorDocument = Creator & { _id: string | ObjectId };

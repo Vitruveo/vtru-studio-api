@@ -8,3 +8,11 @@ export const schemaValidationForUpload = z.object({
 export const schemaValidationForUploadWithFile = z.object({
     key: z.string(),
 });
+
+export const schemaValidationForRequestUpload = z.object({
+    assetsId: z.array(z.string()),
+    assets: z.array(z.string()),
+    fees: z.number(),
+    title: z.string(),
+    size: z.number(),
+});

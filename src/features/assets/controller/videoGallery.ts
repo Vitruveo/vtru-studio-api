@@ -18,6 +18,8 @@ import { schemaValidationForVideoGallery } from './schemas';
 import * as model from '../../creators/model';
 import * as modelAssets from '../model';
 import { sendToExchangeRSS } from '../../../services/rss';
+import { sendToExchangeVideo } from '../../../services/video';
+import { videoExtension } from '../utils/videoExtensions';
 
 const logger = debug('features:assets:controller:makeVideo');
 const route = Router();
@@ -37,9 +39,8 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             return;
         }
 
-        const { artworks, title, sound } = req.body as zodInfer<
-            typeof schemaValidationForVideoGallery
-        >;
+        const { artworks, title, sound, fees, timestamp } =
+            req.body as zodInfer<typeof schemaValidationForVideoGallery>;
 
         const assets = await modelAssets.findAssetsByPath({
             path: 'formats.preview.path',
@@ -93,14 +94,38 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             stackImages: payloadArtwork,
             sound,
         });
-        await model.addToVideoGallery({
+
+        const path = `${req.auth.id}/video/${timestamp}.mp4`;
+
+        await sendToExchangeVideo(
+            JSON.stringify({
+                path,
+                url: response.url,
+            })
+        );
+
+        const clip =
+            response.data.timeline.tracks[
+                response.data.timeline.tracks.length - 1
+            ].clips[0].asset.src;
+
+        const isVideo = videoExtension.some((ext) => clip.endsWith(ext));
+
+        const thumbnail = isVideo
+            ? clip.replace(/\.(\w+)$/, '_thumb.jpg')
+            : clip;
+
+        await model.updateCreatorSearchVideo({
             id: req.auth.id,
-            url: response.url,
-            thumbnail:
-                response.data.timeline.tracks[
-                    response.data.timeline.tracks.length - 1
-                ].clips[0].asset.src,
-            title,
+            video: {
+                id: timestamp,
+                fees,
+                assets: assets.map((item) => item._id.toString()),
+                url: `${GENERAL_STORAGE_URL}/${path}`,
+                sound,
+                thumbnail,
+                title,
+            },
         });
 
         if (creator.emails.length) {
@@ -110,7 +135,7 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
                 text: '',
                 html: '',
                 template: MAIL_SENDGRID_TEMPLATE_VIDEO_GALLERY,
-                link: response.url,
+                link: `${GENERAL_STORAGE_URL}/${path}`,
             });
 
             await sendToExchangeMail(payload);
@@ -120,7 +145,7 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             const payload = JSON.stringify({
                 title,
                 sound,
-                url: response.url,
+                url: `${GENERAL_STORAGE_URL}/${path}`,
                 assets: payloadArtwork.map((asset) => ({
                     artist: asset.artistName,
                     title: asset.title,

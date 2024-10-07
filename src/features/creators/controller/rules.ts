@@ -11,6 +11,7 @@ import {
     otpConfirmSchema,
     schemaValidationForAddEmail,
     schemaValidationForCreate,
+    schemaValidationForGenerateStackSlideshow,
     schemaValidationForPut,
     schemaValidationForPutAvatar,
     schemaValidationForRequestConnect,
@@ -243,6 +244,34 @@ export const validateBodyForCreate = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.creator.validateBodyForCreate.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForGenerateStackSlideshow = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForGenerateStackSlideshow.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForGenerateStackSlideshow.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForGenerateStackSlideshow.failed',
             message: '',
             transaction: nanoid(),
             args: error,

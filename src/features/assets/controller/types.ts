@@ -1,11 +1,13 @@
-import { Sort } from 'mongodb';
 import { model } from '..';
 
 export interface QueryPaginatedParams {
     query: Record<string, unknown>;
     page: string;
     limit: string;
-    sort: Sort;
+    sort: {
+        order: string;
+        isIncludeSold: string;
+    };
     minPrice: string;
     maxPrice: string;
     name?: string;
@@ -16,6 +18,7 @@ export interface QueryPaginatedParams {
 
 export interface QueryCollectionParams {
     name: string;
+    showAdditionalAssets: string;
 }
 
 export interface QueryParams {
@@ -29,6 +32,7 @@ export interface QueryParams {
 interface Tags {
     tag: string;
     count: number;
+    showAdditionalAssets: string;
 }
 
 export interface ResponseAssetsPaginated {
@@ -57,9 +61,36 @@ export interface CarouselResponse {
         image?: string;
         title: string;
         description: string;
-    },
+    };
     creator: {
         avatar?: string;
         username: string;
-    }
+    };
+}
+
+export interface QueryScopeNftParams {
+    sort: string;
+}
+
+export interface ResponsePaginatedAdmin {
+    data: model.AssetsDocument[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
+}
+
+export interface Spotlight {
+    _id: string;
+    title: string;
+    licenses: string;
+    preview: string;
+    author: string;
+    nudity: string;
+}
+
+export interface ArtistSpotlight {
+    _id: string;
+    avatar: string;
+    username: string;
 }

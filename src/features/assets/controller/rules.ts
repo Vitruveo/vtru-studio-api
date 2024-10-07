@@ -18,12 +18,14 @@ import {
     schemaIpfs,
     schemaLicenses,
     schemaPublish,
-    schemaValidationForCreate,
     schemaValidationForDeleteFile,
     schemaValidationForVideoGallery,
     schemaValidationForUpdate,
     schemaAssetUpdateManyStatus,
+    schemaValidationForCreate,
+    schemaAssetUpdateManyNudity,
 } from './schemas';
+import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 
 export const validateBodyForCreate = async (
     req: Request,
@@ -180,6 +182,24 @@ export const validateBodyForUpdateManyStatus = async (
     }
 };
 
+export const validateBodyForUpdateManyNudity = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.body = schemaAssetUpdateManyNudity.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateManyStatus.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
 export const validateBodyForUpdateStep = async (
     req: Request,
     res: Response,
@@ -317,6 +337,34 @@ export const validateBodyForDeleteFile = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForDeleteFile.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForPatchAssetPrice = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'PATCH') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForPatchAssetPrice.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForPatchAssetPrice.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForPatchAssetPrice.failed',
             message: '',
             transaction: nanoid(),
             args: error,

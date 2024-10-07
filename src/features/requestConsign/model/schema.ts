@@ -1,9 +1,19 @@
+import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 
 export const COLLECTION_REQUEST_CONSIGNS = 'requestConsigns';
 
 export const StatusSchema = z
-    .enum(['pending', 'approved', 'rejected', 'error', 'running'])
+    .enum([
+        'pending',
+        'approved',
+        'rejected',
+        'error',
+        'running',
+        'queue',
+        'draft',
+        'canceled',
+    ])
     .default('pending');
 
 export const RequestConsignSchema = z.object({
@@ -23,7 +33,11 @@ export const RequestConsignSchema = z.object({
     comments: z
         .array(
             z.object({
-                message: z.string(),
+                id: z.string().default(new ObjectId().toString()),
+                username: z.string(),
+                comment: z.string(),
+                when: z.string().default(() => new Date().toISOString()),
+                isPublic: z.boolean().default(false),
             })
         )
         .default([]),

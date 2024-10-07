@@ -1,34 +1,122 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import debug from 'debug';
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import * as model from '../model';
 import * as modelAssets from '../../assets/model';
 import * as modelCreator from '../../creators/model';
+import * as modelUsers from '../../users/model';
 import { middleware } from '../../users';
-import { needsToBeOwner } from '../../common/rules';
+import { mustBeOwner, needsToBeOwner } from '../../common/rules';
 import {
     APIResponse,
     DeleteResult,
     InsertOneResult,
+    ObjectId,
     UpdateResult,
 } from '../../../services';
-import { findAssetCreatedBy } from '../../assets/model';
-import { validateBodyForPatch, validateBodyForPatchComments } from './rules';
+import {
+    validateBodyForPatch,
+    validateBodyForPatchComments,
+    validateBodyForPatchCommentsVisibility,
+} from './rules';
 import { sendToExchangeMail } from '../../../services/mail';
-import { MAIL_SENDGRID_TEMPLATE_CONSIGN } from '../../../constants';
+import {
+    ASSET_STORAGE_URL,
+    MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
+} from '../../../constants';
+import { RequestConsignsPaginatedResponse } from '../model/types';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
 
-route.post('/', async (req, res) => {
+route.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const data = await model.findRequestConsignsById({ id });
+
+        if (!data) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consign success',
+            transaction: nanoid(),
+            data,
+        } as APIResponse<model.RequestConsign>);
+    } catch (error) {
+        logger('Get request consign failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consign failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 10;
+        const status = req.query.status as string;
+        const search = req.query.search as string;
+
+        const total = await model.countRequestConsigns({
+            query: { status, search },
+        });
+        const data = await model.findRequestConsignsPaginated({
+            query: { status, search },
+            limit,
+            skip: (page - 1) * limit,
+            sort: { when: 1 },
+        });
+
+        const totalPage = Math.ceil(total / limit);
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consigns success',
+            transaction: nanoid(),
+            data: {
+                data,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+        } as APIResponse<RequestConsignsPaginatedResponse>);
+    } catch (error) {
+        logger('Get request consigns failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consigns failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/:assetId', mustBeOwner, async (req, res) => {
     try {
         const { id } = req.auth;
         const alreadyExists = await model.findRequestConsignsByCreator({
             creator: id,
+            assetId: req.params.assetId,
         });
-        if (alreadyExists) {
+        if (
+            alreadyExists &&
+            !['draft', 'error'].includes(alreadyExists.status)
+        ) {
             res.status(409).json({
                 code: 'vitruveo.studio.api.requestConsign.failed',
                 message: 'Request consign already exists',
@@ -37,7 +125,11 @@ route.post('/', async (req, res) => {
             return;
         }
 
-        const asset = await findAssetCreatedBy({ id });
+        const asset = await modelAssets.findOneAssets({
+            query: {
+                _id: new ObjectId(req.params.assetId),
+            },
+        });
         if (!asset) {
             res.status(404).json({
                 code: 'vitruveo.studio.api.requestConsign.failed',
@@ -52,7 +144,15 @@ route.post('/', async (req, res) => {
             creator: id,
         });
 
-        const result = await model.createRequestConsign({ requestConsign });
+        if (alreadyExists) {
+            await model.updateRequestConsign({
+                id: alreadyExists._id,
+                requestConsign: { status: 'pending' },
+            });
+        } else {
+            await model.createRequestConsign({ requestConsign });
+        }
+
         await modelAssets.updateAssets({
             id: asset._id,
             asset: {
@@ -66,8 +166,7 @@ route.post('/', async (req, res) => {
             code: 'vitruveo.studio.api.requestConsign.success',
             message: 'Create request consign success',
             transaction: nanoid(),
-            data: result,
-        } as APIResponse<InsertOneResult<model.RequestConsignDocument>>);
+        } as APIResponse);
     } catch (error) {
         logger('Create request consign failed: %O', error);
         res.status(500).json({
@@ -120,6 +219,9 @@ route.patch(
                 const creator = await modelCreator.findCreatorById({
                     id: requestConsign.creator,
                 });
+                const asset = await modelAssets.findAssetsById({
+                    id: requestConsign.asset.toString(),
+                });
 
                 if (
                     creator &&
@@ -128,10 +230,16 @@ route.patch(
                 ) {
                     await sendToExchangeMail(
                         JSON.stringify({
-                            template: MAIL_SENDGRID_TEMPLATE_CONSIGN,
+                            template: MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
                             to: creator.emails[0].email,
-                            consignMessage:
-                                'Your art was not accepted by the moderators.',
+                            title: asset?.assetMetadata.context.formData.title,
+                            creator: creator.username,
+                            thumbnail: `${ASSET_STORAGE_URL}/${
+                                asset?.formats.original?.path.replace(
+                                    /\.(\w+)$/,
+                                    '_thumb.jpg'
+                                ) || ''
+                            }`,
                         })
                     );
                 }
@@ -161,8 +269,9 @@ route.patch(
     validateBodyForPatchComments,
     async (req, res) => {
         try {
+            const logged = req.auth;
             const { id } = req.params;
-            const { comments } = req.body;
+            const { comment } = req.body;
 
             const requestConsign = await model.findRequestConsignsById({ id });
             if (!requestConsign) {
@@ -174,10 +283,32 @@ route.patch(
                 return;
             }
 
-            const result = await model.updateRequestConsign({
+            const user = await modelUsers.findUserById({ id: logged.id });
+            if (!user) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.requestConsign.failed',
+                    message: 'User not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            const comments = Array.isArray(requestConsign.comments)
+                ? requestConsign.comments
+                : [];
+
+            const data = {
+                id: new ObjectId().toString(),
+                username: user.name,
+                comment,
+                when: new Date().toISOString(),
+                isPublic: false,
+            };
+
+            await model.updateRequestConsign({
                 id,
                 requestConsign: {
-                    comments,
+                    comments: [...comments, data],
                 },
             });
 
@@ -185,8 +316,8 @@ route.patch(
                 code: 'vitruveo.studio.api.requestConsign.success',
                 message: 'Update request consign comments success',
                 transaction: nanoid(),
-                data: result,
-            } as APIResponse<UpdateResult<model.RequestConsignDocument>>);
+                data,
+            } as APIResponse);
         } catch (error) {
             logger('Update request consign comments failed: %O', error);
             res.status(500).json({
@@ -199,12 +330,71 @@ route.patch(
     }
 );
 
-route.delete('/', async (req, res) => {
+route.patch(
+    '/comments/:id/visibility',
+    needsToBeOwner({ permissions: ['moderator:admin'] }),
+    validateBodyForPatchCommentsVisibility,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { isPublic, commentId } = req.body;
+
+            await model.updateCommentVisibility({
+                id,
+                commentId,
+                isPublic,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.requestConsign.success',
+                message: 'Update request consign comments visibility success',
+                transaction: nanoid(),
+            } as APIResponse);
+        } catch (error) {
+            logger(
+                'Update request consign comments visibility failed: %O',
+                error
+            );
+            res.status(500).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: `Update request consign comments visibility failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.get('/comments/:assetId', mustBeOwner, async (req, res) => {
+    try {
+        const { assetId } = req.params;
+
+        const data = await model.findCommentsByAsset({ assetId });
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consign comments success',
+            transaction: nanoid(),
+            data,
+        } as APIResponse);
+    } catch (error) {
+        logger('Get request consign comments failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consign comments failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.delete('/:assetId', async (req, res) => {
     try {
         const { id } = req.auth;
 
         const exists = await model.findRequestConsignsByCreator({
             creator: id,
+            assetId: req.params.assetId,
         });
         if (!exists) {
             res.status(404).json({
@@ -229,7 +419,11 @@ route.delete('/', async (req, res) => {
             id: exists._id,
         });
 
-        const asset = await modelAssets.findAssetCreatedBy({ id });
+        const asset = await modelAssets.findOneAssets({
+            query: {
+                _id: new ObjectId(req.params.assetId),
+            },
+        });
 
         if (!asset) {
             res.status(404).json({

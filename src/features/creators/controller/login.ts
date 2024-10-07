@@ -5,6 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from '../../common/types';
 import {
     CreatorDocument,
+    addEmailCreator,
     createCreator,
     encryptCode,
     findOneCreator,
@@ -114,8 +115,18 @@ route.post('/', validateBodyForLogin, async (req, res) => {
             framework,
         } = req.body;
 
+        const standardEmail = email
+            .trim()
+            .toLowerCase()
+            .replace(/\.(?=.*@)|\+.*(?=@)/g, '');
+
         const creator = await findOneCreator({
-            query: { emails: { $elemMatch: { email } } },
+            query: {
+                $or: [
+                    { emails: { $elemMatch: { email } } },
+                    { emails: { $elemMatch: { email: standardEmail } } },
+                ],
+            },
         });
 
         let template = MAIL_SENDGRID_TEMPLATE_SIGNIN;
@@ -125,6 +136,33 @@ route.post('/', validateBodyForLogin, async (req, res) => {
 
             template = MAIL_SENDGRID_TEMPLATE_SIGNUP;
         } else {
+            if (!creator.emails.some((e) => e.email === standardEmail)) {
+                await addEmailCreator({
+                    id: creator._id,
+                    email: standardEmail,
+                    framework: {
+                        createdAt: new Date(),
+                        createdBy: creator._id.toString(),
+                        updatedAt: new Date(),
+                        updatedBy: creator._id.toString(),
+                    },
+                });
+            }
+            if (
+                creator.emails.some((e) => e.email === standardEmail) &&
+                !creator.emails.some((e) => e.email === email)
+            ) {
+                await addEmailCreator({
+                    id: creator._id,
+                    email,
+                    framework: {
+                        createdAt: new Date(),
+                        createdBy: creator._id.toString(),
+                        updatedAt: new Date(),
+                        updatedBy: creator._id.toString(),
+                    },
+                });
+            }
             await updateCodeHashEmailCreator({
                 id: creator._id,
                 email,
@@ -132,9 +170,16 @@ route.post('/', validateBodyForLogin, async (req, res) => {
                 framework,
                 checkedAt: null,
             });
+            await updateCodeHashEmailCreator({
+                id: creator._id,
+                email: standardEmail,
+                codeHash,
+                framework,
+                checkedAt: null,
+            });
         }
 
-        console.log({ code, email });
+        console.log({ code, email, standardEmail });
 
         const payload = JSON.stringify({
             to: email,
