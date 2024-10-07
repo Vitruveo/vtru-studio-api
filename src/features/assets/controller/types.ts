@@ -14,6 +14,7 @@ export interface QueryPaginatedParams {
     showOnlyAvailableArts?: boolean;
     precision?: string;
     showAdditionalAssets: string;
+    hasBts: string;
 }
 
 export interface QueryCollectionParams {
