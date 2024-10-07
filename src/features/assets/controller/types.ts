@@ -14,11 +14,20 @@ export interface QueryPaginatedParams {
     showOnlyAvailableArts?: boolean;
     precision?: string;
     showAdditionalAssets: string;
+    hasBts: string;
 }
 
 export interface QueryCollectionParams {
     name: string;
     showAdditionalAssets: string;
+}
+
+export interface QueryParams {
+    query: Record<string, unknown>;
+    sort?: {
+        field: string;
+        order: number;
+    };
 }
 
 interface Tags {
