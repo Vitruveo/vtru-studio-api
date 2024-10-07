@@ -10,7 +10,6 @@ import { APIResponse } from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
-    GroupedParams,
     QueryCollectionParams,
     QueryPaginatedParams,
     ResponseAssetsPaginated,
@@ -233,7 +232,15 @@ route.post('/groupByCreator', async (req, res) => {
             limit = 10,
             name,
             sort,
-        } = req.body as GroupedParams;
+            hasBts,
+        } = req.body as unknown as {
+            query: Record<string, unknown>;
+            page: string;
+            limit: string;
+            name: string;
+            sort: QueryPaginatedParams['sort'];
+            hasBts: string;
+        };
 
         const pageNumber = Number(page);
         let limitNumber = Number(limit);
@@ -252,7 +259,7 @@ route.post('/groupByCreator', async (req, res) => {
             limitNumber = 200;
         }
 
-        const parsedQuery: Record<string, unknown> = {
+        const parsedQuery = {
             ...query,
             ...conditionsToShowAssets,
         };
@@ -342,6 +349,16 @@ route.post('/groupByCreator', async (req, res) => {
                     },
                 }));
             }
+        }
+
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
