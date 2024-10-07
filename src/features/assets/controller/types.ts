@@ -86,3 +86,11 @@ export interface ArtistSpotlight {
     avatar: string;
     username: string;
 }
+
+export interface GroupedParams {
+    query: Record<string, unknown>;
+    page: string;
+    limit: string;
+    name: string;
+    sort: QueryPaginatedParams['sort'];
+}

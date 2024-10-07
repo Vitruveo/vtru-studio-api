@@ -10,6 +10,7 @@ import { APIResponse } from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
+    GroupedParams,
     QueryCollectionParams,
     QueryPaginatedParams,
     ResponseAssetsPaginated,
@@ -57,6 +58,170 @@ route.get('/groupByCreator', async (req, res) => {
             name: string;
             sort: QueryPaginatedParams['sort'];
         };
+
+        const pageNumber = Number(page);
+        let limitNumber = Number(limit);
+
+        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.search.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        // limit the number of assets to 200
+        if (limitNumber > 200) {
+            limitNumber = 200;
+        }
+
+        const parsedQuery: Record<string, unknown> = {
+            ...query,
+            ...conditionsToShowAssets,
+        };
+
+        const addSearchByTitleDescCreator = (param: string) => {
+            const searchByTitleDescCreator = {
+                $or: queryByTitleOrDescOrCreator({ name: param }),
+            };
+            if ('$and' in parsedQuery) {
+                if (Array.isArray(parsedQuery.$and)) {
+                    parsedQuery.$and.push(searchByTitleDescCreator);
+                }
+            } else {
+                parsedQuery.$and = [searchByTitleDescCreator];
+            }
+        };
+
+        if (name) addSearchByTitleDescCreator(name);
+
+        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
+            sort.order = 'mintNewToOld';
+        }
+
+        const sortQuery = querySortGroupByCreator(sort);
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: `^${creator}$`, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
+            const subjects =
+                query['assetMetadata.taxonomy.formData.subject'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
+            if (Array.isArray(parsedQuery.$and)) {
+                subjects.forEach((subject: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.subject': {
+                            $elemMatch: {
+                                $regex: subject,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = subjects.map((subject: string) => ({
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $elemMatch: {
+                            $regex: subject,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
+            const collections =
+                query['assetMetadata.taxonomy.formData.collections'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
+            if (Array.isArray(parsedQuery.$and)) {
+                collections.forEach((collection: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.collections': {
+                            $elemMatch: {
+                                $regex: collection,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = collections.map((collection: string) => ({
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $elemMatch: {
+                            $regex: collection,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+
+        const grouped = groupedOptions.includes(query.grouped as string)
+            ? (query.grouped as string)
+            : 'all';
+
+        delete parsedQuery.grouped;
+
+        const assets = await model.findAssetGroupPaginated({
+            query: parsedQuery,
+            limit: limitNumber,
+            skip: (pageNumber - 1) * limitNumber,
+            sort: sortQuery,
+            grouped,
+        });
+
+        const total = await model.countAssetsGroup({
+            query: parsedQuery,
+            grouped,
+        });
+
+        const totalPage = Math.ceil(total.length / limitNumber);
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.search.success',
+            message: 'Reader search success',
+            transaction: nanoid(),
+            data: {
+                data: assets,
+                page: pageNumber,
+                totalPage,
+                total: total.length,
+                limit: limitNumber,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader search asset failed: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.search.failed',
+            message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/groupByCreator', async (req, res) => {
+    try {
+        const {
+            query = {} as any,
+            page = 1,
+            limit = 10,
+            name,
+            sort,
+        } = req.body as GroupedParams;
 
         const pageNumber = Number(page);
         let limitNumber = Number(limit);
