@@ -14,11 +14,20 @@ export interface QueryPaginatedParams {
     showOnlyAvailableArts?: boolean;
     precision?: string;
     showAdditionalAssets: string;
+    hasBts: string;
 }
 
 export interface QueryCollectionParams {
     name: string;
     showAdditionalAssets: string;
+}
+
+export interface QueryParams {
+    query: Record<string, unknown>;
+    sort?: {
+        field: string;
+        order: number;
+    };
 }
 
 interface Tags {
@@ -79,4 +88,18 @@ export interface Spotlight {
     preview: string;
     author: string;
     nudity: string;
+}
+
+export interface ArtistSpotlight {
+    _id: string;
+    avatar: string;
+    username: string;
+}
+
+export interface GroupedParams {
+    query: Record<string, unknown>;
+    page: string;
+    limit: string;
+    name: string;
+    sort: QueryPaginatedParams['sort'];
 }

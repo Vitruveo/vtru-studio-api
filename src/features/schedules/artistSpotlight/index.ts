@@ -2,23 +2,22 @@ import debug from 'debug';
 import { join } from 'path';
 import { writeFile, access } from 'fs/promises';
 import { uniqueExecution } from '@nsfilho/unique';
-
-import {
-    findAssetsForSpotlight,
-    updateManyAssetSpotlight,
-    updateManyAssetSpotlightClear,
-} from '../../assets/model';
-import { exitWithDelay, retry } from '../../../utils';
 import { DIST } from '../../../constants';
-import { start } from './queue';
+import { exitWithDelay, retry } from '../../../utils';
+import {
+    findArtistsForSpotlight,
+    updateManyArtistSpotlight,
+    updateManyArtistsSpotlightClear,
+} from '../../assets/model';
 
-const logger = debug('features:schedules:updateSpotlight');
-const spotlightPath = join(DIST, 'spotlight.json');
+const logger = debug('features:schedules:artistSpotlight');
+const artistSpotlightPath = join(DIST, 'artistSpotlight.json');
 
-export const updateSpotlight = async () => {
+export const updateArtistSpotlight = async () => {
     try {
-        logger('starting schedule updateSpotlight');
+        logger('starting schedule updateArtistSpotlight');
 
+        const limit = 50;
         const query: any = {
             $and: [
                 {
@@ -36,20 +35,19 @@ export const updateSpotlight = async () => {
             'consignArtwork.status': 'active',
             mintExplorer: { $exists: false },
             contractExplorer: { $exists: true },
-            'actions.displaySpotlight': {
+            'actions.displayArtistSpotlight': {
                 $exists: false,
             },
         };
-        const limit = 50;
-        const assets = await findAssetsForSpotlight({ query, limit });
-        await writeFile(spotlightPath, JSON.stringify(assets));
+        const artistSpotlight = await findArtistsForSpotlight({ query, limit });
+        await writeFile(artistSpotlightPath, JSON.stringify(artistSpotlight));
 
-        // remover a flag de displaySpotlight dos assets
-        await updateManyAssetSpotlightClear();
+        // remover a flag de displaySpotlight dos creators
+        await updateManyArtistsSpotlightClear();
 
-        // adicionar a flag de displaySpotlight nos novos assets
-        await updateManyAssetSpotlight({
-            ids: assets.map((asset) => asset._id),
+        // adicionar a flag de displaySpotlight nos novos creators
+        await updateManyArtistSpotlight({
+            ids: artistSpotlight.map((artist) => artist._id),
         });
 
         logger('Spotlight data updated successfully');
@@ -59,24 +57,23 @@ export const updateSpotlight = async () => {
 };
 
 uniqueExecution({
-    name: 'updateSpotlight',
+    name: 'updateArtistSpotlight',
     callback: () =>
         retry(
             async () => {
-                const existsLocalFile = await access(spotlightPath)
+                const existsLocalFile = await access(artistSpotlightPath)
                     .then(() => true)
                     .catch(() => false);
                 if (!existsLocalFile) {
-                    await writeFile(spotlightPath, JSON.stringify([]));
+                    await writeFile(artistSpotlightPath, JSON.stringify([]));
                 }
-                await updateSpotlight();
-                await start();
+                await updateArtistSpotlight();
             },
             5,
             1000,
-            'updateSpotlight schedule'
+            'updateArtistSpotlight schedule'
         ).catch((error) => {
-            logger('Error updateSpotlight', error);
+            logger('Error updateArtistSpotlight', error);
             exitWithDelay({});
         }),
 });

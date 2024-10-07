@@ -8,6 +8,7 @@ import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
 import {
+    ArtistSpotlight,
     CarouselResponse,
     QueryCollectionParams,
     QueryPaginatedParams,
@@ -49,12 +50,14 @@ route.get('/groupByCreator', async (req, res) => {
             limit = 10,
             name,
             sort,
+            hasBts,
         } = req.query as unknown as {
             query: Record<string, unknown>;
             page: string;
             limit: string;
             name: string;
             sort: QueryPaginatedParams['sort'];
+            hasBts: string;
         };
 
         const pageNumber = Number(page);
@@ -74,7 +77,7 @@ route.get('/groupByCreator', async (req, res) => {
             limitNumber = 200;
         }
 
-        const parsedQuery: Record<string, unknown> = {
+        const parsedQuery = {
             ...query,
             ...conditionsToShowAssets,
         };
@@ -105,7 +108,7 @@ route.get('/groupByCreator', async (req, res) => {
             parsedQuery['assetMetadata.creators.formData'] = {
                 $elemMatch: {
                     $or: creators.map((creator: string) => ({
-                        name: { $regex: creator, $options: 'i' },
+                        name: { $regex: `^${creator}$`, $options: 'i' },
                     })),
                 },
             };
@@ -166,6 +169,198 @@ route.get('/groupByCreator', async (req, res) => {
             }
         }
 
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
+        }
+
+        const grouped = groupedOptions.includes(query.grouped as string)
+            ? (query.grouped as string)
+            : 'all';
+
+        delete parsedQuery.grouped;
+
+        const assets = await model.findAssetGroupPaginated({
+            query: parsedQuery,
+            limit: limitNumber,
+            skip: (pageNumber - 1) * limitNumber,
+            sort: sortQuery,
+            grouped,
+        });
+
+        const total = await model.countAssetsGroup({
+            query: parsedQuery,
+            grouped,
+        });
+
+        const totalPage = Math.ceil(total.length / limitNumber);
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.search.success',
+            message: 'Reader search success',
+            transaction: nanoid(),
+            data: {
+                data: assets,
+                page: pageNumber,
+                totalPage,
+                total: total.length,
+                limit: limitNumber,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader search asset failed: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.search.failed',
+            message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/groupByCreator', async (req, res) => {
+    try {
+        const {
+            query = {} as any,
+            page = 1,
+            limit = 10,
+            name,
+            sort,
+            hasBts,
+        } = req.body as unknown as {
+            query: Record<string, unknown>;
+            page: string;
+            limit: string;
+            name: string;
+            sort: QueryPaginatedParams['sort'];
+            hasBts: string;
+        };
+
+        const pageNumber = Number(page);
+        let limitNumber = Number(limit);
+
+        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.assets.search.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        // limit the number of assets to 200
+        if (limitNumber > 200) {
+            limitNumber = 200;
+        }
+
+        const parsedQuery = {
+            ...query,
+            ...conditionsToShowAssets,
+        };
+
+        const addSearchByTitleDescCreator = (param: string) => {
+            const searchByTitleDescCreator = {
+                $or: queryByTitleOrDescOrCreator({ name: param }),
+            };
+            if ('$and' in parsedQuery) {
+                if (Array.isArray(parsedQuery.$and)) {
+                    parsedQuery.$and.push(searchByTitleDescCreator);
+                }
+            } else {
+                parsedQuery.$and = [searchByTitleDescCreator];
+            }
+        };
+
+        if (name) addSearchByTitleDescCreator(name);
+
+        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
+            sort.order = 'mintNewToOld';
+        }
+
+        const sortQuery = querySortGroupByCreator(sort);
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: `^${creator}$`, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
+            const subjects =
+                query['assetMetadata.taxonomy.formData.subject'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
+            if (Array.isArray(parsedQuery.$and)) {
+                subjects.forEach((subject: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.subject': {
+                            $elemMatch: {
+                                $regex: subject,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = subjects.map((subject: string) => ({
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $elemMatch: {
+                            $regex: subject,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
+            const collections =
+                query['assetMetadata.taxonomy.formData.collections'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
+            if (Array.isArray(parsedQuery.$and)) {
+                collections.forEach((collection: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.collections': {
+                            $elemMatch: {
+                                $regex: collection,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = collections.map((collection: string) => ({
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $elemMatch: {
+                            $regex: collection,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
+        }
+
         const grouped = groupedOptions.includes(query.grouped as string)
             ? (query.grouped as string)
             : 'all';
@@ -223,6 +418,7 @@ route.get('/search', async (req, res) => {
             sort,
             precision = '0.7',
             showAdditionalAssets,
+            hasBts,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -304,7 +500,7 @@ route.get('/search', async (req, res) => {
             parsedQuery['assetMetadata.creators.formData'] = {
                 $elemMatch: {
                     $or: creators.map((creator: string) => ({
-                        name: { $regex: creator, $options: 'i' },
+                        name: { $regex: `^${creator}$`, $options: 'i' },
                     })),
                 },
             };
@@ -363,6 +559,16 @@ route.get('/search', async (req, res) => {
                     },
                 }));
             }
+        }
+
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
         }
 
         const maxAssetPrice = await model.findMaxPrice();
@@ -436,6 +642,7 @@ route.post('/search', async (req, res) => {
             sort,
             precision = '0.7',
             showAdditionalAssets,
+            hasBts,
         } = req.body as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -517,7 +724,7 @@ route.post('/search', async (req, res) => {
             parsedQuery['assetMetadata.creators.formData'] = {
                 $elemMatch: {
                     $or: creators.map((creator: string) => ({
-                        name: { $regex: creator, $options: 'i' },
+                        name: { $regex: `^${creator}$`, $options: 'i' },
                     })),
                 },
             };
@@ -576,6 +783,16 @@ route.post('/search', async (req, res) => {
                     },
                 }));
             }
+        }
+
+        if (hasBts === 'yes') {
+            const btsConditions = [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(btsConditions)
+                : btsConditions;
         }
 
         const maxAssetPrice = await model.findMaxPrice();
@@ -816,6 +1033,31 @@ route.get('/spotlight', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.spotlight.failed',
             message: `Reader spotlight failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/artistSpotlight', async (req, res) => {
+    try {
+        const artistSpotlight = await readFile(
+            join(DIST, 'artistSpotlight.json'),
+            'utf-8'
+        );
+        const payload = JSON.parse(artistSpotlight) as ArtistSpotlight[];
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.artistSpotlight.success',
+            message: 'Reader artist Spotlight success',
+            transaction: nanoid(),
+            data: payload,
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader artist Spotlight failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.artistSpotlight.failed',
+            message: `Reader artist Spotlight failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
