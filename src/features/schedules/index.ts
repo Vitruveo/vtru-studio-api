@@ -1,15 +1,13 @@
 import { CronJob } from 'cron';
 import debug from 'debug';
-import { clearSpotlight, updateSpotlight } from './spotlight';
-import { clearArtistSpotlight, updateArtistSpotlight } from './artistSpotlight';
+import { updateArtistSpotlight } from './artistSpotlight';
+import { updateSpotlight } from './spotlight';
 
 const logger = debug('features:schedules');
 
 export const jobs = [
     new CronJob('0 */3 * * *', updateSpotlight),
     new CronJob('0 */3 * * *', updateArtistSpotlight),
-    new CronJob('0 0 */3 * *', clearSpotlight),
-    new CronJob('0 0 */3 * *', clearArtistSpotlight),
 ];
 
 export const start = async () => {
