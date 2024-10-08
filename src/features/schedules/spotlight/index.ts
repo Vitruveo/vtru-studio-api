@@ -46,10 +46,12 @@ export const updateSpotlight = async () => {
 
         const oldContent = await readFile(spotlightPath, 'utf-8');
         const newContent = JSON.stringify(assets);
-        const combinedContent = { oldContent, newContent };
 
         await sendMessageDiscord({
-            message: `Spotlight: ${JSON.stringify(combinedContent, null, 2)}`,
+            message: `Spotlight OLD: ${JSON.stringify(oldContent, null, 4)}`,
+        });
+        await sendMessageDiscord({
+            message: `Spotlight NEW: ${JSON.stringify(newContent, null, 4)}`,
         });
 
         await writeFile(spotlightPath, JSON.stringify(assets));
