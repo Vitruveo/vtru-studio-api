@@ -14,6 +14,19 @@ import { sendMessageDiscord } from '../../../services/discord';
 const logger = debug('features:schedules:artistSpotlight');
 const artistSpotlightPath = join(DIST, 'artistSpotlight.json');
 
+const clearArtistSpotlight = async () => {
+    try {
+        logger('starting schedule clearArtistSpotlight');
+        sendMessageDiscord({ message: 'start schedule clearArtistSpotlight' });
+        // remover a flag de displaySpotlight dos creators
+        await updateManyArtistsSpotlightClear();
+
+        logger('Spotlight data cleared successfully');
+    } catch (error) {
+        logger('Error schedule clearArtistSpotlight', error);
+    }
+};
+
 export const updateArtistSpotlight = async () => {
     try {
         logger('starting schedule updateArtistSpotlight');
@@ -42,9 +55,34 @@ export const updateArtistSpotlight = async () => {
             },
         };
         const artistSpotlight = await findArtistsForSpotlight({ query, limit });
-        const payload = artistSpotlight.sort(() => Math.random() - 0.5);
+        let payload = artistSpotlight;
 
-        await writeFile(artistSpotlightPath, JSON.stringify(payload));
+        if (payload.length === 0) {
+            logger('All artists are already in the spotlight');
+            sendMessageDiscord({
+                message: 'All artists are already in the spotlight',
+            });
+            await clearArtistSpotlight();
+            await updateArtistSpotlight();
+            return;
+        }
+        if (payload.length < limit) {
+            logger('Less than %0 artists found, clearing spotlight', limit);
+            sendMessageDiscord({
+                message: `Less than ${limit} artists found, clearing spotlight`,
+            });
+            await clearArtistSpotlight();
+            const missingArtists = await findArtistsForSpotlight({
+                query,
+                limit: limit - payload.length,
+            });
+            payload = payload.concat(missingArtists);
+        }
+
+        await writeFile(
+            artistSpotlightPath,
+            JSON.stringify(payload.sort(() => 0.5 - Math.random()))
+        );
 
         // adicionar a flag de displaySpotlight nos novos creators
         await updateManyArtistSpotlight({
@@ -57,18 +95,6 @@ export const updateArtistSpotlight = async () => {
     }
 };
 
-export const clearArtistSpotlight = async () => {
-    try {
-        logger('starting schedule clearArtistSpotlight');
-        sendMessageDiscord({ message: 'start schedule clearArtistSpotlight' });
-        // remover a flag de displaySpotlight dos creators
-        await updateManyArtistsSpotlightClear();
-
-        logger('Spotlight data cleared successfully');
-    } catch (error) {
-        logger('Error schedule clearArtistSpotlight', error);
-    }
-};
 uniqueExecution({
     name: 'updateArtistSpotlight',
     callback: () =>
