@@ -61,7 +61,10 @@ export interface querySortSearchParams {
     order: string;
     isIncludeSold: string;
 }
-export const querySortSearch = (sort: querySortSearchParams) => {
+export const querySortSearch = (
+    sort: querySortSearchParams,
+    hasBts: string
+) => {
     let sortQuery: Sort = {};
 
     switch (sort?.order) {
@@ -104,10 +107,22 @@ export const querySortSearch = (sort: querySortSearchParams) => {
         sort?.isIncludeSold === 'true'
             ? sortQuery
             : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
+    sortQuery =
+        hasBts === 'yes'
+            ? {
+                  'mediaAuxiliary.formats.btsVideo': -1,
+                  'mediaAuxiliary.formats.btsImage': -1,
+                  ...sortQuery,
+              }
+            : sortQuery;
+
     return sortQuery;
 };
 
-export const querySortGroupByCreator = (sort: querySortSearchParams) => {
+export const querySortGroupByCreator = (
+    sort: querySortSearchParams,
+    hasBts: string
+) => {
     let sortQuery: Sort = {};
 
     switch (sort?.order) {
@@ -150,6 +165,15 @@ export const querySortGroupByCreator = (sort: querySortSearchParams) => {
         sort?.isIncludeSold === 'true'
             ? sortQuery
             : { 'asset.licenses.nft.availableLicenses': -1, ...sortQuery };
+
+    sortQuery =
+        hasBts === 'yes'
+            ? {
+                  'asset.mediaAuxiliary.formats.btsVideo': -1,
+                  'asset.mediaAuxiliary.formats.btsImage': -1,
+                  ...sortQuery,
+              }
+            : sortQuery;
 
     return sortQuery;
 };
