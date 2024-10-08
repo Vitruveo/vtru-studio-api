@@ -9,6 +9,7 @@ import {
     updateManyArtistSpotlight,
     updateManyArtistsSpotlightClear,
 } from '../../assets/model';
+import { sendMessageDiscord } from '../../../services/discord';
 
 const logger = debug('features:schedules:artistSpotlight');
 const artistSpotlightPath = join(DIST, 'artistSpotlight.json');
@@ -16,6 +17,7 @@ const artistSpotlightPath = join(DIST, 'artistSpotlight.json');
 export const updateArtistSpotlight = async () => {
     try {
         logger('starting schedule updateArtistSpotlight');
+        sendMessageDiscord({ message: 'start schedule updateArtistSpotlight' });
 
         const limit = 50;
         const query: any = {
@@ -58,7 +60,7 @@ export const updateArtistSpotlight = async () => {
 export const clearArtistSpotlight = async () => {
     try {
         logger('starting schedule clearArtistSpotlight');
-
+        sendMessageDiscord({ message: 'start schedule clearArtistSpotlight' });
         // remover a flag de displaySpotlight dos creators
         await updateManyArtistsSpotlightClear();
 

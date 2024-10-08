@@ -11,6 +11,7 @@ import {
 import { exitWithDelay, retry } from '../../../utils';
 import { DIST } from '../../../constants';
 import { start } from './queue';
+import { sendMessageDiscord } from '../../../services/discord';
 
 const logger = debug('features:schedules:updateSpotlight');
 const spotlightPath = join(DIST, 'spotlight.json');
@@ -18,6 +19,7 @@ const spotlightPath = join(DIST, 'spotlight.json');
 export const updateSpotlight = async () => {
     try {
         logger('starting schedule updateSpotlight');
+        sendMessageDiscord({ message: 'start schedule updateSpotlight' });
 
         const query: any = {
             $and: [
@@ -60,7 +62,7 @@ export const updateSpotlight = async () => {
 export const clearSpotlight = async () => {
     try {
         logger('starting schedule clearSpotlight');
-
+        sendMessageDiscord({ message: 'start schedule clearSpotlight' });
         // remover a flag de displaySpotlight dos assets
         await updateManyAssetSpotlightClear();
 
