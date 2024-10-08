@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { join } from 'path';
-import { writeFile, access } from 'fs/promises';
+import { writeFile, access, readFile } from 'fs/promises';
 import { uniqueExecution } from '@nsfilho/unique';
 
 import {
@@ -11,6 +11,7 @@ import {
 import { exitWithDelay, retry } from '../../../utils';
 import { DIST } from '../../../constants';
 import { start } from './queue';
+import { sendMessageDiscord } from '../../../services/discord';
 
 const logger = debug('features:schedules:updateSpotlight');
 const spotlightPath = join(DIST, 'spotlight.json');
@@ -42,6 +43,15 @@ export const updateSpotlight = async () => {
         };
         const limit = 50;
         const assets = await findAssetsForSpotlight({ query, limit });
+
+        const oldContent = await readFile(spotlightPath, 'utf-8');
+        const newContent = JSON.stringify(assets);
+        const combinedContent = { oldContent, newContent };
+
+        await sendMessageDiscord({
+            message: `Spotlight: ${JSON.stringify(combinedContent, null, 2)}`,
+        });
+
         await writeFile(spotlightPath, JSON.stringify(assets));
 
         // remover a flag de displaySpotlight dos assets
