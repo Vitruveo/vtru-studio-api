@@ -40,10 +40,9 @@ export const updateArtistSpotlight = async () => {
             },
         };
         const artistSpotlight = await findArtistsForSpotlight({ query, limit });
-        await writeFile(artistSpotlightPath, JSON.stringify(artistSpotlight));
+        const payload = artistSpotlight.sort(() => Math.random() - 0.5);
 
-        // remover a flag de displaySpotlight dos creators
-        await updateManyArtistsSpotlightClear();
+        await writeFile(artistSpotlightPath, JSON.stringify(payload));
 
         // adicionar a flag de displaySpotlight nos novos creators
         await updateManyArtistSpotlight({
@@ -56,6 +55,18 @@ export const updateArtistSpotlight = async () => {
     }
 };
 
+export const clearArtistSpotlight = async () => {
+    try {
+        logger('starting schedule clearArtistSpotlight');
+
+        // remover a flag de displaySpotlight dos creators
+        await updateManyArtistsSpotlightClear();
+
+        logger('Spotlight data cleared successfully');
+    } catch (error) {
+        logger('Error schedule clearArtistSpotlight', error);
+    }
+};
 uniqueExecution({
     name: 'updateArtistSpotlight',
     callback: () =>

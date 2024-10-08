@@ -42,10 +42,9 @@ export const updateSpotlight = async () => {
         };
         const limit = 50;
         const assets = await findAssetsForSpotlight({ query, limit });
-        await writeFile(spotlightPath, JSON.stringify(assets));
+        const payload = assets.sort(() => Math.random() - 0.5);
 
-        // remover a flag de displaySpotlight dos assets
-        await updateManyAssetSpotlightClear();
+        await writeFile(spotlightPath, JSON.stringify(payload));
 
         // adicionar a flag de displaySpotlight nos novos assets
         await updateManyAssetSpotlight({
@@ -55,6 +54,19 @@ export const updateSpotlight = async () => {
         logger('Spotlight data updated successfully');
     } catch (error) {
         logger('Error schedule updateSpotlight', error);
+    }
+};
+
+export const clearSpotlight = async () => {
+    try {
+        logger('starting schedule clearSpotlight');
+
+        // remover a flag de displaySpotlight dos assets
+        await updateManyAssetSpotlightClear();
+
+        logger('Spotlight data cleared successfully');
+    } catch (error) {
+        logger('Error schedule clearSpotlight', error);
     }
 };
 
