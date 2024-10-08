@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { join } from 'path';
-import { writeFile, access, readFile } from 'fs/promises';
+import { writeFile, access } from 'fs/promises';
 import { uniqueExecution } from '@nsfilho/unique';
 
 import {
@@ -11,7 +11,6 @@ import {
 import { exitWithDelay, retry } from '../../../utils';
 import { DIST } from '../../../constants';
 import { start } from './queue';
-import { sendMessageDiscord } from '../../../services/discord';
 
 const logger = debug('features:schedules:updateSpotlight');
 const spotlightPath = join(DIST, 'spotlight.json');
@@ -43,21 +42,9 @@ export const updateSpotlight = async () => {
         };
         const limit = 50;
         const assets = await findAssetsForSpotlight({ query, limit });
+        const payload = assets.sort(() => Math.random() - 0.5);
 
-        const oldContent = await readFile(spotlightPath, 'utf-8');
-        const newContent = JSON.stringify(assets);
-
-        await sendMessageDiscord({
-            message: `Spotlight OLD: ${JSON.stringify(oldContent, null, 4)}`,
-        });
-        await sendMessageDiscord({
-            message: `Spotlight NEW: ${JSON.stringify(newContent, null, 4)}`,
-        });
-
-        await writeFile(spotlightPath, JSON.stringify(assets));
-
-        // remover a flag de displaySpotlight dos assets
-        await updateManyAssetSpotlightClear();
+        await writeFile(spotlightPath, JSON.stringify(payload));
 
         // adicionar a flag de displaySpotlight nos novos assets
         await updateManyAssetSpotlight({
@@ -67,6 +54,19 @@ export const updateSpotlight = async () => {
         logger('Spotlight data updated successfully');
     } catch (error) {
         logger('Error schedule updateSpotlight', error);
+    }
+};
+
+export const clearSpotlight = async () => {
+    try {
+        logger('starting schedule clearSpotlight');
+
+        // remover a flag de displaySpotlight dos assets
+        await updateManyAssetSpotlightClear();
+
+        logger('Spotlight data cleared successfully');
+    } catch (error) {
+        logger('Error schedule clearSpotlight', error);
     }
 };
 
