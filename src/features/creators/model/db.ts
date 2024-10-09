@@ -266,47 +266,108 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
 export const countAllCreators = async () =>
     getDb().collection(COLLECTION_CREATORS).countDocuments();
 
-export const findCreatorsStacks = async () =>
-    creators()
-        .aggregate([
-            {
-                $match: {
-                    search: { $exists: true },
+export const findCreatorsStacks = async () => {
+    const inputReducer = [
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.slideshow', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'slideshow' }],
                 },
             },
-            {
-                $project: {
-                    _id: 1,
-                    username: 1,
-                    combinedItems: {
-                        $reduce: {
-                            input: [
-                                { $ifNull: ['$search.slideshow', []] },
-                                { $ifNull: ['$search.grid', []] },
-                                { $ifNull: ['$search.video', []] },
-                            ],
-                            initialValue: [],
-                            in: { $concatArrays: ['$$value', '$$this'] },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.grid', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'grid' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.video', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'video' }],
+                },
+            },
+        },
+    ];
+    const stages = [
+        {
+            $match: {
+                search: { $exists: true },
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: {
+                    $reduce: {
+                        input: inputReducer,
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this'],
                         },
                     },
                 },
             },
-            {
-                $unwind: '$combinedItems',
-            },
-            {
-                $group: {
-                    _id: '$_id',
-                    username: { $first: '$username' },
-                    stacks: { $push: '$combinedItems' },
+        },
+        { $unwind: '$stacks' },
+        {
+            $set: {
+                'stacks.assets': {
+                    $cond: {
+                        if: {
+                            $isArray: '$stacks.assets',
+                        },
+                        then: {
+                            $map: {
+                                input: '$stacks.assets',
+                                as: 'assetId',
+                                in: { $toObjectId: '$$assetId' },
+                            },
+                        },
+                        else: [],
+                    },
                 },
             },
-            {
-                $project: {
-                    _id: 1,
-                    username: 1,
-                    stacks: 1,
+        },
+        {
+            $lookup: {
+                from: 'assets',
+                localField: 'stacks.assets',
+                foreignField: '_id',
+                as: 'assetDetails',
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: 1,
+                assetDetails: {
+                    $map: {
+                        input: '$assetDetails',
+                        as: 'asset',
+                        in: {
+                            preview: '$$asset.formats.preview.path',
+                        },
+                    },
                 },
             },
-        ])
-        .toArray();
+        },
+    ];
+
+    return creators().aggregate(stages).toArray();
+};
