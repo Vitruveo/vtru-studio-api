@@ -28,7 +28,7 @@ route.get('/stacks', async (req, res) => {
             limit,
             sort: sortQuery,
         });
-        const totalStacks = 100;
+        const totalStacks = await model.countCreatorStacks({ query });
 
         res.json({
             code: 'vitruveo.studio.api.creators.stack.success',
