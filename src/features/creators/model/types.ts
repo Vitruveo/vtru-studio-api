@@ -1,3 +1,4 @@
+import { Sort } from 'mongodb';
 import { Creator, CreatorDocument } from './schema';
 import { ObjectId } from '../../../services';
 import { Framework } from '../../common/record';
@@ -142,4 +143,11 @@ export interface UpdateCreatorSearchSlideshowParams {
         interval: number;
         display: string;
     };
+}
+
+export interface FindCreatorsStacksParams {
+    query: any;
+    sort: Sort;
+    skip: number;
+    limit: number;
 }

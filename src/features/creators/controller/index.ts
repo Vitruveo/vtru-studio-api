@@ -9,6 +9,7 @@ import { route as gridRouter } from './grid';
 import { route as videoRouter } from './video';
 import { route as slideshowRouter } from './slideshow';
 import { route as stackRouter } from './stack';
+import { route as publicRouter } from './public';
 import {
     route as socialsRouter,
     xCallback,
@@ -27,6 +28,7 @@ router.use('/x/callback', xCallback);
 router.use('/facebook/callback', facebookCallback);
 router.use('/google/callback', googleCallback);
 
+router.use('/creators/public', publicRouter);
 router.use('/creators/socials', socialsRouter);
 router.use('/creators/stack', stackRouter);
 router.use('/creators/vault', vaultRouter);
