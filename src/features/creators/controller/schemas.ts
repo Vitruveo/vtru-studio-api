@@ -21,6 +21,7 @@ export const schemaValidationForPut = z.object({
             })
         )
         .default([]),
+    myWebsite: z.string().url().nullable().default(null),
     links: z
         .array(
             z.object({

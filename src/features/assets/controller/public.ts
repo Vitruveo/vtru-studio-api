@@ -101,7 +101,7 @@ route.get('/groupByCreator', async (req, res) => {
             sort.order = 'mintNewToOld';
         }
 
-        const sortQuery = querySortGroupByCreator(sort);
+        const sortQuery = querySortGroupByCreator(sort, hasBts);
 
         if (query['assetMetadata.creators.formData.name']) {
             const creators = query['assetMetadata.creators.formData.name'].$in;
@@ -283,7 +283,7 @@ route.post('/groupByCreator', async (req, res) => {
             sort.order = 'mintNewToOld';
         }
 
-        const sortQuery = querySortGroupByCreator(sort);
+        const sortQuery = querySortGroupByCreator(sort, hasBts);
 
         if (query['assetMetadata.creators.formData.name']) {
             const creators = query['assetMetadata.creators.formData.name'].$in;
@@ -592,7 +592,7 @@ route.get('/search', async (req, res) => {
             sort.order = 'mintNewToOld';
         }
 
-        const sortQuery = querySortSearch(sort);
+        const sortQuery = querySortSearch(sort, hasBts);
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
@@ -816,7 +816,7 @@ route.post('/search', async (req, res) => {
             sort.order = 'mintNewToOld';
         }
 
-        const sortQuery = querySortSearch(sort);
+        const sortQuery = querySortSearch(sort, hasBts);
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,

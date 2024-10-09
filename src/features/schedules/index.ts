@@ -1,7 +1,7 @@
 import { CronJob } from 'cron';
 import debug from 'debug';
-import { updateSpotlight } from './spotlight';
 import { updateArtistSpotlight } from './artistSpotlight';
+import { updateSpotlight } from './spotlight';
 
 const logger = debug('features:schedules');
 

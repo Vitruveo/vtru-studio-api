@@ -11,13 +11,28 @@ import {
 import { exitWithDelay, retry } from '../../../utils';
 import { DIST } from '../../../constants';
 import { start } from './queue';
+import { sendMessageDiscord } from '../../../services/discord';
 
 const logger = debug('features:schedules:updateSpotlight');
 const spotlightPath = join(DIST, 'spotlight.json');
 
+const clearSpotlight = async () => {
+    try {
+        logger('starting schedule clearSpotlight');
+        sendMessageDiscord({ message: 'start schedule clearSpotlight' });
+        // remover a flag de displaySpotlight dos assets
+        await updateManyAssetSpotlightClear();
+
+        logger('Spotlight data cleared successfully');
+    } catch (error) {
+        logger('Error schedule clearSpotlight', error);
+    }
+};
+
 export const updateSpotlight = async () => {
     try {
         logger('starting schedule updateSpotlight');
+        sendMessageDiscord({ message: 'start schedule updateSpotlight' });
 
         const query: any = {
             $and: [
@@ -42,10 +57,34 @@ export const updateSpotlight = async () => {
         };
         const limit = 50;
         const assets = await findAssetsForSpotlight({ query, limit });
-        await writeFile(spotlightPath, JSON.stringify(assets));
+        let payload = assets;
 
-        // remover a flag de displaySpotlight dos assets
-        await updateManyAssetSpotlightClear();
+        if (payload.length === 0) {
+            logger('All assets are already in the spotlight');
+            sendMessageDiscord({
+                message: 'All assets are already in the spotlight',
+            });
+            await clearSpotlight();
+            await updateSpotlight();
+            return;
+        }
+        if (payload.length < limit) {
+            logger('Less than %0 assets found, clearing spotlight', limit);
+            sendMessageDiscord({
+                message: `Less than ${limit} assets found, clearing spotlight`,
+            });
+            await clearSpotlight();
+            const missingAssets = await findAssetsForSpotlight({
+                query,
+                limit: limit - payload.length,
+            });
+            payload = payload.concat(missingAssets);
+        }
+
+        await writeFile(
+            spotlightPath,
+            JSON.stringify(payload.sort(() => Math.random() - 0.5))
+        );
 
         // adicionar a flag de displaySpotlight nos novos assets
         await updateManyAssetSpotlight({
