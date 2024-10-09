@@ -332,6 +332,11 @@ export const findCreatorsStacks = async ({
         },
         { $unwind: '$stacks' },
         {
+            $match: {
+                'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+            },
+        },
+        {
             $set: {
                 'stacks.assets': {
                     $cond: {

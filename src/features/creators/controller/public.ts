@@ -6,7 +6,7 @@ import { APIResponse } from '../../../services';
 import * as model from '../model';
 import { querySortStacks } from '../utils/queries';
 
-const logger = debug('features:creators:controller:puiblic');
+const logger = debug('features:creators:controller:public');
 const route = Router();
 
 route.get('/stacks', async (req, res) => {
