@@ -292,6 +292,9 @@ export const findCreatorsStacks = async () =>
                 },
             },
             {
+                $unwind: '$combinedItems',
+            },
+            {
                 $group: {
                     _id: '$_id',
                     username: { $first: '$username' },
