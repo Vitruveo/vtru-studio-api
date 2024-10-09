@@ -265,3 +265,45 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
 
 export const countAllCreators = async () =>
     getDb().collection(COLLECTION_CREATORS).countDocuments();
+
+export const findCreatorsStacks = async () =>
+    creators()
+        .aggregate([
+            {
+                $match: {
+                    search: { $exists: true },
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    username: 1,
+                    combinedItems: {
+                        $reduce: {
+                            input: [
+                                { $ifNull: ['$search.slideshow', []] },
+                                { $ifNull: ['$search.grid', []] },
+                                { $ifNull: ['$search.video', []] },
+                            ],
+                            initialValue: [],
+                            in: { $concatArrays: ['$$value', '$$this'] },
+                        },
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    username: { $first: '$username' },
+                    stacks: { $push: '$combinedItems' },
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    username: 1,
+                    stacks: 1,
+                },
+            },
+        ])
+        .toArray();
