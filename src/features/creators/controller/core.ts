@@ -32,6 +32,30 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
+route.get('/me', async (req, res) => {
+    try {
+        const { id } = req.auth
+
+        const creator = await model.findCreatorById({ id })
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.success',
+            message: 'Reader one success',
+            transaction: nanoid(),
+            data: creator,
+        } as APIResponse<model.CreatorDocument>);
+        
+    } catch (error) {
+        logger('Reader by token failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.reader.failed',
+            message: `Reader failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+})
+
 route.get('/:id', validateParamsId, async (req, res) => {
     try {
         const creator = await model.findCreatorById({ id: req.params.id });
