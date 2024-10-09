@@ -21,6 +21,7 @@ import type {
     FindCreatorAssetsByVideoId,
     FindCreatorAssetsBySlideshowId,
     UpdateCreatorSearchSlideshowParams,
+    FindCreatorsStacksParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -266,7 +267,12 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
 export const countAllCreators = async () =>
     getDb().collection(COLLECTION_CREATORS).countDocuments();
 
-export const findCreatorsStacks = async () => {
+export const findCreatorsStacks = async ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindCreatorsStacksParams) => {
     const inputReducer = [
         {
             $map: {
@@ -303,11 +309,7 @@ export const findCreatorsStacks = async () => {
         },
     ];
     const stages = [
-        {
-            $match: {
-                search: { $exists: true },
-            },
-        },
+        { $match: query },
         {
             $project: {
                 _id: 1,
@@ -321,6 +323,11 @@ export const findCreatorsStacks = async () => {
                         },
                     },
                 },
+            },
+        },
+        {
+            $addFields: {
+                'stacks.quantity': { $size: '$stacks' },
             },
         },
         { $unwind: '$stacks' },
@@ -367,6 +374,9 @@ export const findCreatorsStacks = async () => {
                 },
             },
         },
+        { $sort: sort },
+        { $skip: skip },
+        { $limit: limit },
     ];
 
     return creators().aggregate(stages).toArray();
