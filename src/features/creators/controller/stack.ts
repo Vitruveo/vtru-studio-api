@@ -20,7 +20,7 @@ route.post(
     validateBodyForGenerateStackSlideshow,
     async (req, res) => {
         try {
-            const { assets, display, fees, interval, title } =
+            const { assets, display, fees, interval, title, description } =
                 req.body as z.infer<
                     typeof schemaValidationForGenerateStackSlideshow
                 >;
@@ -36,6 +36,7 @@ route.post(
                     fees,
                     interval,
                     title,
+                    description,
                 },
             });
 

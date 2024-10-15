@@ -39,7 +39,7 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
             return;
         }
 
-        const { artworks, title, sound, fees, timestamp } =
+        const { artworks, title, description, sound, fees, timestamp } =
             req.body as zodInfer<typeof schemaValidationForVideoGallery>;
 
         const assets = await modelAssets.findAssetsByPath({
@@ -125,6 +125,7 @@ route.post('/', validateBodyForVideoGallery, async (req, res) => {
                 sound,
                 thumbnail,
                 title,
+                description,
             },
         });
 

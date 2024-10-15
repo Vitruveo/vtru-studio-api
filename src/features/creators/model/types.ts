@@ -101,6 +101,7 @@ export interface updateCreatorSearchVideoParams {
         sound: string;
         fees: number;
         assets: string[];
+        description: string;
     };
 }
 
@@ -130,6 +131,7 @@ export interface PpdateCreatorSearchGridParams {
         fees: number;
         assets: string[];
         title: string;
+        description: string;
     };
 }
 
@@ -142,6 +144,7 @@ export interface UpdateCreatorSearchSlideshowParams {
         title: string;
         interval: number;
         display: string;
+        description: string;
     };
 }
 
