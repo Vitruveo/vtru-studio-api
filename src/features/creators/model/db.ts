@@ -334,6 +334,10 @@ export const findCreatorsStacks = async ({
         {
             $match: {
                 'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+                $or: [
+                    { 'stacks.enable': { $exists: false } },
+                    { 'stacks.enable': true },
+                ],
             },
         },
         {
@@ -443,6 +447,15 @@ export const countCreatorStacks = async ({
             },
         },
         { $unwind: '$stacks' },
+        {
+            $match: {
+                'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+                $or: [
+                    { 'stacks.enable': { $exists: false } },
+                    { 'stacks.enable': true },
+                ],
+            },
+        },
     ];
 
     return (await creators().aggregate(stages).toArray()).length;
