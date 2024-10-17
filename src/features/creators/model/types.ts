@@ -154,3 +154,10 @@ export interface FindCreatorsStacksParams {
     skip: number;
     limit: number;
 }
+
+export interface UpdateManyStackSpotlight {
+    stacks: {
+        id: string;
+        type: string;
+    }[];
+}

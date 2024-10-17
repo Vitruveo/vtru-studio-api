@@ -67,7 +67,7 @@ export const updateArtistSpotlight = async () => {
             return;
         }
         if (payload.length < limit) {
-            logger('Less than %0 artists found, clearing spotlight', limit);
+            logger('Less than %d artists found, clearing spotlight', limit);
             sendMessageDiscord({
                 message: `Less than ${limit} artists found, clearing spotlight`,
             });
