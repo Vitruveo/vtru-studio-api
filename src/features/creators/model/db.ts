@@ -22,6 +22,7 @@ import type {
     FindCreatorAssetsBySlideshowId,
     UpdateCreatorSearchSlideshowParams,
     FindCreatorsStacksParams,
+    UpdateManyStackSpotlight,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -530,6 +531,7 @@ export const findStacksSpotlight = async ({
                     { 'stacks.enable': { $exists: false } },
                     { 'stacks.enable': true },
                 ],
+                // buscar os que não tem displaySpotlight
             },
         },
         {
@@ -579,4 +581,36 @@ export const findStacksSpotlight = async ({
     ];
 
     return creators().aggregate(stages).toArray();
+};
+
+export const updateManyStackSpotlight = async ({
+    stacks,
+}: UpdateManyStackSpotlight) => {
+    stacks.forEach((stack) => {
+        creators().updateOne(
+            {
+                [`search.${stack.type}`]: {
+                    $elemMatch: { id: stack.id },
+                },
+            },
+            {
+                $set: {
+                    [`search.${stack.type}.$.displaySpotlight`]: true,
+                },
+            }
+        );
+    });
+};
+
+export const updateManyStackSpotlightClear = async () => {
+    await creators().updateMany(
+        { search: { $exists: true } },
+        {
+            $unset: {
+                'search.slideshow.$[].displaySpotlight': '',
+                'search.grid.$[].displaySpotlight': '',
+                'search.video.$[].displaySpotlight': '',
+            },
+        }
+    );
 };

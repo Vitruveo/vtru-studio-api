@@ -5,10 +5,27 @@ import { access, writeFile } from 'fs/promises';
 import { DIST } from '../../../constants';
 import { sendMessageDiscord } from '../../../services/discord';
 import { exitWithDelay, retry } from '../../../utils';
-import { findStacksSpotlight } from '../../creators/model';
+import {
+    findStacksSpotlight,
+    updateManyStackSpotlight,
+    updateManyStackSpotlightClear,
+} from '../../creators/model';
 
-const logger = debug('features:schedules:artistSpotlight');
+const logger = debug('features:schedules:stackSpotlight');
 const stackSpotlightPath = join(DIST, 'stackSpotlight.json');
+
+const clearStackSpotlight = async () => {
+    try {
+        logger('starting schedule clearStackSpotlight');
+        sendMessageDiscord({ message: 'start schedule clearStackSpotlight' });
+        // remover a flag de displaySpotlight dos creators
+        await updateManyStackSpotlightClear();
+
+        logger('Spotlight data cleared successfully');
+    } catch (error) {
+        logger('Error schedule clearStackSpotlight', error);
+    }
+};
 
 export const updateStackSpotlight = async () => {
     try {
@@ -16,7 +33,9 @@ export const updateStackSpotlight = async () => {
         sendMessageDiscord({ message: 'start schedule updateStackSpotlight' });
 
         const limit = 50;
-        const query: any = {};
+        const query: any = {
+            search: { $exists: true },
+        };
         const stackSpotlight = await findStacksSpotlight({ query, limit });
         let payload = stackSpotlight;
 
@@ -25,6 +44,7 @@ export const updateStackSpotlight = async () => {
             sendMessageDiscord({
                 message: 'All stacks are already in the spotlight',
             });
+            await clearStackSpotlight();
             await updateStackSpotlight();
             return;
         }
@@ -33,6 +53,7 @@ export const updateStackSpotlight = async () => {
             sendMessageDiscord({
                 message: `Less than ${limit} stacks foundm clearing spotlight`,
             });
+            await clearStackSpotlight();
             const missingStacks = await findStacksSpotlight({
                 query,
                 limit: limit - payload.length,
@@ -44,6 +65,15 @@ export const updateStackSpotlight = async () => {
             stackSpotlightPath,
             JSON.stringify(payload.sort(() => 0.5 - Math.random()))
         );
+
+        // Adicionar flag de displaySpotlight nos novos stacks
+        await updateManyStackSpotlight({
+            stacks: payload.map((item) => ({
+                id: item.stacks.id,
+                type: item.stacks.type,
+            })),
+        });
+        // clearStackSpotlight();
 
         logger('Stacks Spotlight data updated successfully');
     } catch (error) {
