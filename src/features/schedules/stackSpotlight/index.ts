@@ -49,7 +49,7 @@ export const updateStackSpotlight = async () => {
             return;
         }
         if (payload.length < limit) {
-            logger('Less than %0 stacks found, clearing spotlight', limit);
+            logger('Less than %d stacks found, clearing spotlight', limit);
             sendMessageDiscord({
                 message: `Less than ${limit} stacks foundm clearing spotlight`,
             });
@@ -73,7 +73,6 @@ export const updateStackSpotlight = async () => {
                 type: item.stacks.type,
             })),
         });
-        // clearStackSpotlight();
 
         logger('Stacks Spotlight data updated successfully');
     } catch (error) {

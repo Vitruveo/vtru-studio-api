@@ -531,53 +531,45 @@ export const findStacksSpotlight = async ({
                     { 'stacks.enable': { $exists: false } },
                     { 'stacks.enable': true },
                 ],
-                // buscar os que não tem displaySpotlight
+                'stacks.displaySpotlight': { $exists: false },
             },
         },
         {
-            $set: {
-                'stacks.assets': {
-                    $cond: {
-                        if: {
-                            $isArray: '$stacks.assets',
-                        },
-                        then: {
-                            $map: {
-                                input: '$stacks.assets',
-                                as: 'assetId',
-                                in: { $toObjectId: '$$assetId' },
-                            },
-                        },
-                        else: [],
-                    },
-                },
-            },
-        },
-        {
-            $lookup: {
-                from: 'assets',
-                localField: 'stacks.assets',
-                foreignField: '_id',
-                as: 'assetDetails',
+            $group: {
+                _id: '$_id',
+                username: { $first: '$username' },
+                stacks: { $push: '$stacks' },
             },
         },
         {
             $project: {
                 _id: 1,
                 username: 1,
-                stacks: 1,
-                assetDetails: {
-                    $map: {
-                        input: '$assetDetails',
-                        as: 'asset',
-                        in: {
-                            preview: '$$asset.formats.preview.path',
+                randomStack: {
+                    $arrayElemAt: [
+                        '$stacks',
+                        {
+                            $floor: {
+                                $multiply: [
+                                    { $rand: {} },
+                                    { $size: '$stacks' },
+                                ],
+                            },
                         },
-                    },
+                    ],
                 },
             },
         },
-        { $sample: { size: limit } },
+        {
+            $limit: limit,
+        },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: '$randomStack',
+            },
+        },
     ];
 
     return creators().aggregate(stages).toArray();
@@ -604,11 +596,27 @@ export const updateManyStackSpotlight = async ({
 
 export const updateManyStackSpotlightClear = async () => {
     await creators().updateMany(
-        { search: { $exists: true } },
+        { 'search.slideshow': { $exists: true } },
         {
             $unset: {
                 'search.slideshow.$[].displaySpotlight': '',
+            },
+        }
+    );
+
+    await creators().updateMany(
+        { 'search.grid': { $exists: true } },
+        {
+            $unset: {
                 'search.grid.$[].displaySpotlight': '',
+            },
+        }
+    );
+
+    await creators().updateMany(
+        { 'search.video': { $exists: true } },
+        {
+            $unset: {
                 'search.video.$[].displaySpotlight': '',
             },
         }

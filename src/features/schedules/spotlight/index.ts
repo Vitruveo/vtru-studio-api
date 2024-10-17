@@ -69,7 +69,7 @@ export const updateSpotlight = async () => {
             return;
         }
         if (payload.length < limit) {
-            logger('Less than %0 assets found, clearing spotlight', limit);
+            logger('Less than %d assets found, clearing spotlight', limit);
             sendMessageDiscord({
                 message: `Less than ${limit} assets found, clearing spotlight`,
             });
