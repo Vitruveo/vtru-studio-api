@@ -342,46 +342,10 @@ export const findCreatorsStacks = async ({
             },
         },
         {
-            $set: {
-                'stacks.assets': {
-                    $cond: {
-                        if: {
-                            $isArray: '$stacks.assets',
-                        },
-                        then: {
-                            $map: {
-                                input: '$stacks.assets',
-                                as: 'assetId',
-                                in: { $toObjectId: '$$assetId' },
-                            },
-                        },
-                        else: [],
-                    },
-                },
-            },
-        },
-        {
-            $lookup: {
-                from: 'assets',
-                localField: 'stacks.assets',
-                foreignField: '_id',
-                as: 'assetDetails',
-            },
-        },
-        {
             $project: {
                 _id: 1,
                 username: 1,
                 stacks: 1,
-                assetDetails: {
-                    $map: {
-                        input: '$assetDetails',
-                        as: 'asset',
-                        in: {
-                            preview: '$$asset.formats.preview.path',
-                        },
-                    },
-                },
             },
         },
         { $sort: sort },

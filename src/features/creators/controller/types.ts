@@ -30,7 +30,4 @@ export interface StackSpotlight {
         type: string;
         quantity: number;
     };
-    assetDetails: {
-        preview: string;
-    }[];
 }
