@@ -460,3 +460,123 @@ export const countCreatorStacks = async ({
 
     return (await creators().aggregate(stages).toArray()).length;
 };
+
+export const findStacksSpotlight = async ({
+    query,
+    limit,
+}: Pick<FindCreatorsStacksParams, 'query' | 'limit'>) => {
+    const inputReducer = [
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.slideshow', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'slideshow' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.grid', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'grid' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.video', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'video' }],
+                },
+            },
+        },
+    ];
+    const stages = [
+        { $match: query },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: {
+                    $reduce: {
+                        input: inputReducer,
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this'],
+                        },
+                    },
+                },
+            },
+        },
+        {
+            $addFields: {
+                'stacks.quantity': { $size: '$stacks' },
+            },
+        },
+        { $unwind: '$stacks' },
+        {
+            $match: {
+                'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+                $or: [
+                    { 'stacks.enable': { $exists: false } },
+                    { 'stacks.enable': true },
+                ],
+            },
+        },
+        {
+            $set: {
+                'stacks.assets': {
+                    $cond: {
+                        if: {
+                            $isArray: '$stacks.assets',
+                        },
+                        then: {
+                            $map: {
+                                input: '$stacks.assets',
+                                as: 'assetId',
+                                in: { $toObjectId: '$$assetId' },
+                            },
+                        },
+                        else: [],
+                    },
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'assets',
+                localField: 'stacks.assets',
+                foreignField: '_id',
+                as: 'assetDetails',
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: 1,
+                assetDetails: {
+                    $map: {
+                        input: '$assetDetails',
+                        as: 'asset',
+                        in: {
+                            preview: '$$asset.formats.preview.path',
+                        },
+                    },
+                },
+            },
+        },
+        { $sample: { size: limit } },
+    ];
+
+    return creators().aggregate(stages).toArray();
+};

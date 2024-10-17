@@ -12,3 +12,25 @@ export interface QueryPaginatedParams {
     limit: string;
     sort: string;
 }
+
+export interface StackSpotlight {
+    _id: string;
+    username: string;
+    stacks: {
+        id: string;
+        path: string;
+        assets: string[];
+        fees?: number;
+        title?: string;
+        description?: string;
+        display?: string;
+        interval?: string;
+        url?: string;
+        createdAt: string;
+        type: string;
+        quantity: number;
+    };
+    assetDetails: {
+        preview: string;
+    }[];
+}

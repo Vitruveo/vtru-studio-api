@@ -1,10 +1,14 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { APIResponse } from '../../../services';
 
 import * as model from '../model';
 import { querySortStacks } from '../utils/queries';
+import { DIST } from '../../../constants';
+import { StackSpotlight } from './types';
 
 const logger = debug('features:creators:controller:public');
 const route = Router();
@@ -47,6 +51,31 @@ route.get('/stacks', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.creators.stack.failed',
             message: 'Reader stack failed',
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/stackSpotlight', async (req, res) => {
+    try {
+        const stacksSpotlight = await readFile(
+            join(DIST, 'stackSpotlight.json'),
+            'utf-8'
+        );
+        const payload = JSON.parse(stacksSpotlight) as StackSpotlight[];
+
+        res.json({
+            code: 'vitruveo.studio.api.creators.stackSpotlight.success',
+            message: 'Reader stack spotlight success',
+            transaction: nanoid(),
+            data: payload,
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader stack spotlight failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.creators.stackSpotlight.failed',
+            message: `Reader stack spotlight failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
