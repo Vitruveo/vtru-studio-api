@@ -110,6 +110,7 @@ route.post(
                 assets = [],
                 fees,
                 title,
+                description,
                 size,
             } = req.body as z.infer<typeof schemaValidationForRequestUpload>;
             const date = Date.now().toString();
@@ -144,6 +145,7 @@ route.post(
                     assets: assetsId,
                     fees,
                     title,
+                    description,
                 },
             });
 

@@ -123,4 +123,5 @@ export const schemaValidationForGenerateStackSlideshow = z.object({
     fees: z.number(),
     display: z.string(),
     interval: z.number(),
+    description: z.string().default(''),
 });
