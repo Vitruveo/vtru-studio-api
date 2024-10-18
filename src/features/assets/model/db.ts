@@ -1322,8 +1322,9 @@ export const updateManyArtistsSpotlightClear = async () =>
 
 export const updateManyArtistSpotlight = async ({
     ids,
-}: UpdateManyArtistSpotlightParams) =>
-    assets().updateMany(
-        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+}: UpdateManyArtistSpotlightParams) => {
+    await assets().updateMany(
+        { 'framework.createdBy': { $in: ids.map((id) => id.toString()) } },
         { $set: { 'actions.displayArtistSpotlight': true } }
     );
+};

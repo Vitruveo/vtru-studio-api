@@ -32,7 +32,6 @@ export const updateArtistSpotlight = async () => {
         logger('starting schedule updateArtistSpotlight');
         sendMessageDiscord({ message: 'start schedule updateArtistSpotlight' });
 
-        const limit = 50;
         const query: any = {
             $and: [
                 {
@@ -54,6 +53,7 @@ export const updateArtistSpotlight = async () => {
                 $exists: false,
             },
         };
+        const limit = 50;
         const artistSpotlight = await findArtistsForSpotlight({ query, limit });
         let payload = artistSpotlight;
 
@@ -81,7 +81,7 @@ export const updateArtistSpotlight = async () => {
 
         await writeFile(
             artistSpotlightPath,
-            JSON.stringify(payload.sort(() => 0.5 - Math.random()))
+            JSON.stringify(payload.sort(() => Math.random() - 0.5))
         );
 
         // adicionar a flag de displaySpotlight nos novos creators
