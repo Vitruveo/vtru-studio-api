@@ -77,7 +77,7 @@ route.get('/', async (req, res) => {
             },
             price: {
                 total: totalPrice,
-                average: averagePrice,
+                average: Number(averagePrice.toFixed(4)),
                 sold: totalSoldPrice,
             },
             stacks: {
