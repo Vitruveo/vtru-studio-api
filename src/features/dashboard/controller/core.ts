@@ -11,8 +11,8 @@ const route = Router();
 
 route.get('/', async (req, res) => {
     try {
-        const creators = await countAllCreators();
-        const arts = await countAllAssets();
+        const totalCreators = await countAllCreators();
+        const totalArts = await countAllAssets();
         const consigned = await countAllAssets({
             contractExplorer: { $exists: true },
         });
@@ -29,23 +29,27 @@ route.get('/', async (req, res) => {
 
         await sendMessageDiscord({
             message: `Vitruveo Dashboard:\n 
-creators: ${creators}
-arts: ${arts}
-consigned: ${consigned}
-activeConsigned: ${activeConsigned}
-totalPrice: ${totalPrice}
-artsSold: ${artsSold}
-averagePrice: ${averagePrice}`,
+            creators: ${totalCreators}
+            arts: ${totalArts}
+            consigned: ${consigned}
+            activeConsigned: ${activeConsigned}
+            totalPrice: ${totalPrice}
+            artsSold: ${artsSold}
+            averagePrice: ${averagePrice}`,
         });
 
         const response = {
-            creators,
-            arts,
-            consigned,
-            activeConsigned,
-            totalPrice,
-            artsSold,
-            averagePrice,
+            creators: {
+                total: totalCreators,
+            },
+            arts: {
+                total: totalArts,
+                consigned,
+                activeConsigned,
+                sold: artsSold,
+                totalPrice,
+                averagePrice,
+            },
         };
 
         res.json({
