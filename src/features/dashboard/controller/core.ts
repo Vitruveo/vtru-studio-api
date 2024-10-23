@@ -19,6 +19,12 @@ route.get('/', async (req, res) => {
         const totalConsigned = await countAllAssets({
             contractExplorer: { $exists: true },
         });
+        const totalRejected = await countAllAssets({
+            'consignArtwork.status': 'rejected',
+        });
+        const totalPending = await countAllAssets({
+            'consignArtwork.status': 'pending',
+        });
         const activeConsigned = await countAllAssets({
             contractExplorer: { $exists: true },
             'consignArtwork.status': 'active',
@@ -34,7 +40,7 @@ route.get('/', async (req, res) => {
             mintExplorer: { $exists: true },
         });
         const totalStackGrid = await countAllStacks({ type: 'grid' });
-        const totalStacVideo = await countAllStacks({ type: 'video' });
+        const totalStackVideo = await countAllStacks({ type: 'video' });
         const totalStackSlideshow = await countAllStacks({ type: 'slideshow' });
 
         const averagePrice = totalPrice / artsSold;
@@ -62,6 +68,12 @@ route.get('/', async (req, res) => {
                     active: activeConsigned,
                     sold: artsSold,
                 },
+                rejected: {
+                    total: totalRejected,
+                },
+                pending: {
+                    total: totalPending,
+                },
             },
             price: {
                 total: totalPrice,
@@ -69,11 +81,12 @@ route.get('/', async (req, res) => {
                 sold: totalSoldPrice,
             },
             stacks: {
+                total: totalStackGrid + totalStackVideo + totalStackSlideshow,
                 grid: {
                     total: totalStackGrid,
                 },
                 video: {
-                    total: totalStacVideo,
+                    total: totalStackVideo,
                 },
                 slideshow: {
                     total: totalStackSlideshow,
