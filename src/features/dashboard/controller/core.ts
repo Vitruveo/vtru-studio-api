@@ -2,7 +2,7 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { APIResponse } from '../../../services';
-import { countAllCreators } from '../../creators/model';
+import { countAllCreators, countAllStacks } from '../../creators/model';
 import { countAllAssets, getTotalPrice } from '../../assets/model';
 import { sendMessageDiscord } from '../../../services/discord';
 
@@ -11,41 +11,87 @@ const route = Router();
 
 route.get('/', async (req, res) => {
     try {
-        const creators = await countAllCreators();
-        const arts = await countAllAssets();
-        const consigned = await countAllAssets({
+        const totalCreators = await countAllCreators();
+        const totalBlockedCreators = await countAllCreators({
+            'vault.isBlocked': true,
+        });
+        const totalArts = await countAllAssets();
+        const totalConsigned = await countAllAssets({
             contractExplorer: { $exists: true },
+        });
+        const totalRejected = await countAllAssets({
+            'consignArtwork.status': 'rejected',
+        });
+        const totalPending = await countAllAssets({
+            'consignArtwork.status': 'pending',
         });
         const activeConsigned = await countAllAssets({
             contractExplorer: { $exists: true },
             'consignArtwork.status': 'active',
         });
-        const totalPrice = await getTotalPrice();
         const artsSold = await countAllAssets({
             mintExplorer: { $exists: true },
         });
+        const totalPrice = await getTotalPrice({
+            'contractExplorer.explorer': { $exists: true },
+        });
+        const totalSoldPrice = await getTotalPrice({
+            'contractExplorer.explorer': { $exists: true },
+            mintExplorer: { $exists: true },
+        });
+        const totalStackGrid = await countAllStacks({ type: 'grid' });
+        const totalStackVideo = await countAllStacks({ type: 'video' });
+        const totalStackSlideshow = await countAllStacks({ type: 'slideshow' });
 
         const averagePrice = totalPrice / artsSold;
 
         await sendMessageDiscord({
             message: `Vitruveo Dashboard:\n 
-creators: ${creators}
-arts: ${arts}
-consigned: ${consigned}
-activeConsigned: ${activeConsigned}
-totalPrice: ${totalPrice}
-artsSold: ${artsSold}
-averagePrice: ${averagePrice}`,
+            creators: ${totalCreators}
+            arts: ${totalArts}
+            consigned: ${totalConsigned}
+            activeConsigned: ${activeConsigned}
+            totalPrice: ${totalPrice}
+            artsSold: ${artsSold}
+            averagePrice: ${averagePrice}`,
         });
 
         const response = {
-            creators,
-            arts,
-            consigned,
-            activeConsigned,
-            totalPrice,
-            artsSold,
-            averagePrice,
+            creators: {
+                total: totalCreators,
+                blocked: totalBlockedCreators,
+            },
+            arts: {
+                total: totalArts,
+                consigned: {
+                    total: totalConsigned,
+                    active: activeConsigned,
+                    sold: artsSold,
+                },
+                rejected: {
+                    total: totalRejected,
+                },
+                pending: {
+                    total: totalPending,
+                },
+            },
+            price: {
+                total: totalPrice,
+                average: Number(averagePrice.toFixed(4)),
+                sold: totalSoldPrice,
+            },
+            stacks: {
+                total: totalStackGrid + totalStackVideo + totalStackSlideshow,
+                grid: {
+                    total: totalStackGrid,
+                },
+                video: {
+                    total: totalStackVideo,
+                },
+                slideshow: {
+                    total: totalStackSlideshow,
+                },
+            },
         };
 
         res.json({
