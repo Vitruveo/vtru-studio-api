@@ -2,7 +2,7 @@ import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { APIResponse } from '../../../services';
-import { countAllCreators } from '../../creators/model';
+import { countAllCreators, countAllStacks } from '../../creators/model';
 import { countAllAssets, getTotalPrice } from '../../assets/model';
 import { sendMessageDiscord } from '../../../services/discord';
 
@@ -12,18 +12,30 @@ const route = Router();
 route.get('/', async (req, res) => {
     try {
         const totalCreators = await countAllCreators();
+        const totalBlockedCreators = await countAllCreators({
+            'vault.isBlocked': true,
+        });
         const totalArts = await countAllAssets();
-        const consigned = await countAllAssets({
+        const totalConsigned = await countAllAssets({
             contractExplorer: { $exists: true },
         });
         const activeConsigned = await countAllAssets({
             contractExplorer: { $exists: true },
             'consignArtwork.status': 'active',
         });
-        const totalPrice = await getTotalPrice();
         const artsSold = await countAllAssets({
             mintExplorer: { $exists: true },
         });
+        const totalPrice = await getTotalPrice({
+            'contractExplorer.explorer': { $exists: true },
+        });
+        const totalSoldPrice = await getTotalPrice({
+            'contractExplorer.explorer': { $exists: true },
+            mintExplorer: { $exists: true },
+        });
+        const totalStackGrid = await countAllStacks({ type: 'grid' });
+        const totalStacVideo = await countAllStacks({ type: 'video' });
+        const totalStackSlideshow = await countAllStacks({ type: 'slideshow' });
 
         const averagePrice = totalPrice / artsSold;
 
@@ -31,7 +43,7 @@ route.get('/', async (req, res) => {
             message: `Vitruveo Dashboard:\n 
             creators: ${totalCreators}
             arts: ${totalArts}
-            consigned: ${consigned}
+            consigned: ${totalConsigned}
             activeConsigned: ${activeConsigned}
             totalPrice: ${totalPrice}
             artsSold: ${artsSold}
@@ -41,14 +53,31 @@ route.get('/', async (req, res) => {
         const response = {
             creators: {
                 total: totalCreators,
+                blocked: totalBlockedCreators,
             },
             arts: {
                 total: totalArts,
-                consigned,
-                activeConsigned,
-                sold: artsSold,
-                totalPrice,
-                averagePrice,
+                consigned: {
+                    total: totalConsigned,
+                    active: activeConsigned,
+                    sold: artsSold,
+                },
+            },
+            price: {
+                total: totalPrice,
+                average: averagePrice,
+                sold: totalSoldPrice,
+            },
+            stacks: {
+                grid: {
+                    total: totalStackGrid,
+                },
+                video: {
+                    total: totalStacVideo,
+                },
+                slideshow: {
+                    total: totalStackSlideshow,
+                },
             },
         };
 

@@ -1229,14 +1229,10 @@ export const updateManyAssetSpotlightClear = async () =>
 export const countAllAssets = async (query = {}) =>
     assets().countDocuments(query);
 
-export const getTotalPrice = async () =>
+export const getTotalPrice = async (query = {}) =>
     assets()
         .aggregate([
-            {
-                $match: {
-                    'contractExplorer.explorer': { $exists: true },
-                },
-            },
+            { $match: query },
             {
                 $group: {
                     _id: null,

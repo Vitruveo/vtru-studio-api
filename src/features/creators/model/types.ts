@@ -154,3 +154,7 @@ export interface FindCreatorsStacksParams {
     skip: number;
     limit: number;
 }
+
+export interface CountAllStacksParams {
+    type: 'grid' | 'slideshow' | 'video';
+}
