@@ -1155,16 +1155,23 @@ export const findAssetsForSpotlight = ({
         .aggregate([
             { $match: query },
             {
+                $group: {
+                    _id: '$framework.createdBy',
+                    asset: { $first: '$$ROOT' },
+                },
+            },
+            { $limit: limit },
+            {
                 $addFields: {
-                    creatorId: {
-                        $toObjectId: '$framework.createdBy',
+                    createdBy: {
+                        $toObjectId: '$asset.framework.createdBy',
                     },
                 },
             },
             {
                 $lookup: {
                     from: 'creators',
-                    localField: 'creatorId',
+                    localField: 'createdBy',
                     foreignField: '_id',
                     as: 'creator',
                 },
@@ -1175,38 +1182,13 @@ export const findAssetsForSpotlight = ({
                 },
             },
             {
-                $group: {
-                    _id: '$creatorId',
-                    assets: { $push: '$$ROOT' },
-                },
-            },
-            {
                 $project: {
-                    _id: 1,
-                    randomArt: {
-                        $arrayElemAt: [
-                            '$assets',
-                            {
-                                $floor: {
-                                    $multiply: [
-                                        { $rand: {} },
-                                        { $size: '$assets' },
-                                    ],
-                                },
-                            },
-                        ],
-                    },
-                },
-            },
-            { $limit: limit },
-            {
-                $project: {
-                    _id: '$randomArt._id',
-                    title: '$randomArt.assetMetadata.context.formData.title',
-                    price: '$randomArt.licenses.nft.single.editionPrice',
-                    preview: '$randomArt.formats.preview.path',
-                    username: '$randomArt.creator.username',
-                    nudity: '$randomArt.assetMetadata.taxonomy.formData.nudity',
+                    _id: '$asset._id',
+                    title: '$asset.assetMetadata.context.formData.title',
+                    price: '$asset.licenses.nft.single.editionPrice',
+                    preview: '$asset.formats.preview.path',
+                    username: '$creator.username',
+                    nudity: '$asset.assetMetadata.taxonomy.formData.nudity',
                 },
             },
         ])
