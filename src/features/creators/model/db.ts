@@ -91,7 +91,10 @@ export const updateCodeHashEmailCreator = async ({
     framework,
 }: UpdateCodeHashEmailCreatorParams) => {
     const result = await creators().updateOne(
-        { _id: new ObjectId(id), 'emails.email': email },
+        {
+            _id: new ObjectId(id),
+            'emails.email': new RegExp(`^${email}$`, 'i'),
+        },
         {
             $set: {
                 'emails.$.codeHash': codeHash,

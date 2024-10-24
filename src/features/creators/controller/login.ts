@@ -41,7 +41,12 @@ route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
 
         const creator = await findOneCreator({
             query: {
-                emails: { $elemMatch: { email, codeHash: encryptCode(code) } },
+                emails: {
+                    $elemMatch: {
+                        email: new RegExp(`^${email}$`, 'i'),
+                        codeHash: encryptCode(code),
+                    },
+                },
             },
         });
 
@@ -123,7 +128,13 @@ route.post('/', validateBodyForLogin, async (req, res) => {
         const creator = await findOneCreator({
             query: {
                 $or: [
-                    { emails: { $elemMatch: { email } } },
+                    {
+                        emails: {
+                            $elemMatch: {
+                                email: new RegExp(`^${standardEmail}$`, 'i'),
+                            },
+                        },
+                    },
                     { emails: { $elemMatch: { email: standardEmail } } },
                 ],
             },
@@ -150,7 +161,9 @@ route.post('/', validateBodyForLogin, async (req, res) => {
             }
             if (
                 creator.emails.some((e) => e.email === standardEmail) &&
-                !creator.emails.some((e) => e.email === email)
+                !creator.emails.some(
+                    (e) => e.email.toLocaleLowerCase() === email
+                )
             ) {
                 await addEmailCreator({
                     id: creator._id,
