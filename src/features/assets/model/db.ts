@@ -157,6 +157,8 @@ export const findAssetGroupPaginated = ({
                             $concatArrays: ['$$value', '$$this.paths'],
                         },
                     },
+                    // limit to 5 paths
+                    $slice: ['$paths', 5],
                 },
                 asset: {
                     $let: {
@@ -221,6 +223,7 @@ export const findAssetGroupPaginated = ({
         {
             $project: {
                 assetsWithPaths: 0,
+                countWithSold: 0,
                 creatorId: 0,
                 creator: 0,
             },
