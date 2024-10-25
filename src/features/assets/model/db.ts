@@ -150,13 +150,18 @@ export const findAssetGroupPaginated = ({
         {
             $addFields: {
                 paths: {
-                    $reduce: {
-                        input: '$assetsWithPaths',
-                        initialValue: [],
-                        in: {
-                            $concatArrays: ['$$value', '$$this.paths'],
+                    $slice: [
+                        {
+                            $reduce: {
+                                input: '$assetsWithPaths',
+                                initialValue: [],
+                                in: {
+                                    $concatArrays: ['$$value', '$$this.paths'],
+                                },
+                            },
                         },
-                    },
+                        5,
+                    ],
                 },
                 asset: {
                     $let: {
@@ -221,6 +226,7 @@ export const findAssetGroupPaginated = ({
         {
             $project: {
                 assetsWithPaths: 0,
+                countWithSold: 0,
                 creatorId: 0,
                 creator: 0,
             },

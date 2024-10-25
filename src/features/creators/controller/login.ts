@@ -79,9 +79,7 @@ route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
         const token = jwt.sign(
             { id: creator._id, type: 'creator' } as JwtPayload,
             JWT_SECRETKEY,
-            {
-                expiresIn: '14d',
-            }
+            { expiresIn: '30d' }
         );
         const creatorUpdated = await findOneCreator({
             query: {
