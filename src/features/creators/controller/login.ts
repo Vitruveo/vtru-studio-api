@@ -133,7 +133,13 @@ route.post('/', validateBodyForLogin, async (req, res) => {
                             },
                         },
                     },
-                    { emails: { $elemMatch: { email: standardEmail } } },
+                    {
+                        emails: {
+                            $elemMatch: {
+                                email: new RegExp(`^${email}$`, 'i'),
+                            },
+                        },
+                    },
                 ],
             },
         });
