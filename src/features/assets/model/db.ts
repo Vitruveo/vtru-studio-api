@@ -275,6 +275,9 @@ export const findAssetsPaginated = ({
                         },
                     },
                 },
+                insensitiveTitle: {
+                    $toLower: '$assetMetadata.context.formData.title',
+                },
                 exists: {
                     $cond: {
                         if: {

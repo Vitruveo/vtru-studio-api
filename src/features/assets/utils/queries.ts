@@ -86,6 +86,12 @@ export const querySortSearch = (
         case 'creatorZA':
             sortQuery = { insensitiveCreator: -1 };
             break;
+        case 'titleAZ':
+            sortQuery = { insensitiveTitle: 1 };
+            break;
+        case 'titleZA':
+            sortQuery = { insensitiveTitle: -1 };
+            break;
         case 'consignNewToOld':
             sortQuery = { 'consignArtwork.listing': -1 };
             break;
