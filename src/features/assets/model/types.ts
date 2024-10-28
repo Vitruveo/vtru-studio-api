@@ -170,5 +170,5 @@ export interface UpdateManyArtistSpotlightParams {
 }
 
 export interface CountArtsByCreatorParams {
-    id: string;
+    query: any;
 }

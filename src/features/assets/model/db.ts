@@ -1321,5 +1321,5 @@ export const updateManyArtistSpotlight = async ({
     );
 };
 
-export const countArtsByCreator = async ({ id }: CountArtsByCreatorParams) =>
-    assets().countDocuments({ 'framework.createdBy': id });
+export const countArtsByCreator = async ({ query }: CountArtsByCreatorParams) =>
+    assets().countDocuments(query);

@@ -69,9 +69,12 @@ route.get('/profile/:username', async (req, res) => {
             return;
         }
 
-        const artsQuantity = await modelAsset.countArtsByCreator({
-            id: creator._id.toString(),
-        });
+        const query = {
+            'framework.createdBy': creator._id.toString(),
+            'consignArtwork.status': 'active',
+        };
+
+        const artsQuantity = await modelAsset.countArtsByCreator({ query });
 
         res.json({
             code: 'vitruveo.studio.api.creators.profile.success',
@@ -79,6 +82,7 @@ route.get('/profile/:username', async (req, res) => {
             transaction: nanoid(),
             data: {
                 id: creator._id,
+                username: creator.username,
                 avatar: creator.profile.avatar,
                 artsQuantity,
             },
