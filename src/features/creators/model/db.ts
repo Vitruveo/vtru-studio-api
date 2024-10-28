@@ -22,6 +22,7 @@ import type {
     FindCreatorAssetsBySlideshowId,
     UpdateCreatorSearchSlideshowParams,
     FindCreatorsStacksParams,
+    FindCreatorByUsernameParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -463,3 +464,7 @@ export const countCreatorStacks = async ({
 
     return (await creators().aggregate(stages).toArray()).length;
 };
+
+export const findCreatorByUsername = async ({
+    username,
+}: FindCreatorByUsernameParams) => creators().findOne({ username });

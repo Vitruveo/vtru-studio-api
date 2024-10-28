@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { APIResponse } from '../../../services';
 
 import * as model from '../model';
+import * as modelAsset from '../../assets/model';
 import { querySortStacks } from '../utils/queries';
 
 const logger = debug('features:creators:controller:public');
@@ -47,6 +48,46 @@ route.get('/stacks', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.creators.stack.failed',
             message: 'Reader stack failed',
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/profile/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+
+        const creator = await model.findCreatorByUsername({ username });
+
+        if (!creator) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.creators.profile.notFound',
+                message: 'Creator not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const artsQuantity = await modelAsset.countArtsByCreator({
+            id: creator._id.toString(),
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.creators.profile.success',
+            message: 'Get creator success',
+            transaction: nanoid(),
+            data: {
+                id: creator._id,
+                avatar: creator.profile.avatar,
+                artsQuantity,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Get creator failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.creators.profile.failed',
+            message: 'Get creator failed',
             args: error,
             transaction: nanoid(),
         } as APIResponse);

@@ -30,6 +30,7 @@ import type {
     FindMyAssetsParams,
     UpdateManyArtistSpotlightParams,
     FindArtistsForSpotlightParams,
+    CountArtsByCreatorParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1316,3 +1317,6 @@ export const updateManyArtistSpotlight = async ({
         { $set: { 'actions.displayArtistSpotlight': true } }
     );
 };
+
+export const countArtsByCreator = async ({ id }: CountArtsByCreatorParams) =>
+    assets().countDocuments({ 'framework.createdBy': id });
