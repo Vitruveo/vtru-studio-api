@@ -161,3 +161,9 @@ export interface FindCreatorByUsernameParams {
 export interface CountAllStacksParams {
     type: 'grid' | 'slideshow' | 'video';
 }
+export interface UpdateManyStackSpotlight {
+    stacks: {
+        id: string;
+        type: string;
+    }[];
+}

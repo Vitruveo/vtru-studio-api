@@ -24,6 +24,7 @@ import type {
     FindCreatorsStacksParams,
     FindCreatorByUsernameParams,
     CountAllStacksParams,
+    UpdateManyStackSpotlight,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -371,46 +372,10 @@ export const findCreatorsStacks = async ({
             },
         },
         {
-            $set: {
-                'stacks.assets': {
-                    $cond: {
-                        if: {
-                            $isArray: '$stacks.assets',
-                        },
-                        then: {
-                            $map: {
-                                input: '$stacks.assets',
-                                as: 'assetId',
-                                in: { $toObjectId: '$$assetId' },
-                            },
-                        },
-                        else: [],
-                    },
-                },
-            },
-        },
-        {
-            $lookup: {
-                from: 'assets',
-                localField: 'stacks.assets',
-                foreignField: '_id',
-                as: 'assetDetails',
-            },
-        },
-        {
             $project: {
                 _id: 1,
                 username: 1,
                 stacks: 1,
-                assetDetails: {
-                    $map: {
-                        input: '$assetDetails',
-                        as: 'asset',
-                        in: {
-                            preview: '$$asset.formats.preview.path',
-                        },
-                    },
-                },
             },
         },
         { $sort: sort },
@@ -494,3 +459,163 @@ export const countCreatorStacks = async ({
 export const findCreatorByUsername = async ({
     username,
 }: FindCreatorByUsernameParams) => creators().findOne({ username });
+export const findStacksSpotlight = async ({
+    query,
+    limit,
+}: Pick<FindCreatorsStacksParams, 'query' | 'limit'>) => {
+    const inputReducer = [
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.slideshow', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'slideshow' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.grid', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'grid' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.video', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'video' }],
+                },
+            },
+        },
+    ];
+    const stages = [
+        { $match: query },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: {
+                    $reduce: {
+                        input: inputReducer,
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this'],
+                        },
+                    },
+                },
+            },
+        },
+        {
+            $addFields: {
+                'stacks.quantity': { $size: '$stacks' },
+            },
+        },
+        { $unwind: '$stacks' },
+        {
+            $match: {
+                'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+                $or: [
+                    { 'stacks.enable': { $exists: false } },
+                    { 'stacks.enable': true },
+                ],
+                'stacks.displaySpotlight': { $exists: false },
+            },
+        },
+        {
+            $group: {
+                _id: '$_id',
+                username: { $first: '$username' },
+                stacks: { $push: '$stacks' },
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                randomStack: {
+                    $arrayElemAt: [
+                        '$stacks',
+                        {
+                            $floor: {
+                                $multiply: [
+                                    { $rand: {} },
+                                    { $size: '$stacks' },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            },
+        },
+        {
+            $limit: limit,
+        },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: '$randomStack',
+            },
+        },
+    ];
+
+    return creators().aggregate(stages).toArray();
+};
+
+export const updateManyStackSpotlight = async ({
+    stacks,
+}: UpdateManyStackSpotlight) => {
+    stacks.forEach((stack) => {
+        creators().updateOne(
+            {
+                [`search.${stack.type}`]: {
+                    $elemMatch: { id: stack.id },
+                },
+            },
+            {
+                $set: {
+                    [`search.${stack.type}.$.displaySpotlight`]: true,
+                },
+            }
+        );
+    });
+};
+
+export const updateManyStackSpotlightClear = async () => {
+    await creators().updateMany(
+        { 'search.slideshow': { $exists: true } },
+        {
+            $unset: {
+                'search.slideshow.$[].displaySpotlight': '',
+            },
+        }
+    );
+
+    await creators().updateMany(
+        { 'search.grid': { $exists: true } },
+        {
+            $unset: {
+                'search.grid.$[].displaySpotlight': '',
+            },
+        }
+    );
+
+    await creators().updateMany(
+        { 'search.video': { $exists: true } },
+        {
+            $unset: {
+                'search.video.$[].displaySpotlight': '',
+            },
+        }
+    );
+};
