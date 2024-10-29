@@ -21,6 +21,60 @@ export const schemaValidationForPut = z.object({
             })
         )
         .default([]),
+    myWebsite: z.string().url().nullable().default(null),
+    links: z
+        .array(
+            z.object({
+                name: z.string(),
+                url: z.string().url(),
+            })
+        )
+        .nullable()
+        .default([]),
+    personalDetails: z
+        .object({
+            bio: z.string().nullable().default(null),
+            ethnicity: z.string().nullable().default(null),
+            gender: z.string().nullable().default(null),
+            nationality: z.string().nullable().default(null),
+            residence: z.string().nullable().default(null),
+            plusCode: z.string().nullable().default(null),
+        })
+        .nullable()
+        .default({}),
+    artworkRecognition: z
+        .object({
+            exhibitions: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
+                    })
+                )
+                .nullable()
+                .default([]),
+            awards: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .nullable()
+        .default({}),
     profile: z.object({
         avatar: z.string().nullable().default(null),
         phone: z.string().nullable().default(null),
@@ -61,4 +115,13 @@ export const schemaValidationForPutAvatar = z.object({
 
 export const schemaValidationForRequestConnect = z.object({
     wallet: z.string().min(3).max(255),
+});
+
+export const schemaValidationForGenerateStackSlideshow = z.object({
+    assets: z.array(z.string()),
+    title: z.string(),
+    fees: z.number(),
+    display: z.string(),
+    interval: z.number(),
+    description: z.string().default(''),
 });

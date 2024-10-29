@@ -14,11 +14,20 @@ export interface QueryPaginatedParams {
     showOnlyAvailableArts?: boolean;
     precision?: string;
     showAdditionalAssets: string;
+    hasBts: string;
 }
 
 export interface QueryCollectionParams {
     name: string;
     showAdditionalAssets: string;
+}
+
+export interface QueryParams {
+    query: Record<string, unknown>;
+    sort?: {
+        field: string;
+        order: number;
+    };
 }
 
 interface Tags {
@@ -58,4 +67,39 @@ export interface CarouselResponse {
         avatar?: string;
         username: string;
     };
+}
+
+export interface QueryScopeNftParams {
+    sort: string;
+}
+
+export interface ResponsePaginatedAdmin {
+    data: model.AssetsDocument[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
+}
+
+export interface Spotlight {
+    _id: string;
+    title: string;
+    licenses: string;
+    preview: string;
+    author: string;
+    nudity: string;
+}
+
+export interface ArtistSpotlight {
+    _id: string;
+    avatar: string;
+    username: string;
+}
+
+export interface GroupedParams {
+    query: Record<string, unknown>;
+    page: string;
+    limit: string;
+    name: string;
+    sort: QueryPaginatedParams['sort'];
 }

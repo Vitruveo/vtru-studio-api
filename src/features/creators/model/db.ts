@@ -13,12 +13,16 @@ import type {
     AddEmailCreatorParams,
     UpdateAvatarParams,
     CheckWalletExistsParams,
-    AddVideoToGalleryParams,
+    updateCreatorSearchVideoParams,
     UpdateCreatorSocialById,
     RemoveCreatorSocialById,
-    UpdateCreatorSearch,
+    PpdateCreatorSearchGridParams,
     FindCreatorAssetsByGridId,
     FindCreatorAssetsByVideoId,
+    FindCreatorAssetsBySlideshowId,
+    UpdateCreatorSearchSlideshowParams,
+    FindCreatorsStacksParams,
+    FindCreatorByUsernameParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -88,7 +92,10 @@ export const updateCodeHashEmailCreator = async ({
     framework,
 }: UpdateCodeHashEmailCreatorParams) => {
     const result = await creators().updateOne(
-        { _id: new ObjectId(id), 'emails.email': email },
+        {
+            _id: new ObjectId(id),
+            'emails.email': new RegExp(`^${email}$`, 'i'),
+        },
         {
             $set: {
                 'emails.$.codeHash': codeHash,
@@ -165,7 +172,10 @@ export const checkWalletExists = async ({
     return !!result;
 };
 
-export const addToVideoGallery = ({ id, video }: AddVideoToGalleryParams) =>
+export const updateCreatorSearchVideo = ({
+    id,
+    video,
+}: updateCreatorSearchVideoParams) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
         {
@@ -192,13 +202,32 @@ export const updateCreatorSocialById = ({
         }
     );
 
-export const updateCreatorSearch = ({ id, grid }: UpdateCreatorSearch) =>
+export const updateCreatorSearchGrid = ({
+    id,
+    grid,
+}: PpdateCreatorSearchGridParams) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
         {
             $push: {
                 'search.grid': {
                     ...grid,
+                    createdAt: new Date(),
+                },
+            },
+        }
+    );
+
+export const updateCreatorSearchSlideshow = ({
+    id,
+    slideshow,
+}: UpdateCreatorSearchSlideshowParams) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $push: {
+                'search.slideshow': {
+                    ...slideshow,
                     createdAt: new Date(),
                 },
             },
@@ -221,6 +250,14 @@ export const findCreatorAssetsByVideoId = async ({
         { projection: { 'search.video.$': 1 } }
     );
 
+export const findCreatorAssetsBySlideshowId = async ({
+    id,
+}: FindCreatorAssetsBySlideshowId) =>
+    creators().findOne(
+        { 'search.slideshow.id': id },
+        { projection: { 'search.slideshow.$': 1 } }
+    );
+
 export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
@@ -230,3 +267,204 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
             },
         }
     );
+
+export const countAllCreators = async () =>
+    getDb().collection(COLLECTION_CREATORS).countDocuments();
+
+export const findCreatorsStacks = async ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindCreatorsStacksParams) => {
+    const inputReducer = [
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.slideshow', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'slideshow' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.grid', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'grid' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.video', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'video' }],
+                },
+            },
+        },
+    ];
+    const stages = [
+        { $match: query },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: {
+                    $reduce: {
+                        input: inputReducer,
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this'],
+                        },
+                    },
+                },
+            },
+        },
+        {
+            $addFields: {
+                'stacks.quantity': { $size: '$stacks' },
+            },
+        },
+        { $unwind: '$stacks' },
+        {
+            $match: {
+                'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+                $or: [
+                    { 'stacks.enable': { $exists: false } },
+                    { 'stacks.enable': true },
+                ],
+            },
+        },
+        {
+            $set: {
+                'stacks.assets': {
+                    $cond: {
+                        if: {
+                            $isArray: '$stacks.assets',
+                        },
+                        then: {
+                            $map: {
+                                input: '$stacks.assets',
+                                as: 'assetId',
+                                in: { $toObjectId: '$$assetId' },
+                            },
+                        },
+                        else: [],
+                    },
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'assets',
+                localField: 'stacks.assets',
+                foreignField: '_id',
+                as: 'assetDetails',
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: 1,
+                assetDetails: {
+                    $map: {
+                        input: '$assetDetails',
+                        as: 'asset',
+                        in: {
+                            preview: '$$asset.formats.preview.path',
+                        },
+                    },
+                },
+            },
+        },
+        { $sort: sort },
+        { $skip: skip },
+        { $limit: limit },
+    ];
+
+    return creators().aggregate(stages).toArray();
+};
+
+export const countCreatorStacks = async ({
+    query,
+}: Pick<FindCreatorsStacksParams, 'query'>) => {
+    const inputReducer = [
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.slideshow', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'slideshow' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.grid', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'grid' }],
+                },
+            },
+        },
+        {
+            $map: {
+                input: {
+                    $ifNull: ['$search.video', []],
+                },
+                as: 'item',
+                in: {
+                    $mergeObjects: ['$$item', { type: 'video' }],
+                },
+            },
+        },
+    ];
+    const stages = [
+        { $match: query },
+        {
+            $project: {
+                _id: 1,
+                username: 1,
+                stacks: {
+                    $reduce: {
+                        input: inputReducer,
+                        initialValue: [],
+                        in: {
+                            $concatArrays: ['$$value', '$$this'],
+                        },
+                    },
+                },
+            },
+        },
+        { $unwind: '$stacks' },
+        {
+            $match: {
+                'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+                $or: [
+                    { 'stacks.enable': { $exists: false } },
+                    { 'stacks.enable': true },
+                ],
+            },
+        },
+    ];
+
+    return (await creators().aggregate(stages).toArray()).length;
+};
+
+export const findCreatorByUsername = async ({
+    username,
+}: FindCreatorByUsernameParams) => creators().findOne({ username });

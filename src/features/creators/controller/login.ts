@@ -41,7 +41,12 @@ route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
 
         const creator = await findOneCreator({
             query: {
-                emails: { $elemMatch: { email, codeHash: encryptCode(code) } },
+                emails: {
+                    $elemMatch: {
+                        email: new RegExp(`^${email}$`, 'i'),
+                        codeHash: encryptCode(code),
+                    },
+                },
             },
         });
 
@@ -74,9 +79,7 @@ route.post('/otpConfirm', validateBodyForOtpLogin, async (req, res) => {
         const token = jwt.sign(
             { id: creator._id, type: 'creator' } as JwtPayload,
             JWT_SECRETKEY,
-            {
-                expiresIn: '14d',
-            }
+            { expiresIn: '30d' }
         );
         const creatorUpdated = await findOneCreator({
             query: {
@@ -123,8 +126,20 @@ route.post('/', validateBodyForLogin, async (req, res) => {
         const creator = await findOneCreator({
             query: {
                 $or: [
-                    { emails: { $elemMatch: { email } } },
-                    { emails: { $elemMatch: { email: standardEmail } } },
+                    {
+                        emails: {
+                            $elemMatch: {
+                                email: new RegExp(`^${standardEmail}$`, 'i'),
+                            },
+                        },
+                    },
+                    {
+                        emails: {
+                            $elemMatch: {
+                                email: new RegExp(`^${email}$`, 'i'),
+                            },
+                        },
+                    },
                 ],
             },
         });
@@ -150,7 +165,9 @@ route.post('/', validateBodyForLogin, async (req, res) => {
             }
             if (
                 creator.emails.some((e) => e.email === standardEmail) &&
-                !creator.emails.some((e) => e.email === email)
+                !creator.emails.some(
+                    (e) => e.email.toLocaleLowerCase() === email
+                )
             ) {
                 await addEmailCreator({
                     id: creator._id,

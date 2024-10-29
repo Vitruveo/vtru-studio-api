@@ -1,3 +1,4 @@
+import { Sort } from 'mongodb';
 import { Creator, CreatorDocument } from './schema';
 import { ObjectId } from '../../../services';
 import { Framework } from '../../common/record';
@@ -30,6 +31,9 @@ export interface FindCreatorAssetsByGridId {
 }
 
 export interface FindCreatorAssetsByVideoId {
+    id: string;
+}
+export interface FindCreatorAssetsBySlideshowId {
     id: string;
 }
 
@@ -87,7 +91,7 @@ export interface CheckWalletExistsParams {
     id: string;
 }
 
-export interface AddVideoToGalleryParams {
+export interface updateCreatorSearchVideoParams {
     id: string | ObjectId;
     video: {
         id: string;
@@ -97,6 +101,7 @@ export interface AddVideoToGalleryParams {
         sound: string;
         fees: number;
         assets: string[];
+        description: string;
     };
 }
 
@@ -118,7 +123,38 @@ export interface FindCreatorsByName {
     name: string;
 }
 
-export interface UpdateCreatorSearch {
+export interface PpdateCreatorSearchGridParams {
     id: string;
-    grid: { id: string; path: string; fees: number; assets: string[] };
+    grid: {
+        id: string;
+        path: string;
+        fees: number;
+        assets: string[];
+        title: string;
+        description: string;
+    };
+}
+
+export interface UpdateCreatorSearchSlideshowParams {
+    id: string;
+    slideshow: {
+        id: string;
+        assets: string[];
+        fees: number;
+        title: string;
+        interval: number;
+        display: string;
+        description: string;
+    };
+}
+
+export interface FindCreatorsStacksParams {
+    query: any;
+    sort: Sort;
+    skip: number;
+    limit: number;
+}
+
+export interface FindCreatorByUsernameParams {
+    username: string;
 }

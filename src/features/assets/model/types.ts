@@ -1,4 +1,4 @@
-import { Sort } from 'mongodb';
+import { Document, Sort } from 'mongodb';
 import { Assets, AssetsDocument } from './schema';
 import { ObjectId } from '../../../services';
 
@@ -13,6 +13,17 @@ export interface FindAssetsParams {
     limit?: number;
 }
 
+export interface FindAssetsGroupPaginatedParams {
+    query: {
+        [key: string]: unknown;
+        _id?: { $in: string[] | ObjectId[] };
+    };
+    skip: number;
+    limit: number;
+    sort: Sort;
+    grouped: string;
+}
+
 export interface FindAssetsPaginatedParams {
     query: {
         [key: string]: unknown;
@@ -25,12 +36,33 @@ export interface FindAssetsPaginatedParams {
     precision: number;
 }
 
+export interface findAssetsByCreatorIdPaginatedParams {
+    query: any;
+    skip: number;
+    limit: number;
+    sort: Sort;
+}
+
+export interface AssetsPaginatedResponse {
+    data: Assets[];
+    page: number;
+    totalPage: number;
+    total: number;
+    limit: number;
+    collection: string;
+    collections: Document[];
+}
+
 export interface FindAssetsTagsParams {
     query: Record<string, unknown>;
 }
 export interface FindAssetsByCreatorName {
     name: string;
     showAdditionalAssets: string;
+}
+
+export interface FindCollectionsByCreatorParams {
+    creatorId: string;
 }
 
 export interface FindAssetsCollectionsParams {
@@ -42,11 +74,20 @@ export interface FindAssetsSubjectsParams {
     name: string;
     showAdditionalAssets: string;
 }
+
+export interface CountAssetsByCreatorIdParams
+    extends Pick<FindAssetsPaginatedParams, 'query'> {
+    grouped?: string;
+}
 export interface CountAssetsParams
     extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
 
 export interface FindAssetsByIdParams {
     id: string | ObjectId;
+}
+
+export interface FindMyAssetsParams {
+    query: { [key: string]: unknown };
 }
 
 export interface FindOneAssetsParams {
@@ -58,6 +99,10 @@ export interface UpdateAssetsParams {
     asset: Assets | { [key: string]: unknown };
 }
 
+export interface UpdateManyAssetSpotlightParams {
+    ids: string[];
+}
+
 export interface UpdateManyAssetsStatusParams {
     ids: string[] | ObjectId[];
     status: string;
@@ -66,6 +111,10 @@ export interface UpdateManyAssetsStatusParams {
 export interface UpdateManyAssetsNudityParams {
     ids: string[] | ObjectId[];
     nudity: boolean;
+}
+
+export interface CountAllAssetsParams {
+    query?: any;
 }
 
 export interface DeleteAssetsParams {
@@ -95,4 +144,31 @@ export interface FindAssetsCarouselParams {
 
 export interface CountAssetByCreatorIdWithConsignParams {
     creatorId: string;
+}
+
+export interface findAssetMintedByAddressParams {
+    address: string;
+    sort: Sort;
+}
+
+export interface FindAssetsFromSlideshowParams {
+    query: any;
+}
+
+export interface FindAssetsForSpotlightParams {
+    query: any;
+    limit: number;
+}
+
+export interface FindArtistsForSpotlightParams {
+    query?: any;
+    limit: number;
+}
+
+export interface UpdateManyArtistSpotlightParams {
+    ids: string[];
+}
+
+export interface CountArtsByCreatorParams {
+    query: any;
 }

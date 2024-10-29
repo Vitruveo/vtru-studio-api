@@ -53,8 +53,9 @@ export const schemaAssetUpdateManyNudity = z.object({
 });
 
 export const schemaValidationForVideoGallery = z.object({
-    artworks: z.array(z.string()).max(15),
+    artworks: z.array(z.string()).max(16),
     title: z.string().default(''),
+    description: z.string().default(''),
     sound: z.string(),
     fees: z.number(),
     timestamp: z.string(),

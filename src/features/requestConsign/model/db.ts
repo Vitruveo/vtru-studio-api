@@ -13,6 +13,7 @@ import {
     FindOneRequestConsignParams,
     FindRequestConsignByIdParams,
     FindRequestConsignsByIdsParams,
+    FindRequestConsignsPaginatedParams,
     FindRequestConsignsParams,
     updateCommentVisibilityParams,
     UpdateRequestConsignParams,
@@ -24,6 +25,177 @@ const requestConsigns = () =>
 export const createRequestConsign = ({
     requestConsign,
 }: CreateRequestConsignParams) => requestConsigns().insertOne(requestConsign);
+
+export const countRequestConsigns = ({
+    query,
+}: Pick<FindRequestConsignsParams, 'query'>) =>
+    requestConsigns()
+        .aggregate([
+            {
+                $match: {
+                    status: query.status,
+                },
+            },
+            {
+                $addFields: {
+                    asset: { $toObjectId: '$asset' },
+                    creator: { $toObjectId: '$creator' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'assets',
+                    localField: 'asset',
+                    foreignField: '_id',
+                    as: 'asset',
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creator',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$asset',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'asset.assetMetadata.context.formData.title': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.username': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.emails': {
+                                $elemMatch: {
+                                    $regex: query.search ?? '.*',
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        ])
+        .toArray()
+        .then((result) => result.length);
+
+export const findRequestConsignsPaginated = ({
+    query,
+    skip,
+    sort,
+    limit,
+}: FindRequestConsignsPaginatedParams) =>
+    requestConsigns()
+        .aggregate([
+            {
+                $match: {
+                    status: query.status,
+                },
+            },
+            {
+                $addFields: {
+                    asset: { $toObjectId: '$asset' },
+                    creator: { $toObjectId: '$creator' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'assets',
+                    localField: 'asset',
+                    foreignField: '_id',
+                    as: 'asset',
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creator',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$asset',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'asset.assetMetadata.context.formData.title': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.username': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.emails': {
+                                $elemMatch: {
+                                    $regex: query.search ?? '.*',
+                                    $options: 'i',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    status: 1,
+                    logs: 1,
+                    comments: 1,
+                    when: 1,
+                    asset: {
+                        _id: 1,
+                        title: '$asset.assetMetadata.context.formData.title',
+                    },
+                    creator: {
+                        _id: 1,
+                        username: '$creator.username',
+                        emails: '$creator.emails',
+                    },
+                },
+            },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+        ])
+        .toArray();
 
 export const findRequestConsigns = ({
     query,

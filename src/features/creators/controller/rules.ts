@@ -11,6 +11,7 @@ import {
     otpConfirmSchema,
     schemaValidationForAddEmail,
     schemaValidationForCreate,
+    schemaValidationForGenerateStackSlideshow,
     schemaValidationForPut,
     schemaValidationForPutAvatar,
     schemaValidationForRequestConnect,
@@ -38,13 +39,14 @@ export const validateBodyForLogin = async (
         const code = generateCode();
         const codeHash = encryptCode(code);
 
+        req.body.email = req.body.email.trim().toLowerCase();
         req.body.code = code;
         req.body.codeHash = codeHash;
         req.body.framework = defaultRecordFramework();
         req.body.creator = CreatorSchema.parse({
             emails: [
                 {
-                    email: req.body.email,
+                    email: req.body.email.trim().toLowerCase(),
                     codeHash,
                     checkedAt: null,
                 },
@@ -108,6 +110,7 @@ export const validateBodyForOtpLogin = async (
     try {
         req.body = otpConfirmSchema.parse(req.body);
         req.body.framework = defaultRecordFramework();
+        req.body.email = req.body.email.trim().toLowerCase();
         next();
     } catch (error) {
         res.status(400).json({
@@ -243,6 +246,34 @@ export const validateBodyForCreate = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.creator.validateBodyForCreate.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForGenerateStackSlideshow = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForGenerateStackSlideshow.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForGenerateStackSlideshow.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForGenerateStackSlideshow.failed',
             message: '',
             transaction: nanoid(),
             args: error,

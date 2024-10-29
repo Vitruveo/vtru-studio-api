@@ -25,11 +25,86 @@ import {
     ASSET_STORAGE_URL,
     MAIL_SENDGRID_TEMPLATE_CONSIGN_REJECTED,
 } from '../../../constants';
+import { RequestConsignsPaginatedResponse } from '../model/types';
 
 const logger = debug('features:requestConsign:controller');
 const route = Router();
 
 route.use(middleware.checkAuth);
+
+route.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const data = await model.findRequestConsignsById({ id });
+
+        if (!data) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.requestConsign.failed',
+                message: 'Request consign not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consign success',
+            transaction: nanoid(),
+            data,
+        } as APIResponse<model.RequestConsign>);
+    } catch (error) {
+        logger('Get request consign failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consign failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 10;
+        const status = req.query.status as string;
+        const search = req.query.search as string;
+
+        const total = await model.countRequestConsigns({
+            query: { status, search },
+        });
+        const data = await model.findRequestConsignsPaginated({
+            query: { status, search },
+            limit,
+            skip: (page - 1) * limit,
+            sort: { when: 1 },
+        });
+
+        const totalPage = Math.ceil(total / limit);
+
+        res.json({
+            code: 'vitruveo.studio.api.requestConsign.success',
+            message: 'Get request consigns success',
+            transaction: nanoid(),
+            data: {
+                data,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+        } as APIResponse<RequestConsignsPaginatedResponse>);
+    } catch (error) {
+        logger('Get request consigns failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.requestConsign.failed',
+            message: `Get request consigns failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.post('/:assetId', mustBeOwner, async (req, res) => {
     try {

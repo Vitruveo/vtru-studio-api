@@ -5,6 +5,8 @@ import * as model from '../model';
 import * as modelCreator from '../../creators/model';
 import { APIResponse } from '../../../services';
 import { ASSET_STORAGE_URL, STORE_URL } from '../../../constants';
+import { querySortScopeNft } from '../utils/queries';
+import { QueryScopeNftParams } from './types';
 
 const logger = debug('features:assets:controller:scope');
 const route = Router();
@@ -67,8 +69,12 @@ route.get('/:id', async (req, res) => {
 
 route.get('/nft/:address', async (req, res) => {
     try {
+        const { sort } = req.query as unknown as QueryScopeNftParams;
+
+        const sortQuery = querySortScopeNft(sort);
         const assets = await model.findAssetMintedByAddress({
             address: req.params.address,
+            sort: sortQuery,
         });
 
         res.json(assets);

@@ -1,9 +1,11 @@
 import debug from 'debug';
 import fs from 'fs/promises';
+import axios from 'axios';
 import { z } from 'zod';
 import { join, parse } from 'path';
 import { customAlphabet, nanoid } from 'nanoid';
 import { Request, Router } from 'express';
+
 import * as model from '../model';
 import * as modelRequestConsign from '../../requestConsign/model';
 import { middleware } from '../../users';
@@ -23,6 +25,7 @@ import {
 import {
     validateBodyForCreate,
     validateBodyForDeleteFile,
+    validateBodyForPatchAssetPrice,
     validateBodyForUpdate,
     validateBodyForUpdateManyNudity,
     validateBodyForUpdateManyStatus,
@@ -31,9 +34,16 @@ import {
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
 import { handleExtractColor } from '../../../services/extractColor';
-import { ASSET_STORAGE_URL, ASSET_TEMP_DIR } from '../../../constants';
+import {
+    ASSET_STORAGE_URL,
+    ASSET_TEMP_DIR,
+    BATCH_URL,
+} from '../../../constants';
 import { download } from '../../../services/stream';
 import { schemaAssetUpdateManyNudity } from './schemas';
+import { schemaValidationForPatchAssetPrice } from './schemaValidate';
+import { AssetsPaginatedResponse } from '../model/types';
+import { querySortStudioCreatorById } from '../utils/queries';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -42,9 +52,38 @@ const tempFilename = customAlphabet('1234567890abcdefg', 10);
 
 route.use(middleware.checkAuth);
 
+const statusMapper = {
+    draft: { contractExplorer: { $exists: false } },
+    pending: {
+        'consignArtwork.status': 'pending',
+    },
+    listed: {
+        'consignArtwork.status': 'active',
+        mintExplorer: { $exists: false },
+    },
+    sold: { mintExplorer: { $exists: true } },
+    all: {},
+};
+
 route.get('/', async (req, res) => {
     try {
         const creatorId = req.query?.creatorId as string;
+        const status = req.query.status as keyof typeof statusMapper;
+        const collection = req.query.collection as string;
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 24;
+        const sort = req.query.sort as string;
+
+        const query: any = {
+            'framework.createdBy': creatorId || req.auth.id,
+            ...(statusMapper[status] || statusMapper.all),
+        };
+
+        if (collection && collection !== 'all') {
+            query['assetMetadata.taxonomy.formData.collections'] = {
+                $elemMatch: { $eq: collection },
+            };
+        }
 
         if (creatorId && req.auth.type !== 'user') {
             res.status(403).json({
@@ -55,16 +94,35 @@ route.get('/', async (req, res) => {
             return;
         }
 
-        const assets = await model.findAssetsByCreatorId({
-            id: creatorId || req.auth.id,
+        const sortQuery = querySortStudioCreatorById(sort);
+        const total = await model.countAssetsByCreator({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const data = await model.findAssetsByCreatorIdPaginated({
+            query,
+            skip: (page - 1) * limit,
+            limit,
+            sort: sortQuery,
+        });
+
+        const collections = await model.findCollectionsByCreatorId({
+            creatorId: creatorId || req.auth.id,
         });
 
         res.json({
             code: 'vitruveo.studio.api.assets.reader.success',
             message: 'Reader success',
             transaction: nanoid(),
-            data: assets,
-        } as APIResponse<model.AssetsDocument[]>);
+            data: {
+                data,
+                page,
+                totalPage,
+                total,
+                limit,
+                collection,
+                collections,
+            },
+        } as APIResponse<AssetsPaginatedResponse>);
     } catch (error) {
         logger('Reader assets failed: %O', error);
         res.status(500).json({
@@ -76,9 +134,65 @@ route.get('/', async (req, res) => {
     }
 });
 
+route.get('/myAssets', validateQueries, async (req, res) => {
+    try {
+        let query = { 'framework.createdBy': req.auth.id } as any;
+        const title = req.query?.title;
+        if (title) {
+            query = {
+                ...query,
+                $or: [
+                    {
+                        'assetMetadata.context.formData.title': {
+                            $regex: title,
+                            $options: 'i',
+                        },
+                    },
+                    {
+                        'assetMetadata.context.formData.description': {
+                            $regex: title,
+                            $options: 'i',
+                        },
+                    },
+                ],
+            };
+        }
+
+        const assets = await model.findMyAssets({ query });
+
+        if (!assets) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.myAssets.failed',
+                message: `Asset not found`,
+                args: [],
+                transaction: nanoid(),
+            } as APIResponse);
+
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.myAssets.success',
+            message: 'Reader success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<model.AssetsDocument[]>);
+    } catch (error) {
+        logger('Reader asset failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.myAssets.failed',
+            message: `Reader failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/creatorMy', validateQueries, async (req, res) => {
     try {
-        const asset = await model.findAssetCreatedBy({ id: req.auth.id });
+        const query = { id: req.auth.id } as any;
+
+        const asset = await model.findAssetCreatedBy(query);
 
         if (!asset) {
             res.status(404).json({
@@ -110,7 +224,7 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
 
 route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
     try {
-        const asset = await model.findAssetsById({ id: req.params.id });
+        let asset = await model.findAssetsById({ id: req.params.id });
 
         if (!asset) {
             res.status(404).json({
@@ -119,6 +233,21 @@ route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+
+        // TODO: investigar por que as propriedades do campo terms esta sendo setado como falso
+        if (asset?.consignArtwork && !asset?.terms?.contract) {
+            await model.updateAssets({
+                id: asset._id,
+                asset: {
+                    'terms.contract': true,
+                    'terms.generatedArtworkAI': true,
+                    'terms.isOriginal': true,
+                    'terms.notMintedOtherBlockchain': true,
+                },
+            });
+
+            asset = await model.findAssetsById({ id: req.params.id });
         }
 
         res.json({
@@ -152,7 +281,12 @@ route.post('/', validateBodyForCreate, async (req, res) => {
             });
 
             if (asset) {
-                asset.actions = asset.actions || { countClone: 0 };
+                if (!asset?.actions) {
+                    asset.actions = { countClone: 0 };
+                } else if (!asset.actions?.countClone) {
+                    asset.actions.countClone = 0;
+                }
+
                 asset.actions.countClone += 1;
 
                 await model.updateAssets({
@@ -439,6 +573,126 @@ route.put(
         }
     }
 );
+
+route.get('/:id/isLicenseEditable', async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset.framework.createdBy !== id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notAllowed',
+                message: 'You are not allowed to update price',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const response = await axios.get(
+            `${BATCH_URL}/assets/isLicenseEditable/${asset._id.toString()}`
+        );
+
+        if (response.status !== 200) {
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.price.failed',
+                message: `Get isLicenseEditable failed: ${response.data}`,
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.price.success',
+            message: 'Get isLicenseEditable success',
+            transaction: nanoid(),
+            data: response.data.data,
+        } as APIResponse);
+    } catch (error) {
+        logger('Get isLicenseEditable assets failed: %O', error);
+        res.status(400).json({
+            code: 'vitruveo.studio.api.admin.assets.price.failed',
+            message: `Get isLicenseEditable failed: ${error}`,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.patch('/:id/price', validateBodyForPatchAssetPrice, async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const { price } = req.body as z.infer<
+            typeof schemaValidationForPatchAssetPrice
+        >;
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset.framework.createdBy !== id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notAllowed',
+                message: 'You are not allowed to update price',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const response = await axios.patch(
+            `${BATCH_URL}/assets/updatedLicensePrice`,
+            {
+                assetKey: asset._id.toString(),
+                editionPrice: price,
+            }
+        );
+
+        if (response.status !== 200) {
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.assets.price.failed',
+                message: `Update price failed: ${response.data}`,
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const result = await model.updateAssets({
+            id: asset._id,
+            asset: {
+                'licenses.nft.single.editionPrice': price,
+            },
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.price.success',
+            message: 'Update price success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult>);
+    } catch (error) {
+        logger('Update price assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.price.failed',
+            message: `Update price failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.delete(
     '/request/deleteFile/:assetId',
