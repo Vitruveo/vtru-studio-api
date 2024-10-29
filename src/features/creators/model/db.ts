@@ -23,6 +23,7 @@ import type {
     UpdateCreatorSearchSlideshowParams,
     FindCreatorsStacksParams,
     FindCreatorByUsernameParams,
+    CountAllStacksParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -268,8 +269,33 @@ export const removeCreatorSocialById = ({ id, key }: RemoveCreatorSocialById) =>
         }
     );
 
-export const countAllCreators = async () =>
-    getDb().collection(COLLECTION_CREATORS).countDocuments();
+export const countAllCreators = async (query = {}) =>
+    getDb().collection(COLLECTION_CREATORS).countDocuments(query);
+
+export const countAllStacks = async ({ type }: CountAllStacksParams) =>
+    creators()
+        .aggregate([
+            {
+                $match: {
+                    search: { $exists: true },
+                },
+            },
+            {
+                $project: {
+                    stack: {
+                        $size: { $ifNull: [`$search.${type}`, []] },
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalStacks: { $sum: '$stack' },
+                },
+            },
+        ])
+        .toArray()
+        .then((result) => result[0]?.totalStacks || 0);
 
 export const findCreatorsStacks = async ({
     query,
