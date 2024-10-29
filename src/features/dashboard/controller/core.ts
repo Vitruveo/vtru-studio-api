@@ -111,12 +111,27 @@ route.get('/', async (req, res) => {
         });
         const totalBlockedCreators = await countAllCreators({
             'vault.isBlocked': true,
+            ...buildQuery('framework.createdAt', 'total'),
+        });
+        const newBlockedCreators = await countAllCreators({
+            'vault.isBlocked': true,
+            ...buildQuery('framework.createdAt', 'new'),
         });
         const totalRejected = await countAllAssets({
             'consignArtwork.status': 'rejected',
+            ...buildQuery('framework.createdAt', 'total'),
+        });
+        const newRejected = await countAllAssets({
+            'consignArtwork.status': 'rejected',
+            ...buildQuery('framework.createdAt', 'new'),
         });
         const totalPending = await countAllAssets({
             'consignArtwork.status': 'pending',
+            ...buildQuery('framework.createdAt', 'total'),
+        });
+        const newPending = await countAllAssets({
+            'consignArtwork.status': 'pending',
+            ...buildQuery('framework.createdAt', 'new'),
         });
         const totalPrice = await getTotalPrice({
             'contractExplorer.explorer': { $exists: true },
@@ -147,7 +162,10 @@ route.get('/', async (req, res) => {
             creators: {
                 total: totalCreators,
                 new: newCreators,
-                blocked: totalBlockedCreators,
+                blocked: {
+                    total: totalBlockedCreators,
+                    new: newBlockedCreators,
+                },
             },
             arts: {
                 total: totalArts,
@@ -166,9 +184,11 @@ route.get('/', async (req, res) => {
                 },
                 rejected: {
                     total: totalRejected,
+                    new: newRejected,
                 },
                 pending: {
                     total: totalPending,
+                    new: newPending,
                 },
             },
             price: {

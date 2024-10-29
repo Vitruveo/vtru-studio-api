@@ -459,6 +459,7 @@ export const countCreatorStacks = async ({
 export const findCreatorByUsername = async ({
     username,
 }: FindCreatorByUsernameParams) => creators().findOne({ username });
+
 export const findStacksSpotlight = async ({
     query,
     limit,
@@ -535,7 +536,7 @@ export const findStacksSpotlight = async ({
             $group: {
                 _id: '$_id',
                 username: { $first: '$username' },
-                stacks: { $push: '$stacks' },
+                stacks: { $first: '$$ROOT' },
             },
         },
         {
