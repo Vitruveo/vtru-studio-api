@@ -516,11 +516,6 @@ export const findStacksSpotlight = async ({
                 },
             },
         },
-        {
-            $addFields: {
-                'stacks.quantity': { $size: '$stacks' },
-            },
-        },
         { $unwind: '$stacks' },
         {
             $match: {
@@ -535,37 +530,13 @@ export const findStacksSpotlight = async ({
         {
             $group: {
                 _id: '$_id',
-                username: { $first: '$username' },
                 stacks: { $first: '$$ROOT' },
             },
         },
+        { $limit: limit },
         {
             $project: {
-                _id: 1,
-                username: 1,
-                randomStack: {
-                    $arrayElemAt: [
-                        '$stacks',
-                        {
-                            $floor: {
-                                $multiply: [
-                                    { $rand: {} },
-                                    { $size: '$stacks' },
-                                ],
-                            },
-                        },
-                    ],
-                },
-            },
-        },
-        {
-            $limit: limit,
-        },
-        {
-            $project: {
-                _id: 1,
-                username: 1,
-                stacks: '$randomStack',
+                stack: '$stacks',
             },
         },
     ];

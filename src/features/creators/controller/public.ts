@@ -88,6 +88,7 @@ route.get('/profile/:username', async (req, res) => {
                 id: creator._id,
                 username: creator.username,
                 avatar: creator.profile.avatar,
+                socials: creator.socials,
                 artsQuantity,
             },
         } as APIResponse);

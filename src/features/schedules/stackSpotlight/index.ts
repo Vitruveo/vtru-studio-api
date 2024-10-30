@@ -69,8 +69,8 @@ export const updateStackSpotlight = async () => {
         // Adicionar flag de displaySpotlight nos novos stacks
         await updateManyStackSpotlight({
             stacks: payload.map((item) => ({
-                id: item.stacks.id,
-                type: item.stacks.type,
+                id: item.stack.stacks.id,
+                type: item.stack.stacks.type,
             })),
         });
 
