@@ -21,7 +21,7 @@ export async function sendMessageDiscord({ message }: { message: string }) {
                 content: message,
             });
         }
-    } catch (error) {
-        console.error('Erro ao enviar mensagem para o Discord:', error);
+    } catch (error: any) {
+        // console.error('Erro ao enviar mensagem para o Discord:', error.data);
     }
 }
