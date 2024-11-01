@@ -167,3 +167,16 @@ export interface UpdateManyStackSpotlight {
         type: string;
     }[];
 }
+
+export interface FindArtistsForSpotlightParams {
+    query?: any;
+    limit: number;
+}
+
+export interface MarkArtistWithFlagParams {
+    ids: ObjectId[];
+}
+
+export interface FilterArtistsWithConsignParams {
+    ids: ObjectId[];
+}

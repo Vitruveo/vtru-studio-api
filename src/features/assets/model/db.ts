@@ -28,8 +28,6 @@ import type {
     FindAssetsForSpotlightParams,
     UpdateManyAssetSpotlightParams,
     FindMyAssetsParams,
-    UpdateManyArtistSpotlightParams,
-    FindArtistsForSpotlightParams,
     CountArtsByCreatorParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
@@ -1234,88 +1232,6 @@ export const getTotalPrice = async (query = {}) =>
         ])
         .toArray()
         .then((result) => (result.length > 0 ? result[0].totalPrice : 0));
-
-export const findArtistsForSpotlight = async ({
-    query = {},
-    limit,
-}: FindArtistsForSpotlightParams) =>
-    assets()
-        .aggregate([
-            { $match: query },
-            {
-                $addFields: {
-                    creatorId: {
-                        $toObjectId: '$framework.createdBy',
-                    },
-                },
-            },
-            {
-                $lookup: {
-                    from: 'creators',
-                    localField: 'creatorId',
-                    foreignField: '_id',
-                    as: 'creator',
-                },
-            },
-            {
-                $match: {
-                    'creator.profile.avatar': { $ne: null },
-                },
-            },
-            {
-                $unwind: {
-                    path: '$creator',
-                },
-            },
-            {
-                $group: {
-                    _id: '$creatorId',
-                    assets: { $push: '$$ROOT' },
-                },
-            },
-            {
-                $project: {
-                    _id: 1,
-                    randomArt: {
-                        $arrayElemAt: [
-                            '$assets',
-                            {
-                                $floor: {
-                                    $multiply: [
-                                        { $rand: {} },
-                                        { $size: '$assets' },
-                                    ],
-                                },
-                            },
-                        ],
-                    },
-                },
-            },
-            { $limit: limit },
-            {
-                $project: {
-                    _id: '$randomArt.creator._id',
-                    name: '$randomArt.assetMetadata.creators.formData.name',
-                    avatar: '$randomArt.creator.profile.avatar',
-                },
-            },
-        ])
-        .toArray();
-
-export const updateManyArtistsSpotlightClear = async () =>
-    assets().updateMany(
-        { 'actions.displayArtistSpotlight': { $exists: true } },
-        { $unset: { 'actions.displayArtistSpotlight': '' } }
-    );
-
-export const updateManyArtistSpotlight = async ({
-    ids,
-}: UpdateManyArtistSpotlightParams) => {
-    await assets().updateMany(
-        { 'framework.createdBy': { $in: ids.map((id) => id.toString()) } },
-        { $set: { 'actions.displayArtistSpotlight': true } }
-    );
-};
 
 export const countArtsByCreator = async ({ query }: CountArtsByCreatorParams) =>
     assets().countDocuments(query);
