@@ -657,7 +657,7 @@ export const filterArtistsWithConsign = async ({
             {
                 $project: {
                     _id: 1,
-                    username: 1,
+                    name: '$username',
                     'profile.avatar': 1,
                 },
             },
