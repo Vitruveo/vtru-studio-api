@@ -25,6 +25,9 @@ import type {
     FindCreatorByUsernameParams,
     CountAllStacksParams,
     UpdateManyStackSpotlight,
+    FindArtistsForSpotlightParams,
+    FilterArtistsWithConsignParams,
+    MarkArtistWithFlagParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -591,3 +594,72 @@ export const updateManyStackSpotlightClear = async () => {
         }
     );
 };
+
+export const findArtistsForSpotlight = async ({
+    query,
+    limit,
+}: FindArtistsForSpotlightParams) =>
+    creators()
+        .aggregate([
+            { $match: query },
+            { $limit: limit },
+            {
+                $project: {
+                    _id: 1,
+                    username: 1,
+                    avatar: '$profile.avatar',
+                },
+            },
+        ])
+        .toArray();
+
+export const markArtistWithFlag = async ({ ids }: MarkArtistWithFlagParams) =>
+    creators().updateMany(
+        { _id: { $in: ids } },
+        { $set: { 'actions.displaySpotlight': true } }
+    );
+
+export const clearArtistMark = async () =>
+    creators().updateMany(
+        { 'actions.displaySpotlight': { $exists: true } },
+        { $unset: { 'actions.displaySpotlight': '' } }
+    );
+
+export const filterArtistsWithConsign = async ({
+    ids,
+}: FilterArtistsWithConsignParams) =>
+    creators()
+        .aggregate([
+            {
+                $match: {
+                    _id: { $in: ids },
+                },
+            },
+            {
+                $addFields: {
+                    _idStr: { $toString: '$_id' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'assets',
+                    localField: '_idStr',
+                    foreignField: 'framework.createdBy',
+                    as: 'assets',
+                },
+            },
+            {
+                $match: {
+                    'assets.contractExplorer': { $exists: true },
+                    'assets.consignArtwork.status': 'active',
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    username: 1,
+                    'profile.avatar': 1,
+                },
+            },
+        ])
+        .toArray();
