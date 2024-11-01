@@ -30,6 +30,7 @@ import type {
     FindMyAssetsParams,
     UpdateManyArtistSpotlightParams,
     FindArtistsForSpotlightParams,
+    CountArtsByCreatorParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -273,6 +274,9 @@ export const findAssetsPaginated = ({
                             $toLower: '$assetMetadata.creators.formData.name',
                         },
                     },
+                },
+                insensitiveTitle: {
+                    $toLower: '$assetMetadata.context.formData.title',
                 },
                 exists: {
                     $cond: {
@@ -1217,14 +1221,10 @@ export const updateManyAssetSpotlightClear = async () =>
 export const countAllAssets = async (query = {}) =>
     assets().countDocuments(query);
 
-export const getTotalPrice = async () =>
+export const getTotalPrice = async (query = {}) =>
     assets()
         .aggregate([
-            {
-                $match: {
-                    'contractExplorer.explorer': { $exists: true },
-                },
-            },
+            { $match: query },
             {
                 $group: {
                     _id: null,
@@ -1316,3 +1316,6 @@ export const updateManyArtistSpotlight = async ({
         { $set: { 'actions.displayArtistSpotlight': true } }
     );
 };
+
+export const countArtsByCreator = async ({ query }: CountArtsByCreatorParams) =>
+    assets().countDocuments(query);

@@ -168,3 +168,7 @@ export interface FindArtistsForSpotlightParams {
 export interface UpdateManyArtistSpotlightParams {
     ids: string[];
 }
+
+export interface CountArtsByCreatorParams {
+    query: any;
+}
