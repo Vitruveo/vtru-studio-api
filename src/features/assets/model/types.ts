@@ -160,15 +160,6 @@ export interface FindAssetsForSpotlightParams {
     limit: number;
 }
 
-export interface FindArtistsForSpotlightParams {
-    query?: any;
-    limit: number;
-}
-
-export interface UpdateManyArtistSpotlightParams {
-    ids: string[];
-}
-
 export interface CountArtsByCreatorParams {
     query: any;
 }

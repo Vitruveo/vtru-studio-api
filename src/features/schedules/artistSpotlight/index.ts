@@ -2,29 +2,59 @@ import debug from 'debug';
 import { join } from 'path';
 import { writeFile, access } from 'fs/promises';
 import { uniqueExecution } from '@nsfilho/unique';
+import { ObjectId } from 'mongodb';
 import { DIST } from '../../../constants';
 import { exitWithDelay, retry } from '../../../utils';
-import {
-    findArtistsForSpotlight,
-    updateManyArtistSpotlight,
-    updateManyArtistsSpotlightClear,
-} from '../../assets/model';
 import { sendMessageDiscord } from '../../../services/discord';
+import {
+    clearArtistMark,
+    filterArtistsWithConsign,
+    findArtistsForSpotlight,
+    markArtistWithFlag,
+} from '../../creators/model';
 
 const logger = debug('features:schedules:artistSpotlight');
 const artistSpotlightPath = join(DIST, 'artistSpotlight.json');
 
-const clearArtistSpotlight = async () => {
-    try {
-        logger('starting schedule clearArtistSpotlight');
-        sendMessageDiscord({ message: 'start schedule clearArtistSpotlight' });
-        // remover a flag de displaySpotlight dos creators
-        await updateManyArtistsSpotlightClear();
+const defaultLimit = 50;
 
-        logger('Spotlight data cleared successfully');
-    } catch (error) {
-        logger('Error schedule clearArtistSpotlight', error);
+const fetchArtists = async (
+    query: any,
+    limit: number,
+    payload: any[] = []
+): Promise<any[]> => {
+    const artistSpotlight = await findArtistsForSpotlight({ query, limit });
+    logger('Artist found for spotlight: %d', artistSpotlight.length);
+
+    if (artistSpotlight.length === 0) {
+        logger('No artist found for spotlight, start cleaning');
+        await clearArtistMark();
+        if (payload.length > 0) {
+            await markArtistWithFlag({
+                ids: payload.map((artist) => new ObjectId(artist._id)),
+            });
+        }
+        return fetchArtists(query, limit, payload);
     }
+
+    await markArtistWithFlag({
+        ids: artistSpotlight.map((artist) => new ObjectId(artist._id)),
+    });
+
+    const artistsWithConsign = await filterArtistsWithConsign({
+        ids: artistSpotlight.map((artist) => new ObjectId(artist._id)),
+    });
+    logger('Artist with consign: %d', artistsWithConsign.length);
+
+    payload.push(...artistsWithConsign);
+    logger('Total payload found: %d', payload.length);
+
+    if (payload.length < defaultLimit) {
+        const newLimit = defaultLimit - payload.length;
+        await fetchArtists(query, newLimit, payload);
+    }
+
+    return payload;
 };
 
 export const updateArtistSpotlight = async () => {
@@ -33,61 +63,16 @@ export const updateArtistSpotlight = async () => {
         sendMessageDiscord({ message: 'start schedule updateArtistSpotlight' });
 
         const query: any = {
-            $and: [
-                {
-                    'framework.createdBy': {
-                        $exists: true,
-                    },
-                },
-                {
-                    'framework.createdBy': {
-                        $ne: null,
-                        $nin: [''],
-                    },
-                },
-            ],
-            'consignArtwork.status': 'active',
-            mintExplorer: { $exists: false },
-            contractExplorer: { $exists: true },
-            'actions.displayArtistSpotlight': {
-                $exists: false,
-            },
+            'profile.avatar': { $ne: null, $nin: [''] },
+            'actions.displaySpotlight': { $exists: false },
         };
-        const limit = 50;
-        const artistSpotlight = await findArtistsForSpotlight({ query, limit });
-        let payload = artistSpotlight;
-
-        if (payload.length === 0) {
-            logger('All artists are already in the spotlight');
-            sendMessageDiscord({
-                message: 'All artists are already in the spotlight',
-            });
-            await clearArtistSpotlight();
-            await updateArtistSpotlight();
-            return;
-        }
-        if (payload.length < limit) {
-            logger('Less than %d artists found, clearing spotlight', limit);
-            sendMessageDiscord({
-                message: `Less than ${limit} artists found, clearing spotlight`,
-            });
-            await clearArtistSpotlight();
-            const missingArtists = await findArtistsForSpotlight({
-                query,
-                limit: limit - payload.length,
-            });
-            payload = payload.concat(missingArtists);
-        }
+        const limit = defaultLimit;
+        const payload = await fetchArtists(query, limit);
 
         await writeFile(
             artistSpotlightPath,
             JSON.stringify(payload.sort(() => Math.random() - 0.5))
         );
-
-        // adicionar a flag de displaySpotlight nos novos creators
-        await updateManyArtistSpotlight({
-            ids: artistSpotlight.map((artist) => artist._id),
-        });
 
         logger('Spotlight data updated successfully');
     } catch (error) {
