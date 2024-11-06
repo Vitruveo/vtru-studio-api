@@ -28,7 +28,9 @@ route.post('/request/:id', async (req, res) => {
         const { id } = req.auth;
 
         const extension = mimetype.split('/')[1];
-        const path = `${id}/${new Date().getTime()}.${extension}`;
+        const path = metadata?.path
+            ? metadata.path
+            : `${id}/${new Date().getTime()}.${extension}`;
 
         const payload = {
             path,
