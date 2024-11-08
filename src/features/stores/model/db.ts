@@ -1,6 +1,7 @@
 import { getDb, ObjectId } from '../../../services';
 import { COLLECTION_STORES, Stores, StoresSchema } from './schema';
 import type {
+    CheckUrlIsUniqueParams,
     UpdateFormatOrganizationsParams,
     UpdateStepStoresParams,
     UpdateStoresParams,
@@ -50,3 +51,9 @@ export const updateFormatOrganizations = ({
             $set: { [`organization.formats.${format}`]: data },
         }
     );
+
+export const CheckUrlIsUnique = async ({ id, url }: CheckUrlIsUniqueParams) =>
+    stores().findOne({
+        _id: { $ne: new ObjectId(id) },
+        'organization.url': url,
+    });

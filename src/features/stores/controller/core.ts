@@ -189,4 +189,30 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
     }
 });
 
+route.post('/validateUrl/:id', async (req, res) => {
+    try {
+        const url = req.body.url as string;
+
+        const response = await model.CheckUrlIsUnique({
+            id: req.params.id,
+            url,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.stores.validateUrl.success',
+            message: 'Validate url success',
+            transaction: nanoid(),
+            data: !response?._id,
+        } as APIResponse);
+    } catch (error) {
+        logger('Validate url failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.validateUrl.failed',
+            message: `Validate url failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 export { route };

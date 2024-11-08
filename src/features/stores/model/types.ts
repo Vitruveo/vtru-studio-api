@@ -19,3 +19,8 @@ export interface UpdateFormatOrganizationsParams {
         path: string;
     };
 }
+
+export interface CheckUrlIsUniqueParams {
+    id: string;
+    url: string;
+}
