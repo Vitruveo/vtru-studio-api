@@ -29,8 +29,8 @@ route.post('/request/:id', async (req, res) => {
 
         const extension = mimetype.split('/')[1];
         const path = metadata?.path
-            ? `${metadata.path}?timestamp=${new Date().getTime()}`
-            : `${id}/${new Date().getTime()}.${extension}?timestamp=${new Date().getTime()}`;
+            ? metadata.path
+            : `${id}/${new Date().getTime()}.${extension}`;
 
         const payload = {
             path,
@@ -70,7 +70,7 @@ route.post('/request/:id', async (req, res) => {
             format: formats[metadata.formatUpload as keyof typeof formats],
             data: {
                 name: originalName,
-                path,
+                path: `${path}?timestamp=${new Date().getTime()}`,
             },
         });
 
