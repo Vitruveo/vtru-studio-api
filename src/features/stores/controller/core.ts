@@ -11,9 +11,17 @@ import {
     validateBodyForUpdateStepStores,
 } from './rules';
 import { schemaValidationStepName } from './schemas';
+import { querySorStoreCreatorById } from '../utils/queries';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
+
+const statusMapper = {
+    draft: {},
+    active: {},
+    inactive: {},
+    all: {},
+};
 
 route.use(middleware.checkAuth);
 
@@ -42,13 +50,38 @@ route.post('/', validateBodyForCreateStores, async (req, res) => {
 
 route.get('/me', async (req, res) => {
     try {
-        const response = await model.findStoresByCreator(req.auth.id);
+        const status = req.query.status as keyof typeof statusMapper;
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 24;
+        const sort = req.query.sort as string;
+
+        const query: any = {
+            'framework.createdBy': req.auth.id,
+            ...(statusMapper[status] || statusMapper.all),
+        };
+
+        const sortQuery = querySorStoreCreatorById(sort);
+        const total = await model.countStoresByCreator({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const response = await model.findStoresByCreatorPaginated({
+            query,
+            skip: (page - 1) * limit,
+            limit,
+            sort: sortQuery,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.stores.reader.all.success',
             message: 'Reader all success',
             transaction: nanoid(),
-            data: response,
+            data: {
+                data: response,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
         } as APIResponse);
     } catch (error) {
         logger('Reader all stores failed: %O', error);

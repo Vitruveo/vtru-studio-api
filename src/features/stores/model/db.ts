@@ -2,6 +2,7 @@ import { getDb, ObjectId } from '../../../services';
 import { COLLECTION_STORES, Stores, StoresSchema } from './schema';
 import type {
     CheckUrlIsUniqueParams,
+    FindStoresByCreatorParams,
     UpdateFormatOrganizationsParams,
     UpdateStepStoresParams,
     UpdateStoresParams,
@@ -15,8 +16,20 @@ export const createStores = (data: Stores) => {
     return stores().insertOne(envelope);
 };
 
-export const findStoresByCreator = (creator: string) =>
-    stores().find({ 'framework.createdBy': creator }).toArray();
+export const findStoresByCreatorPaginated = ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindStoresByCreatorParams) =>
+    stores()
+        .aggregate([
+            { $match: query },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+        ])
+        .toArray();
 
 export const findStoresById = (id: string) =>
     stores().findOne({ _id: new ObjectId(id) });
@@ -57,3 +70,7 @@ export const CheckUrlIsUnique = async ({ id, url }: CheckUrlIsUniqueParams) =>
         _id: { $ne: new ObjectId(id) },
         'organization.url': url,
     });
+
+export const countStoresByCreator = ({
+    query,
+}: Pick<FindStoresByCreatorParams, 'query'>) => stores().countDocuments(query);
