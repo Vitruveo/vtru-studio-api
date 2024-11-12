@@ -29,7 +29,7 @@ route.post('/request/:id', async (req, res) => {
 
         const extension = mimetype.split('/')[1];
         const path = metadata?.path
-            ? metadata.path
+            ? metadata.path.replace(/\?timestamp=.*/, '')
             : `${id}/${new Date().getTime()}.${extension}`;
 
         const payload = {
@@ -40,8 +40,6 @@ route.post('/request/:id', async (req, res) => {
             origin: 'stores',
             method: 'PUT',
         };
-
-        console.log('paylad', JSON.stringify(payload, null, 2));
 
         await sendToExchangeCreators(JSON.stringify(payload), 'stores');
 
