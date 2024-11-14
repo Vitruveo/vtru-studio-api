@@ -25,6 +25,11 @@ export const findStoresByCreatorPaginated = ({
     stores()
         .aggregate([
             { $match: query },
+            {
+                $addFields: {
+                    insesitiveName: { $toLower: '$organization.name' },
+                },
+            },
             { $sort: sort },
             { $skip: skip },
             { $limit: limit },
