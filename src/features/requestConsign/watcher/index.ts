@@ -86,6 +86,7 @@ const sendToConsign = async ({
                 await sendToExchangeAutoConsign(
                     JSON.stringify({
                         assetId: asset._id.toString(),
+                        moderatorId: 'automatic',
                     })
                 );
 
