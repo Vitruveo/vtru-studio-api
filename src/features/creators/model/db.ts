@@ -16,7 +16,7 @@ import type {
     updateCreatorSearchVideoParams,
     UpdateCreatorSocialById,
     RemoveCreatorSocialById,
-    PpdateCreatorSearchGridParams,
+    UpdateCreatorSearchGridParams,
     FindCreatorAssetsByGridId,
     FindCreatorAssetsByVideoId,
     FindCreatorAssetsBySlideshowId,
@@ -28,6 +28,7 @@ import type {
     FindArtistsForSpotlightParams,
     FilterArtistsWithConsignParams,
     MarkArtistWithFlagParams,
+    CheckHashAlreadyExistsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -210,7 +211,8 @@ export const updateCreatorSocialById = ({
 export const updateCreatorSearchGrid = ({
     id,
     grid,
-}: PpdateCreatorSearchGridParams) =>
+    hash,
+}: UpdateCreatorSearchGridParams) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
         {
@@ -218,6 +220,7 @@ export const updateCreatorSearchGrid = ({
                 'search.grid': {
                     ...grid,
                     createdAt: new Date(),
+                    hash,
                 },
             },
         }
@@ -660,6 +663,17 @@ export const filterArtistsWithConsign = async ({
                     name: '$username',
                     'profile.avatar': 1,
                 },
+            },
+        ])
+        .toArray();
+
+export const checkHashAlreadyExists = async ({
+    hash,
+}: CheckHashAlreadyExistsParams) =>
+    creators()
+        .aggregate([
+            {
+                $match: { 'search.grid.hash': hash },
             },
         ])
         .toArray();
