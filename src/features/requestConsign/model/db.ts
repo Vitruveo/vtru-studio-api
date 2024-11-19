@@ -179,6 +179,7 @@ export const findRequestConsignsPaginated = ({
                     status: 1,
                     logs: 1,
                     comments: 1,
+                    approvedBy: 1,
                     when: 1,
                     asset: {
                         _id: 1,

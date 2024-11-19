@@ -11,7 +11,6 @@ import { mustBeOwner, needsToBeOwner } from '../../common/rules';
 import {
     APIResponse,
     DeleteResult,
-    InsertOneResult,
     ObjectId,
     UpdateResult,
 } from '../../../services';
