@@ -24,6 +24,7 @@ import { model } from '../../creators';
 import { schemaValidationForRequestUpload } from './schemas';
 import { sendToExchangeGrid } from '../../../services/grid';
 import { videoExtension } from '../../assets/utils/videoExtensions';
+import { checkMd5Hash } from '../middleware';
 
 const logger = debug('features:upload:controller');
 const route = Router();
@@ -101,6 +102,7 @@ route.post(
 route.post(
     '/grid',
     checkAuth,
+    checkMd5Hash,
     validateBodyForRequestUpload,
     async (req, res) => {
         try {
@@ -112,6 +114,7 @@ route.post(
                 title,
                 description,
                 size,
+                hash,
             } = req.body as z.infer<typeof schemaValidationForRequestUpload>;
             const date = Date.now().toString();
 
@@ -147,6 +150,7 @@ route.post(
                     title,
                     description,
                 },
+                hash,
             });
 
             res.status(200).json({
