@@ -220,6 +220,7 @@ export const findAssetGroupPaginated = ({
         {
             $addFields: {
                 username: '$creator.username',
+                vault: '$creator.vault',
             },
         },
         {
@@ -330,6 +331,7 @@ export const findAssetsPaginated = ({
         {
             $addFields: {
                 username: '$creator.username',
+                vault: '$creator.vault',
             },
         },
         {
