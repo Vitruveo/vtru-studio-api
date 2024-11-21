@@ -211,6 +211,9 @@ export const AssetsSchema = z.object({
             updatedBy: z.string().nullable().default(null),
         })
         .default({}),
+    creator: z.object({
+        username: z.string().default(''),
+    }),
 });
 
 export type Assets = z.infer<typeof AssetsSchema>;

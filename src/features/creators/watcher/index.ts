@@ -5,6 +5,7 @@ import { exitWithDelay, retry } from '../../../utils';
 import { getDb } from '../../../services';
 import { COLLECTION_CREATORS, CreatorDocument } from '../model';
 import { emitter } from '../../events';
+import { AssetsDocument, COLLECTION_ASSETS } from '../../assets/model';
 
 const logger = debug('features:creators:watcher');
 
@@ -51,6 +52,25 @@ uniqueExecution({
                             status.data[index] = change.fullDocument;
                         } else {
                             status.data.push(change.fullDocument);
+                        }
+
+                        if (change.updateDescription.updatedFields?.username) {
+                            const creatorId = change.documentKey._id.toString();
+                            const assetsByCreator = await getDb()
+                                .collection<AssetsDocument>(COLLECTION_ASSETS)
+                                .find({ 'framework.createdBy': creatorId })
+                                .toArray();
+                            assetsByCreator.forEach((asset) => {
+                                const updatedAsset = {
+                                    ...asset,
+                                    creator: {
+                                        ...asset.creator,
+                                        username: change.fullDocument
+                                            ?.username as string,
+                                    },
+                                };
+                                emitter.emitUpdateAsset(updatedAsset);
+                            });
                         }
 
                         emitter.emitUpdateCreator(change.fullDocument);
