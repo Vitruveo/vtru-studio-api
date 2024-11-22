@@ -351,6 +351,7 @@ export const findCreatorsStacks = async ({
             $project: {
                 _id: 1,
                 username: 1,
+                vault: 1,
                 stacks: {
                     $reduce: {
                         input: inputReducer,

@@ -24,7 +24,15 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
                 {
                     $addFields: {
                         'creator.username': {
-                            $arrayElemAt: ['$creatorDetails.username', 0],
+                            $ifNull: [
+                                {
+                                    $arrayElemAt: [
+                                        '$creatorDetails.username',
+                                        0,
+                                    ],
+                                },
+                                '',
+                            ],
                         },
                     },
                 },
