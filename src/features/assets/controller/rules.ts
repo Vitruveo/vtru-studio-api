@@ -26,6 +26,7 @@ import {
     schemaAssetUpdateManyNudity,
 } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
+import { model } from '../../creators';
 
 export const validateBodyForCreate = async (
     req: Request,
@@ -47,6 +48,11 @@ export const validateBodyForCreate = async (
         req.body.framework = createRecordFramework({
             createdBy: req.auth.id,
         });
+
+        const creator = await model.findCreatorById({ id: req.auth.id });
+        req.body.creator = {
+            username: creator?.username || '',
+        };
         next();
     } catch (error) {
         res.status(400).json({
