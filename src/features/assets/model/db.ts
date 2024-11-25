@@ -29,6 +29,7 @@ import type {
     UpdateManyAssetSpotlightParams,
     FindMyAssetsParams,
     CountArtsByCreatorParams,
+    UpateAssetsUsernameParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -219,7 +220,6 @@ export const findAssetGroupPaginated = ({
         },
         {
             $addFields: {
-                username: '$creator.username',
                 vault: '$creator.vault',
             },
         },
@@ -320,24 +320,23 @@ export const findAssetsPaginated = ({
                 from: 'creators',
                 localField: 'creatorId',
                 foreignField: '_id',
-                as: 'creator',
+                as: 'creatorDetails',
             },
         },
         {
             $unwind: {
-                path: '$creator',
+                path: '$creatorDetails',
             },
         },
         {
             $addFields: {
-                username: '$creator.username',
-                vault: '$creator.vault',
+                vault: '$creatorDetails.vault',
             },
         },
         {
             $project: {
                 creatorId: 0,
-                creator: 0,
+                creatorDetails: 0,
             },
         },
         { $sort: sort },
@@ -1039,6 +1038,7 @@ export const findLastSoldAssets = () =>
                     preview: '$formats.preview.path',
                     price: '$licenses.nft.single.editionPrice',
                     username: '$creator.username',
+                    vault: '$creator.vault',
                 },
             },
         ])
@@ -1199,6 +1199,7 @@ export const findAssetsForSpotlight = ({
                     preview: '$asset.formats.preview.path',
                     username: '$creator.username',
                     nudity: '$asset.assetMetadata.taxonomy.formData.nudity',
+                    vault: '$creator.vault',
                 },
             },
         ])
@@ -1237,3 +1238,12 @@ export const getTotalPrice = async (query = {}) =>
 
 export const countArtsByCreator = async ({ query }: CountArtsByCreatorParams) =>
     assets().countDocuments(query);
+
+export const updateAssetsUsername = async ({
+    data,
+    username,
+}: UpateAssetsUsernameParams) =>
+    assets().updateMany(
+        { _id: { $in: data.map((item) => new ObjectId(item._id)) } },
+        { $set: { 'creator.username': username } }
+    );

@@ -36,6 +36,8 @@ export const findStoresByCreatorPaginated = ({
         ])
         .toArray();
 
+export const findStoresByHash = (hash: string) => stores().findOne({ hash });
+
 export const findStoresById = (id: string) =>
     stores().findOne({ _id: new ObjectId(id) });
 

@@ -38,6 +38,7 @@ export const StoreStatusEnum = z.enum(['draft', 'active', 'inactive']);
 
 export const StoresSchema = z.object({
     organization: OrganizationSchema,
+    hash: z.string().default(''),
     framework: FrameworkSchema.default({}),
     status: StoreStatusEnum.default('draft'),
     actions: z.object({ countClone: z.number().default(0) }).optional(),

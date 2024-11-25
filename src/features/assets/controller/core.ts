@@ -8,6 +8,7 @@ import { Request, Router } from 'express';
 
 import * as model from '../model';
 import * as modelRequestConsign from '../../requestConsign/model';
+import * as modelCreator from '../../creators/model';
 import { middleware } from '../../users';
 import {
     APIResponse,
@@ -273,6 +274,7 @@ route.post('/', validateBodyForCreate, async (req, res) => {
             assetMetadata: model.AssetsDocument['assetMetadata'];
             licenses: model.AssetsDocument['licenses'];
             terms: model.AssetsDocument['terms'];
+            creator: model.AssetsDocument['creator'];
         } | null = null;
 
         if (req.body.cloneId) {
@@ -287,6 +289,13 @@ route.post('/', validateBodyForCreate, async (req, res) => {
                     asset.actions.countClone = 0;
                 }
 
+                if (!asset?.creator) {
+                    const creator = await modelCreator.findCreatorById({
+                        id: req.auth.id,
+                    });
+                    asset.creator = { username: creator?.username || '' };
+                }
+
                 asset.actions.countClone += 1;
 
                 await model.updateAssets({
@@ -298,6 +307,7 @@ route.post('/', validateBodyForCreate, async (req, res) => {
                     assetMetadata: asset?.assetMetadata,
                     licenses: asset?.licenses,
                     terms: asset?.terms,
+                    creator: asset?.creator,
                 };
                 clone.assetMetadata.context.formData.title += ` ${asset.actions.countClone}`;
                 clone.licenses.print.added = false;
