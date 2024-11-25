@@ -1244,6 +1244,6 @@ export const updateAssetsUsername = async ({
     username,
 }: UpateAssetsUsernameParams) =>
     assets().updateMany(
-        { _id: { $in: data.map((item) => item._id) } },
+        { _id: { $in: data.map((item) => new ObjectId(item._id)) } },
         { $set: { 'creator.username': username } }
     );

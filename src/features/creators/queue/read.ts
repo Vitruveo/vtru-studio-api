@@ -50,7 +50,7 @@ export const startQueueUpdateUsernameInAssets = async () => {
     channel.consume(logQueue, async (data) => {
         if (!data) return;
         try {
-            logger('Received message');
+            logger('Received message QueueUpdateUsernameInAssets');
 
             // parse envelope
             const parsedMessage = JSON.parse(data.content.toString().trim());
@@ -74,14 +74,18 @@ export const startQueueUpdateUsernameInAssets = async () => {
                 return;
             }
 
+            logger('Found assets:', assets.length);
+
             await modelAssets.updateAssetsUsername({
                 data: assets,
                 username: creator.username || '',
             });
 
+            logger('Assets updated from creator %s', creatorId);
             channel.ack(data);
-        } catch (parsingError) {
-            sentry.captureException(parsingError);
+        } catch (error) {
+            logger('Error QueueUpdateUsernameInAssets:', error);
+            sentry.captureException(error);
             channel.nack(data);
         }
     });
