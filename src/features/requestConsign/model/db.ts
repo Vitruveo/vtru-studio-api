@@ -117,6 +117,13 @@ export const findRequestConsignsPaginated = ({
                 $addFields: {
                     asset: { $toObjectId: '$asset' },
                     creator: { $toObjectId: '$creator' },
+                    approvedBy: {
+                        $cond: {
+                            if: { $eq: ['$approvedBy', 'automatic'] },
+                            then: '$approvedBy',
+                            else: { $toObjectId: '$approvedBy' },
+                        },
+                    },
                 },
             },
             {
@@ -136,6 +143,14 @@ export const findRequestConsignsPaginated = ({
                 },
             },
             {
+                $lookup: {
+                    from: 'users',
+                    localField: 'approvedBy',
+                    foreignField: '_id',
+                    as: 'user',
+                },
+            },
+            {
                 $unwind: {
                     path: '$asset',
                     preserveNullAndEmptyArrays: true,
@@ -144,6 +159,12 @@ export const findRequestConsignsPaginated = ({
             {
                 $unwind: {
                     path: '$creator',
+                    preserveNullAndEmptyArrays: true,
+                },
+            },
+            {
+                $unwind: {
+                    path: '$user',
                     preserveNullAndEmptyArrays: true,
                 },
             },
@@ -179,6 +200,13 @@ export const findRequestConsignsPaginated = ({
                     status: 1,
                     logs: 1,
                     comments: 1,
+                    approvedBy: {
+                        $cond: {
+                            if: { $eq: ['$approvedBy', 'automatic'] },
+                            then: 'automatic',
+                            else: '$user.name',
+                        },
+                    },
                     when: 1,
                     asset: {
                         _id: 1,

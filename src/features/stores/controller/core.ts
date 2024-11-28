@@ -17,9 +17,9 @@ const logger = debug('features:stores:controller:core');
 const route = Router();
 
 const statusMapper = {
-    draft: {},
-    active: {},
-    inactive: {},
+    draft: { status: 'draft' },
+    active: { status: 'active' },
+    inactive: { status: 'inactive' },
     all: {},
 };
 
@@ -27,9 +27,56 @@ route.use(middleware.checkAuth);
 
 route.post('/', validateBodyForCreateStores, async (req, res) => {
     try {
+        let clone: {
+            organization: model.StoresDocument['organization'];
+        } | null = null;
+
         const payload = req.body;
 
-        const response = await model.createStores(payload);
+        if (payload.cloneId) {
+            const store = await model.findStoresById(payload.cloneId);
+
+            if (!store) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.stores.clone.not.found',
+                    message: 'Clone not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (store.framework.createdBy !== req.auth.id) {
+                res.status(403).json({
+                    code: 'vitruveo.studio.api.stores.clone.forbidden',
+                    message: 'Clone forbidden',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (!store?.actions) {
+                store.actions = { countClone: 0 };
+            } else if (!store.actions.countClone) {
+                store.actions.countClone = 0;
+            }
+
+            store.actions.countClone += 1;
+
+            await model.updateStores({
+                id: store._id.toString(),
+                data: store,
+            });
+
+            clone = {
+                organization: store.organization,
+            };
+            clone.organization.url += `-${store.actions.countClone}`;
+        }
+
+        const response = await model.createStores({
+            ...payload,
+            ...(clone && clone),
+        });
 
         res.json({
             code: 'vitruveo.studio.api.stores.create.success',

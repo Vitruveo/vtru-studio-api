@@ -25,11 +25,18 @@ export const findStoresByCreatorPaginated = ({
     stores()
         .aggregate([
             { $match: query },
+            {
+                $addFields: {
+                    insesitiveName: { $toLower: '$organization.name' },
+                },
+            },
             { $sort: sort },
             { $skip: skip },
             { $limit: limit },
         ])
         .toArray();
+
+export const findStoresByHash = (hash: string) => stores().findOne({ hash });
 
 export const findStoresById = (id: string) =>
     stores().findOne({ _id: new ObjectId(id) });

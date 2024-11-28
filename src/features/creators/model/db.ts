@@ -16,7 +16,7 @@ import type {
     updateCreatorSearchVideoParams,
     UpdateCreatorSocialById,
     RemoveCreatorSocialById,
-    PpdateCreatorSearchGridParams,
+    UpdateCreatorSearchGridParams,
     FindCreatorAssetsByGridId,
     FindCreatorAssetsByVideoId,
     FindCreatorAssetsBySlideshowId,
@@ -31,6 +31,7 @@ import type {
     ChangeStepsSynapsParams,
     SynapsSessionInitParams,
     ChangeTruLevelParams,
+    CheckHashAlreadyExistsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -213,7 +214,8 @@ export const updateCreatorSocialById = ({
 export const updateCreatorSearchGrid = ({
     id,
     grid,
-}: PpdateCreatorSearchGridParams) =>
+    hash,
+}: UpdateCreatorSearchGridParams) =>
     creators().updateOne(
         { _id: new ObjectId(id) },
         {
@@ -221,6 +223,7 @@ export const updateCreatorSearchGrid = ({
                 'search.grid': {
                     ...grid,
                     createdAt: new Date(),
+                    hash,
                 },
             },
         }
@@ -351,6 +354,7 @@ export const findCreatorsStacks = async ({
             $project: {
                 _id: 1,
                 username: 1,
+                vault: 1,
                 stacks: {
                     $reduce: {
                         input: inputReducer,
@@ -732,3 +736,14 @@ export const changeTruLevel = async ({
 
     return result;
 };
+
+export const checkHashAlreadyExists = async ({
+    hash,
+}: CheckHashAlreadyExistsParams) =>
+    creators()
+        .aggregate([
+            {
+                $match: { 'search.grid.hash': hash },
+            },
+        ])
+        .toArray();

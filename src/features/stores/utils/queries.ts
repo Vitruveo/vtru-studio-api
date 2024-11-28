@@ -10,10 +10,10 @@ export const querySorStoreCreatorById = (sort: string) => {
             sortQuery = { 'framework.createdAt': 1 };
             break;
         case 'nameAZ':
-            sortQuery = { 'framework.name': 1 };
+            sortQuery = { insesitiveName: 1 };
             break;
         case 'nameZA':
-            sortQuery = { 'framework.name': -1 };
+            sortQuery = { insesitiveName: -1 };
             break;
         default:
             sortQuery = { 'framework.createdAt': -1 };

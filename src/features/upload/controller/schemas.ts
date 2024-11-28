@@ -16,4 +16,5 @@ export const schemaValidationForRequestUpload = z.object({
     fees: z.number(),
     title: z.string(),
     size: z.number(),
+    hash: z.string(),
 });

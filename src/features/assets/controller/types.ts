@@ -88,6 +88,10 @@ export interface Spotlight {
     preview: string;
     author: string;
     nudity: string;
+    vault: {
+        transactionhash: string | null;
+        vaultAddress: string | null;
+    };
 }
 
 export interface ArtistSpotlight {

@@ -163,3 +163,8 @@ export interface FindAssetsForSpotlightParams {
 export interface CountArtsByCreatorParams {
     query: any;
 }
+
+export interface UpateAssetsUsernameParams {
+    data: AssetsDocument[];
+    username: string;
+}

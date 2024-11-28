@@ -17,7 +17,7 @@ export const FormatSchema = z.object({
 });
 
 export const OrganizationSchema = z.object({
-    url: z.string(),
+    url: z.string().nullable().default(null),
     name: z.string(),
     description: z.string().nullable().default(null),
     markup: z.number().default(0),
@@ -34,9 +34,14 @@ export const FrameworkSchema = z.object({
     updatedBy: z.string().nullable().default(null),
 });
 
+export const StoreStatusEnum = z.enum(['draft', 'active', 'inactive']);
+
 export const StoresSchema = z.object({
     organization: OrganizationSchema,
+    hash: z.string().default(''),
     framework: FrameworkSchema.default({}),
+    status: StoreStatusEnum.default('draft'),
+    actions: z.object({ countClone: z.number().default(0) }).optional(),
 });
 
 export type Stores = z.infer<typeof StoresSchema>;

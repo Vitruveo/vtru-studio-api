@@ -123,7 +123,7 @@ export interface FindCreatorsByName {
     name: string;
 }
 
-export interface PpdateCreatorSearchGridParams {
+export interface UpdateCreatorSearchGridParams {
     id: string;
     grid: {
         id: string;
@@ -133,6 +133,7 @@ export interface PpdateCreatorSearchGridParams {
         title: string;
         description: string;
     };
+    hash: string;
 }
 
 export interface UpdateCreatorSearchSlideshowParams {
@@ -200,4 +201,7 @@ export interface ChangeTruLevelParams {
 export interface SynapsSessionInitParams {
     sessionId: string;
     creatorId: string;
+}
+export interface CheckHashAlreadyExistsParams {
+    hash: string;
 }

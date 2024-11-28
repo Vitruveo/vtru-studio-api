@@ -56,6 +56,12 @@ export const queryByTitleOrDescOrCreator = ({
             },
         },
     },
+    {
+        'creator.username': {
+            $regex: name,
+            $options: 'i',
+        },
+    },
 ];
 export interface querySortSearchParams {
     order: string;
