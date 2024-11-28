@@ -21,7 +21,54 @@ export const schemaValidationForPut = z.object({
             })
         )
         .default([]),
-    myWebsite: z.string().url().nullable().default(null),
+    synaps: z
+        .object({
+            sessionId: z.string().nullable().default(null),
+            steps: z
+                .array(
+                    z.object({
+                        id: z.string(),
+                        name: z.enum([
+                            'LIVENESS',
+                            'ID_DOCUMENT',
+                            'PROOF_OF_ADDRESS',
+                            'PHONE',
+                        ]),
+                        status: z.enum([
+                            'SUBMISSION_REQUIRED',
+                            'PENDING_VERIFICATION',
+                            'APPROVED',
+                            'REJECTED',
+                        ]),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .optional(),
+    truLevel: z
+        .object({
+            currentLevel: z.number(),
+            levels: z.array(
+                z.object({
+                    name: z.string(),
+                    steps: z.array(
+                        z.object({
+                            name: z.string(),
+                            completed: z.boolean(),
+                            points: z.number().optional(),
+                        })
+                    ),
+                })
+            ),
+        })
+        .optional(),
+    myWebsite: z
+        .string()
+        .url()
+        .nullable()
+        .default(null)
+        .transform((val) => (val === '' ? null : val)),
     links: z
         .array(
             z.object({

@@ -79,6 +79,102 @@ export const CreatorSchema = z.object({
             location: z.string().nullable().default(null),
         })
         .default({}),
+    synaps: z
+        .object({
+            sessionId: z.string().nullable().default(null),
+            steps: z
+                .array(
+                    z.object({
+                        id: z.string(),
+                        name: z.enum([
+                            'LIVENESS',
+                            'ID_DOCUMENT',
+                            'PROOF_OF_ADDRESS',
+                            'PHONE',
+                        ]),
+                        status: z.enum([
+                            'SUBMISSION_REQUIRED',
+                            'PENDING_VERIFICATION',
+                            'APPROVED',
+                            'REJECTED',
+                        ]),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .optional(),
+    truLevel: z
+        .object({
+            currentLevel: z.number(),
+            levels: z.array(
+                z.object({
+                    name: z.string(),
+                    steps: z.array(
+                        z.object({
+                            name: z.string(),
+                            completed: z.boolean(),
+                            points: z.number().optional(),
+                        })
+                    ),
+                })
+            ),
+        })
+        .optional(),
+    myWebsite: z.string().url().nullable().default(null),
+    links: z
+        .array(
+            z.object({
+                name: z.string(),
+                url: z.string().url(),
+            })
+        )
+        .nullable()
+        .default([]),
+    personalDetails: z
+        .object({
+            bio: z.string().nullable().default(null),
+            ethnicity: z.string().nullable().default(null),
+            gender: z.string().nullable().default(null),
+            nationality: z.string().nullable().default(null),
+            residence: z.string().nullable().default(null),
+            plusCode: z.string().nullable().default(null),
+        })
+        .nullable()
+        .default({}),
+    artworkRecognition: z
+        .object({
+            exhibitions: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
+                    })
+                )
+                .nullable()
+                .default([]),
+            awards: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .nullable()
+        .default({}),
     socials: z
         .object({
             x: z.object({

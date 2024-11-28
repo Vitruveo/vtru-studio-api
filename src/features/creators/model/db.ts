@@ -28,6 +28,9 @@ import type {
     FindArtistsForSpotlightParams,
     FilterArtistsWithConsignParams,
     MarkArtistWithFlagParams,
+    ChangeStepsSynapsParams,
+    SynapsSessionInitParams,
+    ChangeTruLevelParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -663,3 +666,69 @@ export const filterArtistsWithConsign = async ({
             },
         ])
         .toArray();
+
+export const synapsSessionInit = async ({
+    creatorId,
+    sessionId,
+}: SynapsSessionInitParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(creatorId) },
+        {
+            $set: {
+                'synaps.sessionId': sessionId,
+            },
+        },
+        { upsert: true }
+    );
+    return result;
+};
+
+export const changeStepsSynaps = async ({
+    sessionId,
+    stepId,
+    status,
+    stepName,
+}: ChangeStepsSynapsParams) => {
+    let result = await creators().updateOne(
+        { 'synaps.sessionId': sessionId, 'synaps.steps.id': stepId },
+        {
+            $set: {
+                'synaps.steps.$.status': status,
+                'synaps.steps.$.name': stepName,
+            },
+        }
+    );
+
+    if (result.modifiedCount === 0) {
+        result = await creators().updateOne(
+            { 'synaps.sessionId': sessionId },
+            {
+                $push: {
+                    'synaps.steps': {
+                        id: stepId,
+                        status,
+                        name: stepName,
+                    },
+                },
+            },
+            { upsert: true }
+        );
+    }
+    return result;
+};
+
+export const changeTruLevel = async ({
+    id,
+    truLevel,
+}: ChangeTruLevelParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $set: {
+                truLevel,
+            },
+        }
+    );
+
+    return result;
+};

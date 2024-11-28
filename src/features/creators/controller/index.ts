@@ -16,6 +16,7 @@ import {
     facebookCallback,
     googleCallback,
 } from './socials';
+import { route as synapsRoute } from './synaps';
 
 const router = Router();
 
@@ -29,6 +30,8 @@ router.use('/facebook/callback', facebookCallback);
 router.use('/google/callback', googleCallback);
 
 router.use('/creators/public', publicRouter);
+router.use('/creators/socials', socialsRouter);
+router.use('/creators/synaps', synapsRoute);
 router.use('/creators/socials', socialsRouter);
 router.use('/creators/stack', stackRouter);
 router.use('/creators/vault', vaultRouter);

@@ -10,6 +10,8 @@ import * as modelAsset from '../../assets/model';
 import { querySortStacks } from '../utils/queries';
 import { DIST } from '../../../constants';
 import { StackSpotlight } from './types';
+import { SYNAPS_API_KEY } from '../../../constants/synaps';
+import { sendToExchangeCreators } from '../upload';
 
 const logger = debug('features:creators:controller:public');
 const route = Router();
@@ -122,6 +124,67 @@ route.get('/stackSpotlight', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.creators.stackSpotlight.failed',
             message: `Reader stack spotlight failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/synaps/steps', async (req, res) => {
+    try {
+        const { apiKey } = req.params as { apiKey: string };
+        if (apiKey !== SYNAPS_API_KEY) {
+            res.status(401).json({
+                code: 'vitruveo.studio.api.creator.post.synaps.steps.failed',
+                message: 'Unauthorized',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+        const {
+            session_id: sessionId,
+            step_id: stepId,
+            service: stepName,
+            status,
+        } = req.body;
+
+        await model.changeStepsSynaps({
+            sessionId,
+            stepId,
+            status,
+            stepName,
+        });
+
+        const creator = await model.findOneCreator({
+            query: {
+                'synaps.sessionId': sessionId,
+            },
+        });
+
+        if (creator) {
+            await sendToExchangeCreators(
+                JSON.stringify({
+                    creatorId: creator._id,
+                    sessionId,
+                    stepId,
+                    status,
+                    stepName,
+                    messageType: 'synapsSteps',
+                }),
+                'userNotification'
+            );
+        }
+
+        res.json({
+            code: 'vitruveo.studio.api.creator.post.synaps.steps.success',
+            message: 'Post synaps steps success',
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('Synaps steps failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.creator.post.synaps.steps.failed',
+            message: `post synaps steps failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

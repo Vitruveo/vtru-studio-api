@@ -180,3 +180,24 @@ export interface MarkArtistWithFlagParams {
 export interface FilterArtistsWithConsignParams {
     ids: ObjectId[];
 }
+
+export interface ChangeStepsSynapsParams {
+    sessionId: string;
+    stepId: string;
+    stepName: string;
+    status:
+        | 'SUBMISSION_REQUIRED'
+        | 'PENDING_VERIFICATION'
+        | 'APPROVED'
+        | 'REJECTED';
+}
+
+export interface ChangeTruLevelParams {
+    id: string | ObjectId;
+    truLevel: Creator['truLevel'];
+}
+
+export interface SynapsSessionInitParams {
+    sessionId: string;
+    creatorId: string;
+}

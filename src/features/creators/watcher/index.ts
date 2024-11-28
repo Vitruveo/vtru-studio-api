@@ -5,6 +5,7 @@ import { exitWithDelay, retry } from '../../../utils';
 import { getDb } from '../../../services';
 import { COLLECTION_CREATORS, CreatorDocument } from '../model';
 import { emitter } from '../../events';
+// import { creatorTruLevelCalc } from '../controller/truLevel';
 
 const logger = debug('features:creators:watcher');
 
@@ -47,11 +48,16 @@ uniqueExecution({
                                 item._id.toString() ===
                                 change.documentKey._id.toString()
                         );
+
                         if (index !== -1) {
                             status.data[index] = change.fullDocument;
                         } else {
                             status.data.push(change.fullDocument);
                         }
+
+                        // creatorTruLevelCalc({
+                        //     creatorDoc: change.fullDocument,
+                        // });
 
                         emitter.emitUpdateCreator(change.fullDocument);
                     }
