@@ -68,7 +68,16 @@ route.post('/', validateBodyForCreateStores, async (req, res) => {
             });
 
             clone = {
-                organization: store.organization,
+                organization: {
+                    ...store.organization,
+                    formats: {
+                        logo: {
+                            horizontal: null,
+                            square: null,
+                        },
+                        banner: null,
+                    },
+                },
             };
             clone.organization.url += `-${store.actions.countClone}`;
         }
