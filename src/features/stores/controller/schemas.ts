@@ -26,7 +26,6 @@ export const schemaValidationOrganization = z.object({
     formats: FormatSchema.nullable().default(null),
 });
 
-const nestedArraySchema = z.tuple([z.string(), z.string()]);
 export const schemaValidationArtworks = z.object({
     general: z.object({
         shortcuts: z
@@ -50,28 +49,28 @@ export const schemaValidationArtworks = z.object({
             .optional(),
     }),
     context: z.object({
-        culture: z.array(nestedArraySchema).optional(),
-        mood: z.array(nestedArraySchema).optional(),
-        orientation: z.array(nestedArraySchema).optional(),
+        culture: z.array(z.string()).optional(),
+        mood: z.array(z.string()).optional(),
+        orientation: z.array(z.string()).optional(),
         precision: z.number().optional(),
         colors: z.array(z.string()).optional(),
     }),
     taxonomy: z.object({
-        objectType: z.array(nestedArraySchema).optional(),
-        tags: z.array(nestedArraySchema).optional(),
-        collections: z.array(nestedArraySchema).optional(),
-        aiGeneration: z.array(nestedArraySchema).optional(),
-        arEnabled: z.array(nestedArraySchema).optional(),
-        nudity: z.array(nestedArraySchema).optional(),
-        category: z.array(nestedArraySchema).optional(),
-        medium: z.array(nestedArraySchema).optional(),
-        style: z.array(nestedArraySchema).optional(),
-        subject: z.array(nestedArraySchema).optional(),
+        objectType: z.array(z.string()).optional(),
+        tags: z.array(z.string()).optional(),
+        collections: z.array(z.string()).optional(),
+        aiGeneration: z.array(z.string()).optional(),
+        arEnabled: z.array(z.string()).optional(),
+        nudity: z.array(z.string()).optional(),
+        category: z.array(z.string()).optional(),
+        medium: z.array(z.string()).optional(),
+        style: z.array(z.string()).optional(),
+        subject: z.array(z.string()).optional(),
     }),
     artists: z.object({
-        name: z.array(nestedArraySchema).optional(),
-        nationality: z.array(nestedArraySchema).optional(),
-        residence: z.array(nestedArraySchema).optional(),
+        name: z.array(z.string()).optional(),
+        nationality: z.array(z.string()).optional(),
+        residence: z.array(z.string()).optional(),
     }),
 });
 
