@@ -657,7 +657,7 @@ export const filterArtistsWithConsign = async ({
             },
             {
                 $match: {
-                    'assets.contractExplorer': { $exists: true },
+                    // 'assets.contractExplorer': { $exists: true },
                     'assets.consignArtwork.status': 'active',
                 },
             },
