@@ -132,13 +132,17 @@ uniqueExecution({
                             if (!creator) return;
 
                             await Promise.all(
-                                Object.entries(asset.licenses).map((item) => {
-                                    const [key, license] = item as [
-                                        string,
-                                        AssetsDocument['licenses'][keyof AssetsDocument['licenses']],
-                                    ];
+                                Object.entries(asset.licenses)
+                                    .filter(([key]) => key !== 'artCards')
+                                    .map((item) => {
+                                        const [key, license] = item as [
+                                            string,
+                                            AssetsDocument['licenses'][keyof AssetsDocument['licenses']],
+                                        ];
 
-                                    if (license.added) {
+                                        if (!license?.added)
+                                            return Promise.resolve();
+
                                         return dispatchQueue({
                                             license: key,
                                             id: asset._id.toString(),
@@ -161,9 +165,7 @@ uniqueExecution({
                                                 asset.assetMetadata.context
                                                     .formData.description,
                                         });
-                                    }
-                                    return Promise.resolve();
-                                })
+                                    })
                             ).catch((error) =>
                                 logger(
                                     'Error sending to exchange rss: %O',

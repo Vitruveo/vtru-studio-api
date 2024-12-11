@@ -10,6 +10,7 @@ import { route as consignRouter } from './consign';
 import { route as scopeRouter } from './scope';
 import { route as adminRouter } from './admin';
 import { route as slideshowRouter } from './slideshow';
+import { route as artCardsRouter } from './artCards';
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use('/assets/preview', previewRouter);
 router.use('/assets/store', storeRouter);
 router.use('/assets/scope', scopeRouter);
 router.use('/assets/admin', adminRouter);
+router.use('/assets/artCards', artCardsRouter);
 router.use('/assets', coreRouter);
 
 export { router };
