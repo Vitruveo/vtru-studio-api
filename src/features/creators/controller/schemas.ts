@@ -150,6 +150,11 @@ export const otpConfirmSchema = z.object({
     code: z.string().length(6),
 });
 
+export const updateLicenseSchema = z.object({
+    license: z.string(),
+    value: z.number(),
+});
+
 export const schemaValidationForPutAvatar = z.object({
     fileId: z.string(),
     framework: z.object({

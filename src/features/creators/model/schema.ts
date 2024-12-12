@@ -233,6 +233,11 @@ export const CreatorSchema = z.object({
             slideshow: SlideshowSchema,
         })
         .optional(),
+    licenses: z
+        .object({
+            artCards: z.number().default(3),
+        })
+        .optional(),
 });
 
 export type Creator = z.infer<typeof CreatorSchema>;
