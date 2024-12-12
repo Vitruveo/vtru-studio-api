@@ -195,6 +195,11 @@ export const schemaAuxiliaryMedia = z.object({
         }),
     }),
 });
+export const schemaAssetArtCardsStatus = z.enum([
+    'pending',
+    'approved',
+    'rejected',
+]);
 
 export const schemaLicenses = z.object({
     licenses: z.object({
@@ -233,6 +238,13 @@ export const schemaLicenses = z.object({
             unitPrice: z.number(),
             availableLicenses: z.number().min(0).default(1),
         }),
+        artCards: z
+            .object({
+                version: z.string(),
+                added: z.boolean(),
+                status: schemaAssetArtCardsStatus.default('pending'),
+            })
+            .optional(),
     }),
     framework: z.object({
         createdAt: z.date(),
