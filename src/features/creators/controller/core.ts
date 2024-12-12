@@ -58,6 +58,30 @@ route.get('/me', async (req, res) => {
     }
 });
 
+route.get('/truLevel', async (req, res) => {
+    try {
+        const { id } = req.auth;
+
+        const creator = await model.findTruLevel({ id });
+
+        if (creator)
+            res.json({
+                code: 'vitruveo.studio.api.admin.creators.truLevel.success',
+                message: 'Reader one success',
+                transaction: nanoid(),
+                data: creator.truLevel,
+            });
+    } catch (error) {
+        logger('Reader by token failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.truLevel.failed',
+            message: `Reader failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/:id', validateParamsId, async (req, res) => {
     try {
         const creator = await model.findCreatorById({ id: req.params.id });
