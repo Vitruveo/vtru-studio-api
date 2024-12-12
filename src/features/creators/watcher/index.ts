@@ -5,7 +5,6 @@ import { exitWithDelay, retry } from '../../../utils';
 import { getDb } from '../../../services';
 import { COLLECTION_CREATORS, CreatorDocument } from '../model';
 import { emitter } from '../../events';
-// import { creatorTruLevelCalc } from '../controller/truLevel';
 import { sendToExchangeUpdateUsernameInAssets } from '../queue/write';
 
 const logger = debug('features:creators:watcher');
@@ -56,10 +55,6 @@ uniqueExecution({
                             status.data.push(change.fullDocument);
                         }
 
-                        // creatorTruLevelCalc({
-                        //     creatorDoc: change.fullDocument,
-                        // });
-                        
                         if (change.updateDescription.updatedFields?.username) {
                             const creatorId = change.documentKey._id.toString();
                             await sendToExchangeUpdateUsernameInAssets(

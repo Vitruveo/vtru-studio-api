@@ -184,13 +184,16 @@ export interface FilterArtistsWithConsignParams {
 
 export interface ChangeStepsSynapsParams {
     sessionId: string;
-    stepId: string;
-    stepName: string;
-    status:
-        | 'SUBMISSION_REQUIRED'
-        | 'PENDING_VERIFICATION'
-        | 'APPROVED'
-        | 'REJECTED';
+    status: 'SUBMISSION_REQUIRED' | 'APPROVED' | 'PENDING_VERIFICATION';
+    steps: {
+        id: string;
+        status: 'APPROVED' | 'PENDING_VERIFICATION' | 'SUBMISSION_REQUIRED';
+        name: 'LIVENESS' | 'ID_DOCUMENT' | 'PROOF_OF_ADDRESS' | 'PHONE';
+    }[];
+}
+
+export interface FindTruLevelParams {
+    id: string | ObjectId;
 }
 
 export interface ChangeTruLevelParams {

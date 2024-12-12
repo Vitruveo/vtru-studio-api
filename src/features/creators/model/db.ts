@@ -32,6 +32,7 @@ import type {
     SynapsSessionInitParams,
     ChangeTruLevelParams,
     CheckHashAlreadyExistsParams,
+    FindTruLevelParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -689,33 +690,41 @@ export const synapsSessionInit = async ({
 
 export const changeStepsSynaps = async ({
     sessionId,
-    stepId,
     status,
-    stepName,
+    steps,
 }: ChangeStepsSynapsParams) => {
-    let result = await creators().updateOne(
-        { 'synaps.sessionId': sessionId, 'synaps.steps.id': stepId },
+    const result = await creators().updateOne(
+        { 'synaps.sessionId': sessionId },
         {
             $set: {
-                'synaps.steps.$.status': status,
-                'synaps.steps.$.name': stepName,
+                'synaps.status': status,
+                'synaps.steps': steps,
+            },
+        },
+        { upsert: true }
+    );
+
+    return result;
+};
+
+export const findTruLevel = async ({ id }: FindTruLevelParams) => {
+    const result = await creators().findOne(
+        { _id: new ObjectId(id) },
+        {
+            projection: {
+                truLevel: 1,
+                vault: 1,
             },
         }
     );
-
-    if (result.modifiedCount === 0) {
-        result = await creators().updateOne(
-            { 'synaps.sessionId': sessionId },
+    if (!result?.truLevel && result?.vault.vaultAddress) {
+        await creators().updateOne(
+            { _id: new ObjectId(id) },
             {
-                $push: {
-                    'synaps.steps': {
-                        id: stepId,
-                        status,
-                        name: stepName,
-                    },
+                $set: {
+                    'framework.updatedAt': new Date(),
                 },
-            },
-            { upsert: true }
+            }
         );
     }
     return result;

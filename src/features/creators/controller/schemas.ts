@@ -24,6 +24,11 @@ export const schemaValidationForPut = z.object({
     synaps: z
         .object({
             sessionId: z.string().nullable().default(null),
+            status: z.enum([
+                'SUBMISSION_REQUIRED',
+                'APPROVED',
+                'PENDING_VERIFICATION',
+            ]),
             steps: z
                 .array(
                     z.object({
@@ -49,14 +54,16 @@ export const schemaValidationForPut = z.object({
     truLevel: z
         .object({
             currentLevel: z.number(),
+            totalPoints: z.number(),
+            extraPoints: z.number(),
             levels: z.array(
                 z.object({
-                    name: z.string(),
-                    steps: z.array(
+                    id: z.string(),
+                    items: z.array(
                         z.object({
-                            name: z.string(),
-                            completed: z.boolean(),
+                            label: z.string(),
                             points: z.number().optional(),
+                            completed: z.boolean(),
                         })
                     ),
                 })

@@ -5,7 +5,12 @@ import debug from 'debug';
 import { middleware } from '../../users';
 import type { APIResponse } from '../../../services/express';
 import { SYNAPS_API_KEY } from '../../../constants/synaps';
-import { findCreatorById, synapsSessionInit } from '../model';
+import {
+    changeStepsSynaps,
+    findCreatorById,
+    synapsSessionInit,
+} from '../model';
+import { SynapsIndividualSessionRes } from './types';
 
 const logger = debug('features:creators:controller:synaps');
 const route = Router();
@@ -70,7 +75,7 @@ route.post('/session/init', middleware.checkAuth, async (req, res) => {
     }
 });
 
-route.get('/individual/session', middleware.checkAuth, async (req, res) => {
+route.post('/individual/session', middleware.checkAuth, async (req, res) => {
     try {
         const { id } = req.auth;
         const creator = await findCreatorById({ id });
@@ -90,21 +95,40 @@ route.get('/individual/session', middleware.checkAuth, async (req, res) => {
             url += `/step/${req.params.stepId}`;
         }
 
-        const synapsRes = await axios.get(url, {
+        const synapsRes = await axios.get<SynapsIndividualSessionRes>(url, {
             headers,
         });
 
-        res.json({
-            code: 'vitruveo.studio.api.creator.get.synaps.individual.session.success',
-            message: 'Get synaps individual session success',
-            transaction: nanoid(),
-            data: synapsRes.data,
-        } as APIResponse);
+        if (synapsRes.data.session) {
+            await changeStepsSynaps({
+                sessionId: synapsRes.data.session.id,
+                status: synapsRes.data.session.status,
+                steps: synapsRes.data.session.steps.map(
+                    ({ type, ...resValues }) => ({
+                        ...resValues,
+                        name: type,
+                    })
+                ),
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.creator.get.synaps.individual.session.success',
+                message: 'Update synaps individual session success',
+                transaction: nanoid(),
+                data: synapsRes.data.session,
+            } as APIResponse);
+        } else {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.synaps.individual.session.not.found',
+                message: 'Synaps individual session not found',
+                transaction: nanoid(),
+            } as APIResponse);
+        }
     } catch (error) {
-        logger('Synaps individual session failed: %O', error);
+        logger('Update Synaps individual session failed: %O', error);
         res.status(500).json({
             code: 'vitruveo.studio.api.creator.get.synaps.individual.session.failed',
-            message: `Get synaps individual session failed: ${error}`,
+            message: `Update synaps individual session failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
