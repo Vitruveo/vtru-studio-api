@@ -63,6 +63,10 @@ const statusMapper = {
         mintExplorer: { $exists: false },
     },
     sold: { mintExplorer: { $exists: true } },
+    artcards: {
+        'licenses.artCards.added': true,
+        'licenses.artCards.status': 'approved',
+    },
     all: {},
 };
 
