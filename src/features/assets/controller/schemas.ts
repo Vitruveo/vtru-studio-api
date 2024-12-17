@@ -240,8 +240,8 @@ export const schemaLicenses = z.object({
         }),
         artCards: z
             .object({
-                version: z.string(),
                 added: z.boolean(),
+                version: z.string().default('1'),
                 status: schemaAssetArtCardsStatus.default('pending'),
             })
             .optional(),
