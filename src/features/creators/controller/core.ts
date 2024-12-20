@@ -1,7 +1,6 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { z } from 'zod';
 import * as model from '../model';
 import { sendToExchangeCreators } from '../upload';
 
@@ -20,7 +19,6 @@ import {
     validateBodyForCreate,
     validateBodyForPut,
     validateBodyForPutAvatar,
-    validateBodyForUpdateLicenses,
 } from './rules';
 import {
     needsToBeOwner,
@@ -28,7 +26,6 @@ import {
     validateParamsId,
 } from '../../common/rules';
 import { updateRecordFramework } from '../../common/record';
-import { updateLicenseSchema } from './schemas';
 
 const logger = debug('features:creators:controller');
 const route = Router();
@@ -563,39 +560,5 @@ route.put('/profile/avatar', validateBodyForPutAvatar, async (req, res) => {
         } as APIResponse);
     }
 });
-
-route.patch(
-    '/:id/licenses',
-    validateBodyForUpdateLicenses,
-    async (req, res) => {
-        try {
-            const { id } = req.params;
-            const { license, value } = req.body as z.infer<
-                typeof updateLicenseSchema
-            >;
-
-            const result = await model.updateLicense({
-                id,
-                license,
-                value,
-            });
-
-            res.json({
-                code: 'vitruveo.studio.api.admin.creators.update.success',
-                message: 'Update success',
-                transaction: nanoid(),
-                data: result,
-            } as APIResponse<UpdateResult<model.CreatorDocument>>);
-        } catch (error) {
-            logger('Update creator failed: %O', error);
-            res.status(500).json({
-                code: 'vitruveo.studio.api.admin.creators.update.failed',
-                message: `Update failed: ${error}`,
-                args: error,
-                transaction: nanoid(),
-            } as APIResponse);
-        }
-    }
-);
 
 export { route };

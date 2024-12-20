@@ -32,7 +32,6 @@ import type {
     SynapsSessionInitParams,
     ChangeTruLevelParams,
     CheckHashAlreadyExistsParams,
-    UpdateLicenseParams,
     FindTruLevelParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
@@ -757,17 +756,3 @@ export const checkHashAlreadyExists = async ({
             },
         ])
         .toArray();
-
-export const updateLicense = async ({
-    id,
-    license,
-    value,
-}: UpdateLicenseParams) =>
-    creators().updateOne(
-        { _id: new ObjectId(id) },
-        {
-            $set: {
-                [`licenses.${license}`]: value,
-            },
-        }
-    );
