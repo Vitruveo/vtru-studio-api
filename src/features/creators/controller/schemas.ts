@@ -179,3 +179,8 @@ export const schemaValidationForGenerateStackSlideshow = z.object({
     interval: z.number(),
     description: z.string().default(''),
 });
+
+export const updateLicenseSchema = z.object({
+    license: z.string(),
+    value: z.number(),
+});

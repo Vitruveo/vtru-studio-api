@@ -208,3 +208,9 @@ export interface SynapsSessionInitParams {
 export interface CheckHashAlreadyExistsParams {
     hash: string;
 }
+
+export interface UpdateLicenseParams {
+    id: string | ObjectId;
+    license: string;
+    value: number;
+}
