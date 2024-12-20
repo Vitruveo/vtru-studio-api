@@ -50,7 +50,7 @@ export const updateSpotlight = async () => {
             ],
             'consignArtwork.status': 'active',
             mintExplorer: { $exists: false },
-            contractExplorer: { $exists: true },
+            // contractExplorer: { $exists: true },
             'actions.displaySpotlight': {
                 $exists: false,
             },

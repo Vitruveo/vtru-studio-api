@@ -48,6 +48,7 @@ uniqueExecution({
                                 item._id.toString() ===
                                 change.documentKey._id.toString()
                         );
+
                         if (index !== -1) {
                             status.data[index] = change.fullDocument;
                         } else {

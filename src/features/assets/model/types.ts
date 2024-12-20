@@ -51,6 +51,7 @@ export interface AssetsPaginatedResponse {
     limit: number;
     collection: string;
     collections: Document[];
+    licenseArtCards: number;
 }
 
 export interface FindAssetsTagsParams {
@@ -62,6 +63,10 @@ export interface FindAssetsByCreatorName {
 }
 
 export interface FindCollectionsByCreatorParams {
+    creatorId: string;
+}
+
+export interface CountAssetsWithLicenseArtCardsByCreatorParams {
     creatorId: string;
 }
 
@@ -84,6 +89,22 @@ export interface CountAssetsParams
 
 export interface FindAssetsByIdParams {
     id: string | ObjectId;
+}
+
+export interface CountAssetsWithLicenseArtCardsParams {
+    status: string;
+}
+
+export interface FindAssetsWithArtCardsPaginatedParams {
+    query: any;
+    sort: any;
+    skip: number;
+    limit: number;
+}
+
+export interface UpdateAssetArtCardsStatusParams {
+    id: string;
+    status: string;
 }
 
 export interface FindMyAssetsParams {

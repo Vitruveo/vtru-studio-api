@@ -182,6 +182,35 @@ export interface FilterArtistsWithConsignParams {
     ids: ObjectId[];
 }
 
+export interface ChangeStepsSynapsParams {
+    sessionId: string;
+    status: 'SUBMISSION_REQUIRED' | 'APPROVED' | 'PENDING_VERIFICATION';
+    steps: {
+        id: string;
+        status: 'APPROVED' | 'PENDING_VERIFICATION' | 'SUBMISSION_REQUIRED';
+        name: 'LIVENESS' | 'ID_DOCUMENT' | 'PROOF_OF_ADDRESS' | 'PHONE';
+    }[];
+}
+
+export interface FindTruLevelParams {
+    id: string | ObjectId;
+}
+
+export interface ChangeTruLevelParams {
+    id: string | ObjectId;
+    truLevel: Creator['truLevel'];
+}
+
+export interface SynapsSessionInitParams {
+    sessionId: string;
+    creatorId: string;
+}
 export interface CheckHashAlreadyExistsParams {
     hash: string;
+}
+
+export interface UpdateLicenseParams {
+    id: string | ObjectId;
+    license: string;
+    value: number;
 }

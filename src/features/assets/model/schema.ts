@@ -135,6 +135,15 @@ export const AssetsSchema = z.object({
             unitPrice: z.number(),
             availableLicenses: z.number(),
         }),
+        artCards: z
+            .object({
+                version: z.string(),
+                added: z.boolean(),
+                status: z
+                    .enum(['pending', 'approved', 'rejected'])
+                    .default('pending'),
+            })
+            .optional(),
     }),
     assetMetadata: z.object({
         context: z.object({

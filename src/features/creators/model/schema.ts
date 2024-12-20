@@ -79,6 +79,109 @@ export const CreatorSchema = z.object({
             location: z.string().nullable().default(null),
         })
         .default({}),
+    synaps: z
+        .object({
+            sessionId: z.string().nullable().default(null),
+            status: z.enum([
+                'SUBMISSION_REQUIRED',
+                'APPROVED',
+                'PENDING_VERIFICATION',
+            ]),
+            steps: z
+                .array(
+                    z.object({
+                        id: z.string(),
+                        name: z.enum([
+                            'LIVENESS',
+                            'ID_DOCUMENT',
+                            'PROOF_OF_ADDRESS',
+                            'PHONE',
+                        ]),
+                        status: z.enum([
+                            'SUBMISSION_REQUIRED',
+                            'PENDING_VERIFICATION',
+                            'APPROVED',
+                            'REJECTED',
+                        ]),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .optional(),
+    truLevel: z
+        .object({
+            currentLevel: z.number(),
+            totalPoints: z.number(),
+            extraPoints: z.number(),
+            levels: z.array(
+                z.object({
+                    id: z.string(),
+                    items: z.array(
+                        z.object({
+                            label: z.string(),
+                            points: z.number().optional(),
+                            completed: z.boolean(),
+                        })
+                    ),
+                })
+            ),
+        })
+        .optional(),
+    myWebsite: z.string().url().nullable().default(null),
+    links: z
+        .array(
+            z.object({
+                name: z.string(),
+                url: z.string().url(),
+            })
+        )
+        .nullable()
+        .default([]),
+    personalDetails: z
+        .object({
+            bio: z.string().nullable().default(null),
+            ethnicity: z.string().nullable().default(null),
+            gender: z.string().nullable().default(null),
+            nationality: z.string().nullable().default(null),
+            residence: z.string().nullable().default(null),
+            plusCode: z.string().nullable().default(null),
+        })
+        .nullable()
+        .default({}),
+    artworkRecognition: z
+        .object({
+            exhibitions: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
+                    })
+                )
+                .nullable()
+                .default([]),
+            awards: z
+                .array(
+                    z.object({
+                        name: z.string(),
+                        url: z.string().url(),
+                        artwork: z.object({
+                            type: z.enum(['assetRef', 'upload']),
+                            value: z.string().nullable().default(null),
+                            title: z.string().nullable().optional(),
+                        }),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .nullable()
+        .default({}),
     socials: z
         .object({
             x: z.object({
@@ -135,6 +238,11 @@ export const CreatorSchema = z.object({
             grid: GridSchema,
             video: VideoSchema,
             slideshow: SlideshowSchema,
+        })
+        .optional(),
+    licenses: z
+        .object({
+            artCards: z.number().default(3),
         })
         .optional(),
 });

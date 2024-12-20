@@ -68,7 +68,16 @@ route.post('/', validateBodyForCreateStores, async (req, res) => {
             });
 
             clone = {
-                organization: store.organization,
+                organization: {
+                    ...store.organization,
+                    formats: {
+                        logo: {
+                            horizontal: null,
+                            square: null,
+                        },
+                        banner: null,
+                    },
+                },
             };
             clone.organization.url += `-${store.actions.countClone}`;
         }
@@ -244,13 +253,16 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
 
         const payload = req.body as z.infer<typeof schemaValidationStepName>;
 
+        const data = { ...payload.data };
+
+        if (payload.stepName === 'organization') {
+            data.formats = stores.organization.formats;
+        }
+
         await model.updateStepStores({
             id: req.params.id,
             stepName: payload.stepName,
-            data: {
-                ...payload.data,
-                formats: stores.organization.formats,
-            },
+            data,
         });
 
         res.json({

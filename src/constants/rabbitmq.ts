@@ -10,6 +10,8 @@ export const RABBITMQ_EXCHANGE_GRID =
     process.env.RABBITMQ_EXCHANGE_GRID || 'grid';
 export const RABBITMQ_EXCHANGE_CREATORS =
     process.env.RABBITMQ_EXCHANGE_CREATORS || 'creators';
+export const RABBITMQ_EXCHANGE_ARTCARDS_TEMPLATES =
+    process.env.RABBITMQ_EXCHANGE_ARTCARDS_TEMPLATES || 'artcardsTemplates';
 export const RABBITMQ_EXCHANGE_RSS = process.env.RABBITMQ_EXCHANGE_RSS || 'rss';
 export const RABBITMQ_EXCHANGE_AUTO_CONSIGN =
     process.env.RABBITMQ_EXCHANGE_AUTO_CONSIGN || 'autoConsign';

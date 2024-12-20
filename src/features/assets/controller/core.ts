@@ -63,6 +63,10 @@ const statusMapper = {
         mintExplorer: { $exists: false },
     },
     sold: { mintExplorer: { $exists: true } },
+    artcards: {
+        'licenses.artCards.added': true,
+        'licenses.artCards.status': 'approved',
+    },
     all: {},
 };
 
@@ -110,6 +114,11 @@ route.get('/', async (req, res) => {
             creatorId: creatorId || req.auth.id,
         });
 
+        const licenseArtCards =
+            await model.countAssetsWithLicenseArtCardsByCreator({
+                creatorId: creatorId || req.auth.id,
+            });
+
         res.json({
             code: 'vitruveo.studio.api.assets.reader.success',
             message: 'Reader success',
@@ -122,6 +131,7 @@ route.get('/', async (req, res) => {
                 limit,
                 collection,
                 collections,
+                licenseArtCards,
             },
         } as APIResponse<AssetsPaginatedResponse>);
     } catch (error) {

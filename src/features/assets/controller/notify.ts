@@ -74,8 +74,6 @@ route.put('/file', async (req, res) => {
             },
         });
 
-        console.log(req.body);
-
         if (asset) {
             const formatFound = formatNames.find(
                 (formatName) =>

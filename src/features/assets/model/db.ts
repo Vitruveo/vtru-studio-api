@@ -30,6 +30,10 @@ import type {
     FindMyAssetsParams,
     CountArtsByCreatorParams,
     UpateAssetsUsernameParams,
+    CountAssetsWithLicenseArtCardsByCreatorParams,
+    FindAssetsWithArtCardsPaginatedParams,
+    UpdateAssetArtCardsStatusParams,
+    CountAssetsWithLicenseArtCardsParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -525,6 +529,14 @@ export const countAssets = async ({
     >;
 };
 
+export const countAssetsWithLicenseArtCardsByCreator = async ({
+    creatorId,
+}: CountAssetsWithLicenseArtCardsByCreatorParams) =>
+    assets().countDocuments({
+        'framework.createdBy': creatorId,
+        'licenses.artCards.added': true,
+    });
+
 export const findCollectionsByCreatorId = async ({
     creatorId,
 }: FindCollectionsByCreatorParams) =>
@@ -742,6 +754,61 @@ export const findAssetsById = async ({ id }: FindAssetsByIdParams) => {
     const result = await assets().findOne({ _id: new ObjectId(id) });
     return result;
 };
+
+export const countAssetsWithLicenseArtCards = async ({
+    status,
+}: CountAssetsWithLicenseArtCardsParams) =>
+    assets().countDocuments({
+        'licenses.artCards.added': true,
+        'licenses.artCards.status': status,
+    });
+
+export const findAssetsWithArtCardsPaginated = ({
+    limit,
+    query,
+    skip,
+    sort,
+}: FindAssetsWithArtCardsPaginatedParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'licenses.artCards.added': true,
+                    'licenses.artCards.status': query.status,
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'assetMetadata.context.formData.title': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'creator.username': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                    ],
+                },
+            },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+        ])
+        .toArray();
+
+export const updateAssetArtCardsStatus = ({
+    id,
+    status,
+}: UpdateAssetArtCardsStatusParams) =>
+    assets().updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { 'licenses.artCards.status': status } }
+    );
 
 export const findAssetMintedByAddress = async ({
     address,

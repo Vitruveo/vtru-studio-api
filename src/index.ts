@@ -29,6 +29,7 @@ app.use(features.requestConsign.controller.router);
 app.use(features.events.controller.router);
 app.use(features.dashboard.controller.router);
 app.use(features.stores.controller.router);
+app.use(features.templates.controller.router);
 
 // start schedules
 features.schedules.start();

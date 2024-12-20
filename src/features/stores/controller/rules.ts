@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import { NextFunction, Request, Response } from 'express';
 import { APIResponse } from '../../../services';
 import {
+    schemaValidationArtworks,
     schemaValidationForCreateStores,
     schemaValidationOrganization,
     schemaValidationStepName,
@@ -65,7 +66,9 @@ export const validateBodyForUpdateStepStores = async (
         if (req.body.stepName === 'organization') {
             req.body.data = schemaValidationOrganization.parse(req.body.data);
         }
-
+        if (req.body.stepName === 'artworks') {
+            req.body.data = schemaValidationArtworks.parse(req.body.data);
+        }
         next();
     } catch (error) {
         res.status(400).json({

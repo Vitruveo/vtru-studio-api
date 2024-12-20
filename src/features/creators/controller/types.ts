@@ -31,3 +31,26 @@ export interface StackSpotlight {
         quantity: number;
     };
 }
+
+export type SynapsSessionStatus =
+    | 'SUBMISSION_REQUIRED'
+    | 'APPROVED'
+    | 'PENDING_VERIFICATION';
+
+export interface SynapsIndividualSessionRes {
+    app: {
+        name: string;
+        id: string;
+    };
+    session: {
+        id: string;
+        alias: string;
+        status: SynapsSessionStatus;
+        sandbox: boolean;
+        steps: {
+            id: string;
+            status: 'APPROVED' | 'PENDING_VERIFICATION' | 'SUBMISSION_REQUIRED';
+            type: 'LIVENESS' | 'ID_DOCUMENT' | 'PROOF_OF_ADDRESS' | 'PHONE';
+        }[];
+    };
+}
