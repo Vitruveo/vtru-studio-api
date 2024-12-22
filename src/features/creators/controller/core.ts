@@ -1,5 +1,6 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
+import { z } from 'zod';
 import { Router } from 'express';
 import * as model from '../model';
 import { sendToExchangeCreators } from '../upload';
@@ -19,6 +20,7 @@ import {
     validateBodyForCreate,
     validateBodyForPut,
     validateBodyForPutAvatar,
+    validateBodyForUpdateLicenses,
 } from './rules';
 import {
     needsToBeOwner,
@@ -26,6 +28,7 @@ import {
     validateParamsId,
 } from '../../common/rules';
 import { updateRecordFramework } from '../../common/record';
+import { updateLicenseSchema } from './schemas';
 
 const logger = debug('features:creators:controller');
 const route = Router();
@@ -34,9 +37,9 @@ route.use(middleware.checkAuth);
 
 route.get('/me', async (req, res) => {
     try {
-        const { id } = req.auth
+        const { id } = req.auth;
 
-        const creator = await model.findCreatorById({ id })
+        const creator = await model.findCreatorById({ id });
 
         res.json({
             code: 'vitruveo.studio.api.admin.creators.success',
@@ -44,7 +47,6 @@ route.get('/me', async (req, res) => {
             transaction: nanoid(),
             data: creator,
         } as APIResponse<model.CreatorDocument>);
-        
     } catch (error) {
         logger('Reader by token failed: %O', error);
         res.status(500).json({
@@ -54,7 +56,31 @@ route.get('/me', async (req, res) => {
             transaction: nanoid(),
         } as APIResponse);
     }
-})
+});
+
+route.get('/truLevel', async (req, res) => {
+    try {
+        const { id } = req.auth;
+
+        const creator = await model.findTruLevel({ id });
+
+        if (creator)
+            res.json({
+                code: 'vitruveo.studio.api.admin.creators.truLevel.success',
+                message: 'Reader one success',
+                transaction: nanoid(),
+                data: creator.truLevel,
+            });
+    } catch (error) {
+        logger('Reader by token failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.truLevel.failed',
+            message: `Reader failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.get('/:id', validateParamsId, async (req, res) => {
     try {
@@ -537,5 +563,37 @@ route.put('/profile/avatar', validateBodyForPutAvatar, async (req, res) => {
         } as APIResponse);
     }
 });
+
+route.patch(
+    '/:id/licenses',
+    validateBodyForUpdateLicenses,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { license, value } = req.body as z.infer<
+                typeof updateLicenseSchema
+            >;
+            const result = await model.updateLicense({
+                id,
+                license,
+                value,
+            });
+            res.json({
+                code: 'vitruveo.studio.api.admin.creators.update.success',
+                message: 'Update success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult<model.CreatorDocument>>);
+        } catch (error) {
+            logger('Update creator failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.admin.creators.update.failed',
+                message: `Update failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
 
 export { route };

@@ -21,7 +21,61 @@ export const schemaValidationForPut = z.object({
             })
         )
         .default([]),
-    myWebsite: z.string().url().nullable().default(null),
+    synaps: z
+        .object({
+            sessionId: z.string().nullable().default(null),
+            status: z.enum([
+                'SUBMISSION_REQUIRED',
+                'APPROVED',
+                'PENDING_VERIFICATION',
+            ]),
+            steps: z
+                .array(
+                    z.object({
+                        id: z.string(),
+                        name: z.enum([
+                            'LIVENESS',
+                            'ID_DOCUMENT',
+                            'PROOF_OF_ADDRESS',
+                            'PHONE',
+                        ]),
+                        status: z.enum([
+                            'SUBMISSION_REQUIRED',
+                            'PENDING_VERIFICATION',
+                            'APPROVED',
+                            'REJECTED',
+                        ]),
+                    })
+                )
+                .nullable()
+                .default([]),
+        })
+        .optional(),
+    truLevel: z
+        .object({
+            currentLevel: z.number(),
+            totalPoints: z.number(),
+            extraPoints: z.number(),
+            levels: z.array(
+                z.object({
+                    id: z.string(),
+                    items: z.array(
+                        z.object({
+                            label: z.string(),
+                            points: z.number().optional(),
+                            completed: z.boolean(),
+                        })
+                    ),
+                })
+            ),
+        })
+        .optional(),
+    myWebsite: z
+        .string()
+        .url()
+        .nullable()
+        .default(null)
+        .transform((val) => (val === '' ? null : val)),
     links: z
         .array(
             z.object({
@@ -124,4 +178,9 @@ export const schemaValidationForGenerateStackSlideshow = z.object({
     display: z.string(),
     interval: z.number(),
     description: z.string().default(''),
+});
+
+export const updateLicenseSchema = z.object({
+    license: z.string(),
+    value: z.number(),
 });

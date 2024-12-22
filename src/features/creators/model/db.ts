@@ -28,7 +28,12 @@ import type {
     FindArtistsForSpotlightParams,
     FilterArtistsWithConsignParams,
     MarkArtistWithFlagParams,
+    ChangeStepsSynapsParams,
+    SynapsSessionInitParams,
+    ChangeTruLevelParams,
     CheckHashAlreadyExistsParams,
+    FindTruLevelParams,
+    UpdateLicenseParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -654,7 +659,7 @@ export const filterArtistsWithConsign = async ({
             },
             {
                 $match: {
-                    'assets.contractExplorer': { $exists: true },
+                    // 'assets.contractExplorer': { $exists: true },
                     'assets.consignArtwork.status': 'active',
                 },
             },
@@ -668,6 +673,80 @@ export const filterArtistsWithConsign = async ({
         ])
         .toArray();
 
+export const synapsSessionInit = async ({
+    creatorId,
+    sessionId,
+}: SynapsSessionInitParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(creatorId) },
+        {
+            $set: {
+                'synaps.sessionId': sessionId,
+            },
+        },
+        { upsert: true }
+    );
+    return result;
+};
+
+export const changeStepsSynaps = async ({
+    sessionId,
+    status,
+    steps,
+}: ChangeStepsSynapsParams) => {
+    const result = await creators().updateOne(
+        { 'synaps.sessionId': sessionId },
+        {
+            $set: {
+                'synaps.status': status,
+                'synaps.steps': steps,
+            },
+        },
+        { upsert: true }
+    );
+
+    return result;
+};
+
+export const findTruLevel = async ({ id }: FindTruLevelParams) => {
+    const result = await creators().findOne(
+        { _id: new ObjectId(id) },
+        {
+            projection: {
+                truLevel: 1,
+                vault: 1,
+            },
+        }
+    );
+    if (!result?.truLevel && result?.vault.vaultAddress) {
+        await creators().updateOne(
+            { _id: new ObjectId(id) },
+            {
+                $set: {
+                    'framework.updatedAt': new Date(),
+                },
+            }
+        );
+    }
+    return result;
+};
+
+export const changeTruLevel = async ({
+    id,
+    truLevel,
+}: ChangeTruLevelParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $set: {
+                truLevel,
+            },
+        }
+    );
+
+    return result;
+};
+
 export const checkHashAlreadyExists = async ({
     hash,
 }: CheckHashAlreadyExistsParams) =>
@@ -678,3 +757,17 @@ export const checkHashAlreadyExists = async ({
             },
         ])
         .toArray();
+
+export const updateLicense = async ({
+    id,
+    license,
+    value,
+}: UpdateLicenseParams) =>
+    creators().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $set: {
+                [`licenses.${license}`]: value,
+            },
+        }
+    );

@@ -195,6 +195,11 @@ export const schemaAuxiliaryMedia = z.object({
         }),
     }),
 });
+export const schemaAssetArtCardsStatus = z.enum([
+    'pending',
+    'approved',
+    'rejected',
+]);
 
 export const schemaLicenses = z.object({
     licenses: z.object({
@@ -215,7 +220,7 @@ export const schemaLicenses = z.object({
                 editionPrice: z.number(),
             }),
             editionOption: z.enum(['elastic', 'single', 'unlimited', '']),
-            availableLicenses: z.number().min(0).nullable(), // NOTE: ESSE CAMPO É NULLABLE POR CONTA DA MIGRAÇÃO DE DADOS DO SEARCH.
+            availableLicenses: z.number().min(0).nullable().default(1), // NOTE: ESSE CAMPO É NULLABLE POR CONTA DA MIGRAÇÃO DE DADOS DO SEARCH.
         }),
         stream: z.object({
             version: z.string(),
@@ -233,6 +238,13 @@ export const schemaLicenses = z.object({
             unitPrice: z.number(),
             availableLicenses: z.number().min(0).default(1),
         }),
+        artCards: z
+            .object({
+                added: z.boolean(),
+                version: z.string().default('1'),
+                status: schemaAssetArtCardsStatus.default('pending'),
+            })
+            .optional(),
     }),
     framework: z.object({
         createdAt: z.date(),
