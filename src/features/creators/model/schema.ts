@@ -43,6 +43,7 @@ export const CreatorSchema = z.object({
     creatorRefId: z.number().nullable().default(null),
     name: z.string().default(''),
     username: z.string().trim().or(z.undefined()),
+    displayName: z.string().trim().nullable().optional(),
     login: z
         .object({
             loginHistory: z

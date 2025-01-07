@@ -5,6 +5,7 @@ export const schemaValidationForPut = z.object({
     name: z.string(),
     walletDefault: z.string(),
     emailDefault: z.string().email(),
+    displayName: z.string().trim().nullable().optional(),
     username: z.string().trim(),
     wallets: z.array(
         z.object({
