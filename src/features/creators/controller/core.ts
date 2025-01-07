@@ -1,7 +1,7 @@
 import debug from 'debug';
 import { nanoid } from 'nanoid';
-import { Router } from 'express';
 import { z } from 'zod';
+import { Router } from 'express';
 import * as model from '../model';
 import { sendToExchangeCreators } from '../upload';
 
@@ -573,13 +573,11 @@ route.patch(
             const { license, value } = req.body as z.infer<
                 typeof updateLicenseSchema
             >;
-
             const result = await model.updateLicense({
                 id,
                 license,
                 value,
             });
-
             res.json({
                 code: 'vitruveo.studio.api.admin.creators.update.success',
                 message: 'Update success',

@@ -32,8 +32,8 @@ import type {
     SynapsSessionInitParams,
     ChangeTruLevelParams,
     CheckHashAlreadyExistsParams,
-    UpdateLicenseParams,
     FindTruLevelParams,
+    UpdateLicenseParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 

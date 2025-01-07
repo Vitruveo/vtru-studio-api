@@ -155,35 +155,6 @@ export const validateBodyForPut = async (
     }
 };
 
-export const validateBodyForUpdateLicenses = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    if (req.method !== 'PATCH') {
-        res.status(405).json({
-            code: 'vitruveo.studio.api.creator.validateBodyForUpdateLicenses.failed',
-            message: '',
-            transaction: nanoid(),
-        } as APIResponse);
-
-        return;
-    }
-
-    try {
-        req.body = updateLicenseSchema.parse(req.body);
-
-        next();
-    } catch (error) {
-        res.status(400).json({
-            code: 'vitruveo.studio.api.creator.validateBodyForPut.failed',
-            message: '',
-            transaction: nanoid(),
-            args: error,
-        } as APIResponse);
-    }
-};
-
 export const validateBodyForAddEmail = async (
     req: Request,
     res: Response,
@@ -304,6 +275,32 @@ export const validateBodyForGenerateStackSlideshow = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.creator.validateBodyForGenerateStackSlideshow.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateLicenses = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'PATCH') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForUpdateLicenses.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+        return;
+    }
+    try {
+        req.body = updateLicenseSchema.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.creator.validateBodyForPut.failed',
             message: '',
             transaction: nanoid(),
             args: error,
