@@ -301,13 +301,25 @@ route.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 24;
-        const username = (req.query.username as string) || undefined;
-        const email = (req.query.email as string) || undefined;
+        const search = (req.query.search as string) || undefined;
 
-        const query: any = {
-            ...(username && { username }),
-            ...(email && { emails: { $elemMatch: { email } } }),
-        };
+        let query: any = {};
+        if (search) {
+            query = {
+                $or: [
+                    {
+                        username: { $regex: search, $options: 'i' },
+                    },
+                    {
+                        emails: {
+                            $elemMatch: {
+                                email: { $regex: search, $options: 'i' },
+                            },
+                        },
+                    },
+                ],
+            };
+        }
 
         const total = await model.countCreators({ query });
         const totalPage = Math.ceil(total / limit);
