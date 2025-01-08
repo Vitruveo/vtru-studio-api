@@ -1,9 +1,11 @@
 import { RoleDocument, COLLECTION_ROLES } from './schema';
 import type {
+    CountRolesParams,
     CreateRoleParams,
     DeleteRoleParams,
     FindOneRoleParams,
     FindRoleByIdParams,
+    FindRolesPaginatedParams,
     FindRolesParams,
     FindRolesReturnPermissionsParams,
     UpdateRoleParams,
@@ -31,6 +33,14 @@ export const findRoles = async ({
 
     return result.stream();
 };
+
+// return roles paginated from database
+export const findRolesPaginated = async ({
+    query,
+    skip,
+    limit,
+}: FindRolesPaginatedParams) =>
+    roles().find(query).skip(skip).limit(limit).toArray();
 
 export const findRoleReturnPermissions = async ({
     ids,
@@ -84,3 +94,6 @@ export const deleteRole = async ({ id }: DeleteRoleParams) => {
     const result = await roles().deleteOne({ _id: new ObjectId(id) });
     return result;
 };
+
+export const countRoles = async ({ query }: CountRolesParams) =>
+    roles().countDocuments(query);

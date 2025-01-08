@@ -12,6 +12,12 @@ export interface FindRolesParams {
     limit?: number;
 }
 
+export interface FindRolesPaginatedParams {
+    query: any;
+    skip: number;
+    limit: number;
+}
+
 export interface FindRolesReturnPermissionsParams {
     ids: string[];
 }
@@ -31,4 +37,8 @@ export interface UpdateRoleParams {
 
 export interface DeleteRoleParams {
     id: string | ObjectId;
+}
+
+export interface CountRolesParams {
+    query: any;
 }

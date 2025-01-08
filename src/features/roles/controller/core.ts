@@ -52,6 +52,52 @@ route.get(
     }
 );
 
+route.get('/', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 24;
+        const search = req.query.search as string;
+
+        let query: any = {};
+        if (search) {
+            query = {
+                ...query,
+                name: { $regex: search, $options: 'i' },
+            };
+        }
+
+        const total = await model.countRoles({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const response = await model.findRolesPaginated({
+            query,
+            skip: (page - 1) * limit,
+            limit,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.roles.reader.all.success',
+            message: 'Reader roles success',
+            transaction: nanoid(),
+            data: {
+                data: response,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader roles failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.roles.reader.all.failed',
+            message: `Reader roles failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.post(
     '/',
     needsToBeOwner({ permissions: ['role:admin'] }),
