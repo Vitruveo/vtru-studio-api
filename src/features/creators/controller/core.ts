@@ -302,10 +302,13 @@ route.get('/', async (req, res) => {
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 24;
         const search = (req.query.search as string) || undefined;
+        const isBlocked = req.query.isBlocked === 'true';
+        const ids = (req.query.ids as string[]) || undefined;
 
         let query: any = {};
         if (search) {
             query = {
+                ...query,
                 $or: [
                     {
                         username: { $regex: search, $options: 'i' },
@@ -318,6 +321,18 @@ route.get('/', async (req, res) => {
                         },
                     },
                 ],
+            };
+        }
+        if (isBlocked) {
+            query = {
+                ...query,
+                'vault.isBlocked': isBlocked,
+            };
+        }
+        if (ids) {
+            query = {
+                ...query,
+                _id: { $in: ids },
             };
         }
 
