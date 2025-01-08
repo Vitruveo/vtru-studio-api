@@ -301,10 +301,8 @@ route.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 24;
-        const { username, email } = req.body as {
-            username: string | undefined;
-            email: string | undefined;
-        };
+        const username = (req.query.username as string) || undefined;
+        const email = (req.query.email as string) || undefined;
 
         const query: any = {
             ...(username && { username }),
