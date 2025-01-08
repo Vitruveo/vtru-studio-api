@@ -34,6 +34,7 @@ import type {
     CheckHashAlreadyExistsParams,
     FindTruLevelParams,
     UpdateLicenseParams,
+    CountCreatorsParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -65,6 +66,22 @@ export const findCreators = async ({
 
     return result.stream();
 };
+
+// return a list of creators from database paginated
+export const findCreatorsPaginated = async ({
+    query,
+    skip,
+    limit,
+}: FindCreatorsParams) =>
+    creators()
+        .find(query, {
+            projection: {
+                'login.codeHash': 0,
+            },
+        })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
 
 export const findCreatorById = async ({ id }: FindCreatorByIdParams) => {
     const result = await creators().findOne(
@@ -771,3 +788,5 @@ export const updateLicense = async ({
             },
         }
     );
+export const countCreators = async ({ query }: CountCreatorsParams) =>
+    creators().countDocuments(query);

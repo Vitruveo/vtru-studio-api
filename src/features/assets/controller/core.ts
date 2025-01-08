@@ -914,7 +914,7 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
     } finally {
         await Promise.all(
             Object.values(files).map((fileName) =>
-                fs.unlink(fileName).catch(() => {})
+                fs.unlink(fileName).catch(() => { })
             )
         );
         res.end();
