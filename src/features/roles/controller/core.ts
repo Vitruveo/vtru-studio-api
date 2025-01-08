@@ -56,7 +56,7 @@ route.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page as string, 10) || 1;
         const limit = parseInt(req.query.limit as string, 10) || 24;
-        const search = (req.query.search as string) || undefined;
+        const search = req.query.search as string;
 
         let query: any = {};
         if (search) {

@@ -23,6 +23,12 @@ export interface FindUsersParams {
     limit?: number;
 }
 
+export interface FindUserPaginatedParams {
+    query: any;
+    skip: number;
+    limit: number;
+}
+
 export interface FindUserByIdParams {
     id: string | ObjectId;
 }
@@ -45,4 +51,8 @@ export interface PushLoginHistoryParams {
 
 export interface DeleteUserParams {
     id: string | ObjectId;
+}
+
+export interface CountUsersParams {
+    query: any;
 }
