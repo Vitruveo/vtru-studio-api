@@ -18,10 +18,9 @@ export const addToAllowList = async ({ newAllow }: AddToAllowListParams) => {
 export const addMultipleToAllowList = async (
     newAllows: AllowListDocument[]
 ) => {
-    const result = await allowList().insertMany(newAllows);
+    const result = await allowList().insertMany(newAllows, { ordered: false });
     return result;
 };
-
 export const getAllowList = async () => {
     const result = await allowList().find().toArray();
     return result;
