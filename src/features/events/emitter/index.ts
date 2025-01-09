@@ -173,7 +173,7 @@ export const listDataEvents = [
     emitter.LIST_CREATORS,
     emitter.LIST_ROLES,
     // emitter.LIST_WAITING_LIST,
-    // emitter.LIST_ALLOW_LIST,
+    emitter.LIST_ALLOW_LIST,
 ];
 
 export const initialEvents = [
@@ -183,7 +183,7 @@ export const initialEvents = [
     emitter.INITIAL_CREATORS,
     emitter.INITIAL_ROLES,
     // emitter.INITIAL_WAITING_LIST,
-    // emitter.INITIAL_ALLOW_LIST,
+    emitter.INITIAL_ALLOW_LIST,
 ];
 
 export const createdEvents = [
@@ -193,7 +193,7 @@ export const createdEvents = [
     emitter.CREATED_USER,
     emitter.CREATED_CREATOR,
     // emitter.CREATED_WAITING_LIST,
-    // emitter.CREATED_ALLOW_LIST,
+    emitter.CREATED_ALLOW_LIST,
 ];
 
 export const updatedEvents = [
@@ -203,7 +203,7 @@ export const updatedEvents = [
     emitter.UPDATED_USER,
     emitter.UPDATED_CREATOR,
     // emitter.UPDATED_WAITING_LIST,
-    // emitter.UPDATED_ALLOW_LIST,
+    emitter.UPDATED_ALLOW_LIST,
 ];
 
 export const deletedEvents = [
@@ -213,6 +213,6 @@ export const deletedEvents = [
     emitter.DELETED_USER,
     emitter.DELETED_CREATOR,
     // emitter.DELETED_WAITING_LIST,
-    // emitter.DELETED_ALLOW_LIST,
+    emitter.DELETED_ALLOW_LIST,
 ];
 export { emitter };

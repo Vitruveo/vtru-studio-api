@@ -7,6 +7,8 @@ import type {
     CreateUserParams,
     FindUserByIdParams,
     FindOneUserParams,
+    CountUsersParams,
+    FindUserPaginatedParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -38,6 +40,22 @@ export const findUsers = async ({
 
     return result.stream();
 };
+
+// return a list of users from database paginated
+export const findUsersPaginated = async ({
+    query,
+    skip,
+    limit,
+}: FindUserPaginatedParams) =>
+    await users()
+        .find(query, {
+            projection: {
+                'login.codeHash': 0,
+            },
+        })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
 
 export const findUserById = async ({ id }: FindUserByIdParams) => {
     const result = await users().findOne(
@@ -84,4 +102,5 @@ export const deleteUser = async ({ id }: DeleteUserParams) => {
     return result;
 };
 
-// Other actions
+export const countUsers = async ({ query }: CountUsersParams) =>
+    users().countDocuments(query);

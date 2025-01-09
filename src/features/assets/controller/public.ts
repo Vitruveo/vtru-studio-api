@@ -27,7 +27,7 @@ import { DIST } from '../../../constants/static';
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
     'consignArtwork.status': 'active',
-    'contractExplorer.explorer': {
+    'contractExplorer.explorerUrl': {
         $exists: true,
     },
     'licenses.nft.added': true,

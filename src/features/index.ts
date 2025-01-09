@@ -12,3 +12,4 @@ export * as schedules from './schedules';
 export * as dashboard from './dashboard';
 export * as stores from './stores';
 export * as templates from './templates';
+export * as features from './features';
