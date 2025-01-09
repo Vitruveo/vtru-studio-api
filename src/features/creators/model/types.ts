@@ -17,9 +17,9 @@ export interface CreateCreatorParams {
 
 export interface FindCreatorsParams {
     query: any;
-    sort: any;
+    sort?: any;
     skip: number;
-    limit?: number;
+    limit: number;
 }
 
 export interface FindCreatorByIdParams {
@@ -213,4 +213,8 @@ export interface UpdateLicenseParams {
     id: string | ObjectId;
     license: string;
     value: number;
+}
+
+export interface CountCreatorsParams {
+    query: any;
 }

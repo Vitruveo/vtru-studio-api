@@ -48,6 +48,55 @@ route.get('/:id', validateParamsId, async (req, res) => {
     }
 });
 
+route.get('/', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 24;
+        const serch = req.query.search as string;
+
+        let query: any = {};
+
+        if (serch) {
+            query = {
+                $or: [
+                    { name: { $regex: serch, $options: 'i' } },
+                    { 'login.email': { $regex: serch, $options: 'i' } },
+                ],
+            };
+        }
+
+        const total = await model.countUsers({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const response = await model.findUsersPaginated({
+            query,
+            skip: (page - 1) * limit,
+            limit,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.users.reader.success',
+            message: 'Reader users success',
+            transaction: nanoid(),
+            data: {
+                data: response,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader users failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.users.reader.failed',
+            message: `Reader users failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.post(
     '/',
     needsToBeOwner({ permissions: ['user:admin'] }),
@@ -69,7 +118,7 @@ route.post(
             res.status(500).json({
                 code: 'vitruveo.studio.api.admin.users.create.failed',
                 message: `Create failed: ${error}`,
-                args: error,
+
                 transaction: nanoid(),
             } as APIResponse);
         }
