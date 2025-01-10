@@ -7,7 +7,6 @@ export * as allowList from './allowList';
 export * as waitingList from './waitingList';
 export * as upload from './upload';
 export * as requestConsign from './requestConsign';
-export * as events from './events';
 export * as schedules from './schedules';
 export * as dashboard from './dashboard';
 export * as stores from './stores';
