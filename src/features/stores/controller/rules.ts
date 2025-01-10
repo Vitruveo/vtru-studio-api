@@ -8,6 +8,7 @@ import {
     schemaValidationStepName,
 } from './schemas';
 import { FrameworkSchema } from '../model';
+import reservedWords from '../../../../reservedWords.json';
 
 export const validateBodyForCreateStores = async (
     req: Request,
@@ -26,6 +27,15 @@ export const validateBodyForCreateStores = async (
 
     try {
         req.body = schemaValidationForCreateStores.parse(req.body);
+
+        if (reservedWords.includes(req.body.organization.url)) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.stores.create.failed',
+                message: 'URL contains a reserved word',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
 
         const framework = FrameworkSchema.parse({
             createdBy: req.auth.id,
