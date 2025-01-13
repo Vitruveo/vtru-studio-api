@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { NextFunction, Request, Response } from 'express';
+import axios from 'axios';
 import { APIResponse } from '../../../services';
 import {
     schemaValidationArtworks,
@@ -8,7 +9,7 @@ import {
     schemaValidationStepName,
 } from './schemas';
 import { FrameworkSchema } from '../model';
-import reservedWords from '../../../../reservedWords.json';
+import { GENERAL_STORAGE_URL } from '../../../constants';
 
 export const validateBodyForCreateStores = async (
     req: Request,
@@ -27,8 +28,22 @@ export const validateBodyForCreateStores = async (
 
     try {
         req.body = schemaValidationForCreateStores.parse(req.body);
+        const { url } = req.body.organization;
 
-        if (reservedWords.includes(req.body.organization.url)) {
+        if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.stores.create.failed',
+                message:
+                    'URL must be at least 4 characters and contain only letters, numbers, and hyphens',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const reservedWords = await axios.get(
+            `${GENERAL_STORAGE_URL}/reservedWords.json`
+        );
+        if (reservedWords.data.includes(url)) {
             res.status(400).json({
                 code: 'vitruveo.studio.api.stores.create.failed',
                 message: 'URL contains a reserved word',
