@@ -51,4 +51,36 @@ route.get('/validate/:hash', async (req, res) => {
     }
 });
 
+route.get('/:subdomain', async (req, res) => {
+    try {
+        const { subdomain } = req.params;
+
+        const store = await model.findStoresBySubdomain(subdomain);
+
+        if (!store) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.stores.find.failed',
+                message: 'Store not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.status(200).json({
+            code: 'vitruveo.studio.api.stores.find.success',
+            message: 'Store found',
+            data: store,
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('Find stores failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.find.failed',
+            message: `Find failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 export { route };
