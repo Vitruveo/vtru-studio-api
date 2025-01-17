@@ -34,32 +34,35 @@ export const validateBodyForCreateStores = async (
         req.body = schemaValidationForCreateStores.parse(req.body);
         const { url } = req.body.organization;
 
-        if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) {
-            logger(
-                'URL must be at least 4 characters and contain only letters, numbers, and hyphens'
-            );
-            res.status(400).json({
-                code: 'vitruveo.studio.api.stores.create.failed',
-                message:
-                    'URL must be at least 4 characters and contain only letters, numbers, and hyphens',
-                transaction: nanoid(),
-                args: { url },
-            } as APIResponse);
-            return;
-        }
+        if (url) {
+            if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) {
+                logger(
+                    'URL must be at least 4 characters and contain only letters, numbers, and hyphens'
+                );
+                res.status(400).json({
+                    code: 'vitruveo.studio.api.stores.create.failed',
+                    message:
+                        'URL must be at least 4 characters and contain only letters, numbers, and hyphens',
+                    transaction: nanoid(),
+                    args: { url },
+                } as APIResponse);
+                return;
+            }
 
-        const reservedWords = await axios.get(
-            `${GENERAL_STORAGE_URL}/reservedWords.json`
-        );
-        if (reservedWords.data.includes(url)) {
-            logger('URL contains a reserved word');
-            res.status(400).json({
-                code: 'vitruveo.studio.api.stores.create.failed',
-                message: 'URL contains a reserved word',
-                transaction: nanoid(),
-                args: { url },
-            } as APIResponse);
-            return;
+            const reservedWords = await axios.get(
+                `${GENERAL_STORAGE_URL}/reservedWords.json`
+            );
+
+            if (reservedWords.data.includes(url)) {
+                logger('URL contains a reserved word');
+                res.status(400).json({
+                    code: 'vitruveo.studio.api.stores.create.failed',
+                    message: 'URL contains a reserved word',
+                    transaction: nanoid(),
+                    args: { url },
+                } as APIResponse);
+                return;
+            }
         }
 
         const framework = FrameworkSchema.parse({
