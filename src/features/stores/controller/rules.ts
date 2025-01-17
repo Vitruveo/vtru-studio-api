@@ -1,6 +1,8 @@
 import { nanoid } from 'nanoid';
 import { NextFunction, Request, Response } from 'express';
 import axios from 'axios';
+import debug from 'debug';
+
 import { APIResponse } from '../../../services';
 import {
     schemaValidationArtworks,
@@ -10,6 +12,8 @@ import {
 } from './schemas';
 import { FrameworkSchema } from '../model';
 import { GENERAL_STORAGE_URL } from '../../../constants';
+
+const logger = debug('features:stores:controller:rules');
 
 export const validateBodyForCreateStores = async (
     req: Request,
@@ -31,11 +35,15 @@ export const validateBodyForCreateStores = async (
         const { url } = req.body.organization;
 
         if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) {
+            logger(
+                'URL must be at least 4 characters and contain only letters, numbers, and hyphens'
+            );
             res.status(400).json({
                 code: 'vitruveo.studio.api.stores.create.failed',
                 message:
                     'URL must be at least 4 characters and contain only letters, numbers, and hyphens',
                 transaction: nanoid(),
+                args: { url },
             } as APIResponse);
             return;
         }
@@ -44,10 +52,12 @@ export const validateBodyForCreateStores = async (
             `${GENERAL_STORAGE_URL}/reservedWords.json`
         );
         if (reservedWords.data.includes(url)) {
+            logger('URL contains a reserved word');
             res.status(400).json({
                 code: 'vitruveo.studio.api.stores.create.failed',
                 message: 'URL contains a reserved word',
                 transaction: nanoid(),
+                args: { url },
             } as APIResponse);
             return;
         }
@@ -61,9 +71,10 @@ export const validateBodyForCreateStores = async (
 
         next();
     } catch (error) {
+        logger('Error validating body for create stores', error);
         res.status(400).json({
             code: 'vitruveo.studio.api.stores.create.failed',
-            message: '',
+            message: error instanceof Error ? error.message : '',
             transaction: nanoid(),
             args: error,
         } as APIResponse);
@@ -96,9 +107,10 @@ export const validateBodyForUpdateStepStores = async (
         }
         next();
     } catch (error) {
+        logger('Error validating body for update step stores', error);
         res.status(400).json({
             code: 'vitruveo.studio.api.stores.update.failed',
-            message: '',
+            message: error instanceof Error ? error.message : '',
             transaction: nanoid(),
             args: error,
         } as APIResponse);
