@@ -41,6 +41,9 @@ export const findStoresByHash = (hash: string) => stores().findOne({ hash });
 export const findStoresById = (id: string) =>
     stores().findOne({ _id: new ObjectId(id) });
 
+export const findStoresBySubdomain = (subdomain: string) =>
+    stores().findOne({ 'organization.url': subdomain });
+
 export const updateStores = ({ id, data }: UpdateStoresParams) => {
     const envelope = StoresSchema.parse(data);
 

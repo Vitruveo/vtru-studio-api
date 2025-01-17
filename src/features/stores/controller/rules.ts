@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { NextFunction, Request, Response } from 'express';
+import axios from 'axios';
 import { APIResponse } from '../../../services';
 import {
     schemaValidationArtworks,
@@ -8,7 +9,6 @@ import {
     schemaValidationStepName,
 } from './schemas';
 import { FrameworkSchema } from '../model';
-import axios from 'axios';
 import { GENERAL_STORAGE_URL } from '../../../constants';
 
 export const validateBodyForCreateStores = async (
@@ -28,7 +28,7 @@ export const validateBodyForCreateStores = async (
 
     try {
         req.body = schemaValidationForCreateStores.parse(req.body);
-        const url: string = req.body.organization.url;
+        const { url } = req.body.organization;
 
         if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) {
             res.status(400).json({
