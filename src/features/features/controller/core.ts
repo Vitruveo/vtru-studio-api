@@ -17,6 +17,29 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
+route.get('/check/:email', async (req, res) => {
+    try {
+        const features = await model.checkEmailExist({
+            email: req.params.email,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.features.email.success',
+            message: 'Checked email with success',
+            transaction: nanoid(),
+            data: features.map((v) => v.name),
+        } as APIResponse<string[]>);
+    } catch (error) {
+        logger('Exist email features failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.features.email.failed',
+            message: `Exist email failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/', async (req, res) => {
     try {
         const features = await model.getFeatures();

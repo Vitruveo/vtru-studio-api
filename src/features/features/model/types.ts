@@ -13,3 +13,7 @@ export interface UpdateFeatureParams {
 export interface DeleteFeatureParams {
     id: string | ObjectId;
 }
+
+export interface CheckEmailExistParams {
+    email: string;
+}
