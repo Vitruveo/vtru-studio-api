@@ -15,7 +15,9 @@ const framework = z
 export const FeatureSchema = z.object({
     name: z.string().default(''),
     released: z.boolean().optional().default(false),
-    onlyForAllowList: z.boolean().optional().default(false),
+    isOnlyFor: z.boolean().optional(),
+    onlyFor: z.enum(['allowList', 'specificUsers']).optional(),
+    emails: z.array(z.string()).optional(),
     framework,
 });
 
