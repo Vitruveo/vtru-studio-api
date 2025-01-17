@@ -104,6 +104,35 @@ export const validateBodyForUpdateStepStores = async (
 
         if (req.body.stepName === 'organization') {
             req.body.data = schemaValidationOrganization.parse(req.body.data);
+            const { url } = req.body.data;
+            if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) {
+                logger(
+                    'URL must be at least 4 characters and contain only letters, numbers, and hyphens'
+                );
+                res.status(400).json({
+                    code: 'vitruveo.studio.api.stores.update.failed',
+                    message:
+                        'URL must be at least 4 characters and contain only letters, numbers, and hyphens',
+                    transaction: nanoid(),
+                    args: { url },
+                } as APIResponse);
+                return;
+            }
+
+            const reservedWords = await axios.get(
+                `${GENERAL_STORAGE_URL}/reservedWords.json`
+            );
+
+            if (reservedWords.data.includes(url)) {
+                logger('URL contains a reserved word');
+                res.status(400).json({
+                    code: 'vitruveo.studio.api.stores.update.failed',
+                    message: 'URL contains a reserved word',
+                    transaction: nanoid(),
+                    args: { url },
+                } as APIResponse);
+                return;
+            }
         }
         if (req.body.stepName === 'artworks') {
             req.body.data = schemaValidationArtworks.parse(req.body.data);
