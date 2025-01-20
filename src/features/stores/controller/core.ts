@@ -253,10 +253,14 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
 
         const payload = req.body as z.infer<typeof schemaValidationStepName>;
 
-        const data = { ...payload.data };
+        const { hasBanner, ...data } = payload.data;
 
         if (payload.stepName === 'organization') {
             data.formats = stores.organization.formats;
+        }
+
+        if (payload.stepName === 'organization' && !hasBanner) {
+            data.formats.banner = null;
         }
 
         await model.updateStepStores({
