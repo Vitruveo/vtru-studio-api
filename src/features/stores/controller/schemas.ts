@@ -24,6 +24,7 @@ export const schemaValidationOrganization = z.object({
     description: z.string().nullable().default(null),
     markup: z.number().default(0),
     formats: FormatSchema.nullable().default(null),
+    hasBanner: z.boolean().nullable().default(null),
 });
 
 export const schemaValidationArtworks = z.object({
