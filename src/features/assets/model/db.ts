@@ -35,6 +35,7 @@ import type {
     UpdateAssetArtCardsStatusParams,
     CountAssetsWithLicenseArtCardsParams,
     UpdateManyAssetsAutoStakeParams,
+    FindLastConsignsParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -751,10 +752,29 @@ export const findAssets = async ({
     return result.stream();
 };
 
-export const findAssetsById = async ({ id }: FindAssetsByIdParams) => {
-    const result = await assets().findOne({ _id: new ObjectId(id) });
-    return result;
-};
+export const findAssetsById = async ({ id }: FindAssetsByIdParams) =>
+    assets().findOne({ _id: new ObjectId(id) });
+
+export const findLastConsigns = async ({ id }: FindLastConsignsParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    'consignArtwork.status': 'active',
+                    'framework.createdBy': id,
+                    mintExplorer: { $exists: false },
+                },
+            },
+            { $sort: { 'consignArtwork.createdAt': -1 } },
+            { $limit: 5 },
+            {
+                $project: {
+                    id: '$_id',
+                    path: '$formats.preview.path',
+                },
+            },
+        ])
+        .toArray();
 
 export const countAssetsWithLicenseArtCards = async ({
     status,

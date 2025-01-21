@@ -141,6 +141,37 @@ route.get('/:id', async (req, res) => {
     }
 });
 
+route.get('/:creatorId/lastConsigns', async (req, res) => {
+    try {
+        const { creatorId } = req.params;
+        if (!creatorId) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.admin.assets.store.badRequest',
+                message: 'Bad request',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const assets = await model.findLastConsigns({ id: creatorId });
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.store.success',
+            message: 'Store last consigns success',
+            transaction: nanoid(),
+            data: assets,
+        } as APIResponse<{ id: string; path: string }[]>);
+    } catch (error) {
+        logger('store last consigns failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.store.failed',
+            message: `Store last consigns failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/:id/mint', async (req, res) => {
     try {
         // TODO: receber wallet via query (do comprador)
@@ -204,7 +235,7 @@ route.get('/:id/mint', async (req, res) => {
     }
 });
 
-route.get('/:wallet/creditsAvailable', (req, res) => {
+route.get('/:wallet/creditsAvailable', (_req, res) => {
     try {
         res.set('Content-Type', 'text/event-stream');
         res.set('Cache-Control', 'no-cache');
