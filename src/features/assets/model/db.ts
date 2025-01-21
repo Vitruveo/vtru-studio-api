@@ -754,13 +754,17 @@ export const findAssets = async ({
 export const findAssetsById = async ({ id }: FindAssetsByIdParams) =>
     assets().findOne({ _id: new ObjectId(id) });
 
-export const findLastConsigns = async ({ id }: FindLastConsignsParams) =>
+export const findLastConsigns = async ({
+    id,
+    creatorId,
+}: FindLastConsignsParams) =>
     assets()
         .aggregate([
             {
                 $match: {
+                    _id: { $ne: new ObjectId(id) },
                     'consignArtwork.status': 'active',
-                    'framework.createdBy': id,
+                    'framework.createdBy': creatorId,
                     mintExplorer: { $exists: false },
                 },
             },

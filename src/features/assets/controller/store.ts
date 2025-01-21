@@ -141,10 +141,10 @@ route.get('/:id', async (req, res) => {
     }
 });
 
-route.get('/:creatorId/lastConsigns', async (req, res) => {
+route.get('/:id/lastConsigns', async (req, res) => {
     try {
-        const { creatorId } = req.params;
-        if (!creatorId) {
+        const { id } = req.params;
+        if (!id) {
             res.status(400).json({
                 code: 'vitruveo.studio.api.admin.assets.store.badRequest',
                 message: 'Bad request',
@@ -153,7 +153,20 @@ route.get('/:creatorId/lastConsigns', async (req, res) => {
             return;
         }
 
-        const assets = await model.findLastConsigns({ id: creatorId });
+        const asset = await model.findAssetsById({ id });
+        if (!asset || !asset.framework.createdBy) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.store.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const assets = await model.findLastConsigns({
+            id: asset._id,
+            creatorId: asset.framework.createdBy,
+        });
 
         res.json({
             code: 'vitruveo.studio.api.assets.store.success',

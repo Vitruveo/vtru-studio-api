@@ -93,6 +93,7 @@ export interface FindAssetsByIdParams {
 
 export interface FindLastConsignsParams {
     id: string | ObjectId;
+    creatorId: string;
 }
 
 export interface CountAssetsWithLicenseArtCardsParams {
