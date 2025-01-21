@@ -160,7 +160,7 @@ route.get('/:creatorId/lastConsigns', async (req, res) => {
             message: 'Store last consigns success',
             transaction: nanoid(),
             data: assets,
-        } as APIResponse<{ id: string; path: string }[]>);
+        } as APIResponse<{ _id: string; path: string }[]>);
     } catch (error) {
         logger('store last consigns failed: %O', error);
         res.status(500).json({
