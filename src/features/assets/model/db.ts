@@ -769,7 +769,6 @@ export const findLastConsigns = async ({ id }: FindLastConsignsParams) =>
             { $limit: 5 },
             {
                 $project: {
-                    id: '$_id',
                     path: '$formats.preview.path',
                 },
             },
