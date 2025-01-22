@@ -35,6 +35,7 @@ import type {
     UpdateAssetArtCardsStatusParams,
     CountAssetsWithLicenseArtCardsParams,
     FindLastConsignsParams,
+    UpdateManyAssetsAutoStakeParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1020,6 +1021,17 @@ export const updateManyAssetsStatus = async ({
     const result = await assets().updateMany(
         { _id: { $in: ids.map((id) => new ObjectId(id)) } },
         { $set: { 'consignArtwork.status': status } }
+    );
+    return result;
+};
+
+export const updateManyAssetsAutoStake = async ({
+    creatorId,
+    autoStake,
+}: UpdateManyAssetsAutoStakeParams) => {
+    const result = await assets().updateMany(
+        { 'framework.createdBy': creatorId },
+        { $set: { 'licenses.nft.autoStake': autoStake } }
     );
     return result;
 };

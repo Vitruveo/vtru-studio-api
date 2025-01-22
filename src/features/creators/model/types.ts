@@ -86,6 +86,11 @@ export interface UpdateAvatarParams {
     fileId: string;
 }
 
+export interface UpdateAutoStakeParams {
+    id: string | ObjectId;
+    autoStake: boolean;
+}
+
 export interface CheckWalletExistsParams {
     address: string;
     id: string;

@@ -134,6 +134,11 @@ export interface UpdateManyAssetsStatusParams {
     status: string;
 }
 
+export interface UpdateManyAssetsAutoStakeParams {
+    creatorId: string | ObjectId;
+    autoStake: boolean;
+}
+
 export interface UpdateManyAssetsNudityParams {
     ids: string[] | ObjectId[];
     nudity: boolean;

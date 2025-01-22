@@ -44,6 +44,7 @@ export const CreatorSchema = z.object({
     name: z.string().default(''),
     username: z.string().trim().or(z.undefined()),
     displayName: z.string().trim().nullable().optional(),
+    autoStake: z.boolean().optional(),
     login: z
         .object({
             loginHistory: z
