@@ -13,6 +13,7 @@ export const schemaValidationForPut = z.object({
             archived: z.boolean(),
         })
     ),
+    autoStake: z.boolean().optional(),
     emails: z
         .array(
             z.object({

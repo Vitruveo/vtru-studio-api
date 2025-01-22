@@ -115,6 +115,7 @@ const AssetMetadataSchema = z.object({
 
 const NFTLicenseSchema = z
     .object({
+        autoStake: z.boolean().optional(),
         version: z.string(),
         added: z.boolean(),
         license: z.enum([

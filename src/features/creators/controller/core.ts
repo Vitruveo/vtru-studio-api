@@ -35,6 +35,31 @@ const route = Router();
 
 route.use(middleware.checkAuth);
 
+route.put('/autoStake', async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const result = await model.updateAutoStake({
+            id,
+            autoStake: req.body.autoStake,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.creators.update.success',
+            message: 'Update success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult<model.CreatorDocument>>);
+    } catch (error) {
+        logger('Update creator failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.creators.update.failed',
+            message: `Update failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.get('/me', async (req, res) => {
     try {
         const { id } = req.auth;

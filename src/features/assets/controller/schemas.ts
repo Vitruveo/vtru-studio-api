@@ -207,6 +207,7 @@ export const schemaLicenses = z.object({
             version: z.string(),
             added: z.boolean(),
             license: z.string(),
+            autoStake: z.boolean().optional(),
             elastic: z.object({
                 editionPrice: z.number(),
                 numberOfEditions: z.number(),
