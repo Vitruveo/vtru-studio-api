@@ -51,6 +51,7 @@ route.get('/groupByCreator', async (req, res) => {
             name,
             sort,
             hasBts,
+            hasNftAutoStake,
         } = req.query as unknown as {
             query: Record<string, unknown>;
             page: string;
@@ -58,6 +59,7 @@ route.get('/groupByCreator', async (req, res) => {
             name: string;
             sort: QueryPaginatedParams['sort'];
             hasBts: string;
+            hasNftAutoStake: boolean;
         };
 
         const pageNumber = Number(page);
@@ -177,6 +179,20 @@ route.get('/groupByCreator', async (req, res) => {
             parsedQuery.$or = parsedQuery.$or
                 ? parsedQuery.$or.concat(btsConditions)
                 : btsConditions;
+        }
+
+        if (hasNftAutoStake) {
+            parsedQuery.$and = parsedQuery.$and
+                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                : [{ 'licenses.nft.autoStake': true }];
+        } else {
+            const nftAutoStakeCondition = [
+                { 'licenses.nft.autoStake': false },
+                { 'licenses.nft.autoStake': { $exists: false } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(nftAutoStakeCondition)
+                : nftAutoStakeCondition;
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
@@ -233,6 +249,7 @@ route.post('/groupByCreator', async (req, res) => {
             name,
             sort,
             hasBts,
+            hasNftAutoStake,
         } = req.body as unknown as {
             query: Record<string, unknown>;
             page: string;
@@ -240,6 +257,7 @@ route.post('/groupByCreator', async (req, res) => {
             name: string;
             sort: QueryPaginatedParams['sort'];
             hasBts: string;
+            hasNftAutoStake: boolean;
         };
 
         const pageNumber = Number(page);
@@ -359,6 +377,20 @@ route.post('/groupByCreator', async (req, res) => {
             parsedQuery.$or = parsedQuery.$or
                 ? parsedQuery.$or.concat(btsConditions)
                 : btsConditions;
+        }
+
+        if (hasNftAutoStake) {
+            parsedQuery.$and = parsedQuery.$and
+                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                : [{ 'licenses.nft.autoStake': true }];
+        } else {
+            const nftAutoStakeCondition = [
+                { 'licenses.nft.autoStake': false },
+                { 'licenses.nft.autoStake': { $exists: false } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(nftAutoStakeCondition)
+                : nftAutoStakeCondition;
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
@@ -419,6 +451,7 @@ route.get('/search', async (req, res) => {
             precision = '0.7',
             showAdditionalAssets,
             hasBts,
+            hasNftAutoStake,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -571,6 +604,20 @@ route.get('/search', async (req, res) => {
                 : btsConditions;
         }
 
+        if (hasNftAutoStake) {
+            parsedQuery.$and = parsedQuery.$and
+                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                : [{ 'licenses.nft.autoStake': true }];
+        } else {
+            const nftAutoStakeCondition = [
+                { 'licenses.nft.autoStake': false },
+                { 'licenses.nft.autoStake': { $exists: false } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(nftAutoStakeCondition)
+                : nftAutoStakeCondition;
+        }
+
         const maxAssetPrice = await model.findMaxPrice();
 
         if (parsedQuery?._id?.$in)
@@ -643,6 +690,7 @@ route.post('/search', async (req, res) => {
             precision = '0.7',
             showAdditionalAssets,
             hasBts,
+            hasNftAutoStake,
         } = req.body as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -793,6 +841,20 @@ route.post('/search', async (req, res) => {
             parsedQuery.$or = parsedQuery.$or
                 ? parsedQuery.$or.concat(btsConditions)
                 : btsConditions;
+        }
+
+        if (hasNftAutoStake) {
+            parsedQuery.$and = parsedQuery.$and
+                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                : [{ 'licenses.nft.autoStake': true }];
+        } else {
+            const nftAutoStakeCondition = [
+                { 'licenses.nft.autoStake': false },
+                { 'licenses.nft.autoStake': { $exists: false } },
+            ];
+            parsedQuery.$or = parsedQuery.$or
+                ? parsedQuery.$or.concat(nftAutoStakeCondition)
+                : nftAutoStakeCondition;
         }
 
         const maxAssetPrice = await model.findMaxPrice();

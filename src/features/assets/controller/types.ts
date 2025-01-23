@@ -15,6 +15,7 @@ export interface QueryPaginatedParams {
     precision?: string;
     showAdditionalAssets: string;
     hasBts: string;
+    hasNftAutoStake: boolean;
 }
 
 export interface QueryCollectionParams {
