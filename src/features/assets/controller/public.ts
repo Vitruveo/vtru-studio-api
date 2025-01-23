@@ -183,7 +183,7 @@ route.get('/groupByCreator', async (req, res) => {
 
         if (hasNftAutoStake) {
             parsedQuery.$and = parsedQuery.$and
-                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
         } else {
             const nftAutoStakeCondition = [
@@ -381,7 +381,7 @@ route.post('/groupByCreator', async (req, res) => {
 
         if (hasNftAutoStake) {
             parsedQuery.$and = parsedQuery.$and
-                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
         } else {
             const nftAutoStakeCondition = [
@@ -606,7 +606,7 @@ route.get('/search', async (req, res) => {
 
         if (hasNftAutoStake) {
             parsedQuery.$and = parsedQuery.$and
-                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
         } else {
             const nftAutoStakeCondition = [
@@ -845,7 +845,7 @@ route.post('/search', async (req, res) => {
 
         if (hasNftAutoStake) {
             parsedQuery.$and = parsedQuery.$and
-                ? parsedQuery.$and.push({ 'licenses.nft.autoStake': true })
+                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
         } else {
             const nftAutoStakeCondition = [
