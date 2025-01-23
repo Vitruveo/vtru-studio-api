@@ -185,14 +185,6 @@ route.get('/groupByCreator', async (req, res) => {
             parsedQuery.$and = parsedQuery.$and
                 ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
-        } else {
-            const nftAutoStakeCondition = [
-                { 'licenses.nft.autoStake': false },
-                { 'licenses.nft.autoStake': { $exists: false } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(nftAutoStakeCondition)
-                : nftAutoStakeCondition;
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
@@ -383,14 +375,6 @@ route.post('/groupByCreator', async (req, res) => {
             parsedQuery.$and = parsedQuery.$and
                 ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
-        } else {
-            const nftAutoStakeCondition = [
-                { 'licenses.nft.autoStake': false },
-                { 'licenses.nft.autoStake': { $exists: false } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(nftAutoStakeCondition)
-                : nftAutoStakeCondition;
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
@@ -608,14 +592,6 @@ route.get('/search', async (req, res) => {
             parsedQuery.$and = parsedQuery.$and
                 ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
-        } else {
-            const nftAutoStakeCondition = [
-                { 'licenses.nft.autoStake': false },
-                { 'licenses.nft.autoStake': { $exists: false } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(nftAutoStakeCondition)
-                : nftAutoStakeCondition;
         }
 
         const maxAssetPrice = await model.findMaxPrice();
@@ -847,14 +823,6 @@ route.post('/search', async (req, res) => {
             parsedQuery.$and = parsedQuery.$and
                 ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
-        } else {
-            const nftAutoStakeCondition = [
-                { 'licenses.nft.autoStake': false },
-                { 'licenses.nft.autoStake': { $exists: false } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(nftAutoStakeCondition)
-                : nftAutoStakeCondition;
         }
 
         const maxAssetPrice = await model.findMaxPrice();
