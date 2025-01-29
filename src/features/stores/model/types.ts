@@ -7,6 +7,13 @@ export interface FindStoresByCreatorParams {
     limit: number;
     sort: Sort;
 }
+
+export interface FindStoresPaginatedParams {
+    query: any;
+    skip: number;
+    limit: number;
+}
+
 export interface UpdateStoresParams {
     id: string;
     data: Partial<Stores>;

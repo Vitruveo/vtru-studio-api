@@ -19,6 +19,7 @@ const route = Router();
 
 const statusMapper = {
     draft: { status: 'draft' },
+    pending: { status: 'pending' },
     active: { status: 'active' },
     inactive: { status: 'inactive' },
     all: {},
@@ -291,6 +292,9 @@ route.patch(
     validateBodyForUpdateStatusStore,
     async (req, res) => {
         try {
+            const { type, id } = req.auth;
+            const payload = req.body as z.infer<typeof schemaValidationStatus>;
+
             const stores = await model.findStoresById(req.params.id);
 
             if (!stores) {
@@ -302,7 +306,10 @@ route.patch(
                 return;
             }
 
-            if (stores.framework.createdBy !== req.auth.id) {
+            if (
+                payload.status === 'pending' &&
+                stores.framework.createdBy !== id
+            ) {
                 res.status(403).json({
                     code: 'vitruveo.studio.api.stores.update.status.forbidden',
                     message: 'Update status forbidden',
@@ -310,8 +317,14 @@ route.patch(
                 } as APIResponse);
                 return;
             }
-
-            const payload = req.body as z.infer<typeof schemaValidationStatus>;
+            if (payload.status !== 'pending' && type !== 'user') {
+                res.status(403).json({
+                    code: 'vitruveo.studio.api.stores.update.status.forbidden',
+                    message: 'Update status forbidden',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
 
             await model.updateStatusStore({
                 id: req.params.id,
@@ -355,6 +368,50 @@ route.post('/validateUrl/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.stores.validateUrl.failed',
             message: `Validate url failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const limit = parseInt(req.query.limit as string, 10) || 10;
+        const status = req.query.status as keyof typeof statusMapper;
+        const search = req.query.search as string;
+
+        const query: any = {
+            ...statusMapper[status],
+            search,
+        };
+
+        const total = await model.countStores({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const response = await model.findStoresPaginated({
+            query,
+            limit,
+            skip: (page - 1) * limit,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.stores.reader.all.success',
+            message: 'Reader all success',
+            transaction: nanoid(),
+            data: {
+                data: response,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader all stores failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.reader.all.failed',
+            message: `Reader all stores failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

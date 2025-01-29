@@ -3,6 +3,7 @@ import { COLLECTION_STORES, Stores, StoresSchema } from './schema';
 import type {
     CheckUrlIsUniqueParams,
     FindStoresByCreatorParams,
+    FindStoresPaginatedParams,
     UpdateFormatOrganizationsParams,
     UpdateStatusStoreParams,
     UpdateStepStoresParams,
@@ -32,6 +33,68 @@ export const findStoresByCreatorPaginated = ({
                 },
             },
             { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+        ])
+        .toArray();
+
+export const findStoresPaginated = ({
+    query,
+    skip,
+    limit,
+}: FindStoresPaginatedParams) =>
+    stores()
+        .aggregate([
+            { $match: { status: query.status } },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'organization.name': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'organization.url': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $addFields: {
+                    username: '$creator.username',
+                },
+            },
+            {
+                $project: {
+                    creator: 0,
+                    creatorId: 0,
+                },
+            },
             { $skip: skip },
             { $limit: limit },
         ])
@@ -88,3 +151,6 @@ export const CheckUrlIsUnique = async ({ id, url }: CheckUrlIsUniqueParams) =>
 export const countStoresByCreator = ({
     query,
 }: Pick<FindStoresByCreatorParams, 'query'>) => stores().countDocuments(query);
+
+export const countStores = ({ query }: { query: any }) =>
+    stores().countDocuments(query);
