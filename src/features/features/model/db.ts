@@ -1,6 +1,7 @@
 import { FeatureDocument, COLLECTION_FEATURES } from './schema';
 import type {
     AddFeatureParams,
+    CheckEmailExistParams,
     DeleteFeatureParams,
     UpdateFeatureParams,
 } from './types';
@@ -28,5 +29,10 @@ export const updateFeature = async ({ id, feature }: UpdateFeatureParams) => {
 
 export const deleteFeature = async ({ id }: DeleteFeatureParams) => {
     const result = await features().deleteOne({ _id: new ObjectId(id) });
+    return result;
+};
+
+export const checkEmailExist = async ({ email }: CheckEmailExistParams) => {
+    const result = await features().find({ emails: email }).toArray();
     return result;
 };
