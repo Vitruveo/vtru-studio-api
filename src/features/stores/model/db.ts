@@ -4,6 +4,7 @@ import type {
     CheckUrlIsUniqueParams,
     FindStoresByCreatorParams,
     UpdateFormatOrganizationsParams,
+    UpdateStatusStoreParams,
     UpdateStepStoresParams,
     UpdateStoresParams,
 } from './types';
@@ -62,6 +63,9 @@ export const updateStepStores = ({
         { _id: new ObjectId(id) },
         { $set: { [stepName]: data } }
     );
+
+export const updateStatusStore = ({ id, status }: UpdateStatusStoreParams) =>
+    stores().updateOne({ _id: new ObjectId(id) }, { $set: { status } });
 
 export const updateFormatOrganizations = ({
     id,

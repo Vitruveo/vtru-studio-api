@@ -34,7 +34,12 @@ export const FrameworkSchema = z.object({
     updatedBy: z.string().nullable().default(null),
 });
 
-export const StoreStatusEnum = z.enum(['draft', 'active', 'inactive']);
+export const StoreStatusEnum = z.enum([
+    'draft',
+    'pending',
+    'active',
+    'inactive',
+]);
 
 export const StoresSchema = z.object({
     organization: OrganizationSchema,
@@ -45,4 +50,5 @@ export const StoresSchema = z.object({
 });
 
 export type Stores = z.infer<typeof StoresSchema>;
+export type StoreStatus = z.infer<typeof StoreStatusEnum>;
 export type StoresDocument = Stores & { _id: string | ObjectId };

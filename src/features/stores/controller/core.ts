@@ -8,9 +8,10 @@ import { middleware } from '../../users';
 import { APIResponse } from '../../../services';
 import {
     validateBodyForCreateStores,
+    validateBodyForUpdateStatusStore,
     validateBodyForUpdateStepStores,
 } from './rules';
-import { schemaValidationStepName } from './schemas';
+import { schemaValidationStatus, schemaValidationStepName } from './schemas';
 import { querySorStoreCreatorById } from '../utils/queries';
 
 const logger = debug('features:stores:controller:core');
@@ -284,6 +285,55 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
         } as APIResponse);
     }
 });
+
+route.patch(
+    '/status/:id',
+    validateBodyForUpdateStatusStore,
+    async (req, res) => {
+        try {
+            const stores = await model.findStoresById(req.params.id);
+
+            if (!stores) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.stores.update.status.not.found',
+                    message: 'Update status not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (stores.framework.createdBy !== req.auth.id) {
+                res.status(403).json({
+                    code: 'vitruveo.studio.api.stores.update.status.forbidden',
+                    message: 'Update status forbidden',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            const payload = req.body as z.infer<typeof schemaValidationStatus>;
+
+            await model.updateStatusStore({
+                id: req.params.id,
+                status: payload.status,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.stores.update.status.success',
+                message: 'Update status success',
+                transaction: nanoid(),
+            } as APIResponse);
+        } catch (error) {
+            logger('Update status stores failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.stores.update.status.failed',
+                message: `Update status failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
 
 route.post('/validateUrl/:id', async (req, res) => {
     try {
