@@ -16,6 +16,20 @@ import { GENERAL_STORAGE_URL } from '../../../constants';
 
 const logger = debug('features:stores:controller:rules');
 
+const isValidUrl = async (
+    url: string
+): Promise<boolean | 'characters' | 'reservedWords'> => {
+    if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) return 'characters';
+
+    const reservedWords = await axios.get(
+        `${GENERAL_STORAGE_URL}/reservedWords.json`
+    );
+
+    if (reservedWords.data.includes(url)) return 'reservedWords';
+
+    return true;
+};
+
 export const validateBodyForCreateStores = async (
     req: Request,
     res: Response,
@@ -36,7 +50,8 @@ export const validateBodyForCreateStores = async (
         const { url } = req.body.organization;
 
         if (url) {
-            if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) {
+            const checkUrl = await isValidUrl(url);
+            if (checkUrl === 'characters') {
                 logger(
                     'URL must be at least 4 characters and contain only letters, numbers, and hyphens'
                 );
@@ -49,12 +64,7 @@ export const validateBodyForCreateStores = async (
                 } as APIResponse);
                 return;
             }
-
-            const reservedWords = await axios.get(
-                `${GENERAL_STORAGE_URL}/reservedWords.json`
-            );
-
-            if (reservedWords.data.includes(url)) {
+            if (checkUrl === 'reservedWords') {
                 logger('URL contains a reserved word');
                 res.status(400).json({
                     code: 'vitruveo.studio.api.stores.create.failed',
@@ -105,6 +115,36 @@ export const validateBodyForUpdateStepStores = async (
 
         if (req.body.stepName === 'organization') {
             req.body.data = schemaValidationOrganization.parse(req.body.data);
+
+            const { url } = req.body.data;
+
+            if (url) {
+                const checkUrl = await isValidUrl(url);
+
+                if (checkUrl === 'characters') {
+                    logger(
+                        'URL must be at least 4 characters and contain only letters, numbers, and hyphens'
+                    );
+                    res.status(400).json({
+                        code: 'vitruveo.studio.api.stores.create.failed',
+                        message:
+                            'URL must be at least 4 characters and contain only letters, numbers, and hyphens',
+                        transaction: nanoid(),
+                        args: { url },
+                    } as APIResponse);
+                    return;
+                }
+                if (checkUrl === 'reservedWords') {
+                    logger('URL contains a reserved word');
+                    res.status(400).json({
+                        code: 'vitruveo.studio.api.stores.create.failed',
+                        message: 'URL contains a reserved word',
+                        transaction: nanoid(),
+                        args: { url },
+                    } as APIResponse);
+                    return;
+                }
+            }
         }
         if (req.body.stepName === 'artworks') {
             req.body.data = schemaValidationArtworks.parse(req.body.data);
