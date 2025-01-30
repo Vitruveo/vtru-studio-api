@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FormatSchema } from '../model';
+import { FormatSchema, StoreStatusEnum } from '../model';
 
 export const schemaValidationForCreateStores = z.object({
     organization: z
@@ -78,4 +78,8 @@ export const schemaValidationArtworks = z.object({
 export const schemaValidationStepName = z.object({
     stepName: z.enum(['organization', 'artworks']),
     data: z.any(),
+});
+
+export const schemaValidationStatus = z.object({
+    status: StoreStatusEnum,
 });
