@@ -87,6 +87,7 @@ export const findStoresPaginated = ({
             {
                 $addFields: {
                     username: '$creator.username',
+                    emails: '$creator.emails',
                 },
             },
             {
