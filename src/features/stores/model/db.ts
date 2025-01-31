@@ -42,6 +42,7 @@ export const findStoresPaginated = ({
     query,
     skip,
     limit,
+    sort,
 }: FindStoresPaginatedParams) =>
     stores()
         .aggregate([
@@ -69,6 +70,8 @@ export const findStoresPaginated = ({
                     creatorId: {
                         $toObjectId: '$framework.createdBy',
                     },
+                    insensitiveName: { $toLower: '$organization.name' },
+                    insensitiveUrl: { $toLower: '$organization.url' },
                 },
             },
             {
@@ -90,14 +93,17 @@ export const findStoresPaginated = ({
                     emails: '$creator.emails',
                 },
             },
+            { $sort: sort ?? {} },
+            { $skip: skip },
+            { $limit: limit },
             {
                 $project: {
                     creator: 0,
                     creatorId: 0,
+                    insensitiveName: 0,
+                    insensitiveUrl: 0,
                 },
             },
-            { $skip: skip },
-            { $limit: limit },
         ])
         .toArray();
 

@@ -5,6 +5,7 @@ import { Router } from 'express';
 import * as model from '../model';
 
 import { APIResponse } from '../../../services';
+import { querySortStores } from '../../assets/utils/queries';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
@@ -69,7 +70,13 @@ route.get('/:subdomain', async (req, res) => {
         res.status(200).json({
             code: 'vitruveo.studio.api.stores.find.success',
             message: 'Store found',
-            data: store,
+            data: {
+                data: [store],
+                page: 1,
+                totalPage: 1,
+                total: 1,
+                limit: 1,
+            },
             transaction: nanoid(),
         } as APIResponse);
     } catch (error) {
@@ -83,4 +90,51 @@ route.get('/:subdomain', async (req, res) => {
     }
 });
 
+route.get('/', async (req, res) => {
+    try {
+        let limit = parseInt(req.query.limit as string, 10) || 24;
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const sort = req.query.sort as string;
+
+        if (limit > 200) {
+            limit = 200;
+        }
+
+        const query: any = {
+            status: 'active',
+        };
+
+        const total = await model.countStores({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const sortQuery = querySortStores(sort);
+        const stores = await model.findStoresPaginated({
+            query,
+            skip: (page - 1) * limit,
+            limit,
+            sort: sortQuery,
+        });
+
+        res.status(200).json({
+            code: 'vitruveo.studio.api.stores.list.success',
+            message: 'Stores found',
+            data: {
+                data: stores,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('List stores failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.list.failed',
+            message: `List failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 export { route };
