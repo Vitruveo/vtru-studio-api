@@ -70,13 +70,7 @@ route.get('/:subdomain', async (req, res) => {
         res.status(200).json({
             code: 'vitruveo.studio.api.stores.find.success',
             message: 'Store found',
-            data: {
-                data: [store],
-                page: 1,
-                totalPage: 1,
-                total: 1,
-                limit: 1,
-            },
+            data: store,
             transaction: nanoid(),
         } as APIResponse);
     } catch (error) {
