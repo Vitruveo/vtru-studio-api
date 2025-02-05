@@ -20,7 +20,6 @@ route.get('/validate/:hash', async (req, res) => {
                 message: 'Invalid hash',
                 transaction: nanoid(),
             } as APIResponse);
-
             return;
         }
 
@@ -32,7 +31,15 @@ route.get('/validate/:hash', async (req, res) => {
                 message: 'Store not found',
                 transaction: nanoid(),
             } as APIResponse);
+            return;
+        }
 
+        if (store.status !== 'active') {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.stores.validate.forbidden',
+                message: 'Store is not active',
+                transaction: nanoid(),
+            } as APIResponse);
             return;
         }
 
