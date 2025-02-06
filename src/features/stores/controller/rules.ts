@@ -5,6 +5,7 @@ import debug from 'debug';
 
 import { APIResponse } from '../../../services';
 import {
+    schemaValidationAppearanceContent,
     schemaValidationArtworks,
     schemaValidationForCreateStores,
     schemaValidationOrganization,
@@ -148,6 +149,11 @@ export const validateBodyForUpdateStepStores = async (
         }
         if (req.body.stepName === 'artworks') {
             req.body.data = schemaValidationArtworks.parse(req.body.data);
+        }
+        if (req.body.stepName === 'appearanceContent') {
+            req.body.data = schemaValidationAppearanceContent.parse(
+                req.body.data
+            );
         }
         next();
     } catch (error) {
