@@ -75,8 +75,23 @@ export const schemaValidationArtworks = z.object({
     }),
 });
 
+export const schemaValidationAppearanceContent = z.object({
+    highlightColor: z.string().default('#000000'),
+    hideElements: z.object({
+        filters: z.boolean().default(false),
+        order: z.boolean().default(false),
+        header: z.boolean().default(false),
+        recentlySold: z.boolean().default(false),
+        artworkSpotlight: z.boolean().default(false),
+        artistSpotlight: z.boolean().default(false),
+        pageNavigation: z.boolean().default(false),
+        cardDetails: z.boolean().default(false),
+        assets: z.boolean().default(false),
+    }),
+});
+
 export const schemaValidationStepName = z.object({
-    stepName: z.enum(['organization', 'artworks']),
+    stepName: z.enum(['organization', 'artworks', 'appearanceContent']),
     data: z.any(),
 });
 
