@@ -738,20 +738,6 @@ export const findAssetsByCreatorName = ({
         ])
         .toArray();
 
-// return a stream of assets from database
-export const findAssets = async ({
-    query,
-    sort,
-    skip,
-    limit,
-}: FindAssetsParams) => {
-    let result = assets().find(query, {}).sort(sort).skip(skip);
-
-    if (limit) result = result.limit(limit);
-
-    return result.stream();
-};
-
 export const findAssetsById = async ({ id }: FindAssetsByIdParams) =>
     assets().findOne({ _id: new ObjectId(id) });
 
@@ -1349,3 +1335,6 @@ export const updateAssetsUsername = async ({
         { _id: { $in: data.map((item) => new ObjectId(item._id)) } },
         { $set: { 'creator.username': username } }
     );
+
+export const findAssets = async ({ query }: FindAssetsParams) =>
+    assets().find(query).toArray();

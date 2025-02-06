@@ -1036,21 +1036,105 @@ route.get('/lastSold', async (req, res) => {
     }
 });
 
-route.get('/spotlight', async (req, res) => {
+route.post('/spotlight', async (req, res) => {
     try {
-        const nudity = req.query.nudity ?? 'no';
+        const { query = {} as any } = req.body as unknown as {
+            query: Record<string, unknown>;
+        };
+
+        const parsedQuery = {
+            ...query,
+            ...conditionsToShowAssets,
+        };
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: `^${creator}$`, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
+            const subjects =
+                query['assetMetadata.taxonomy.formData.subject'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
+            if (Array.isArray(parsedQuery.$and)) {
+                subjects.forEach((subject: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.subject': {
+                            $elemMatch: {
+                                $regex: subject,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = subjects.map((subject: string) => ({
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $elemMatch: {
+                            $regex: subject,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
+            const collections =
+                query['assetMetadata.taxonomy.formData.collections'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
+            if (Array.isArray(parsedQuery.$and)) {
+                collections.forEach((collection: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.collections': {
+                            $elemMatch: {
+                                $regex: collection,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = collections.map((collection: string) => ({
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $elemMatch: {
+                            $regex: collection,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
 
         const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
 
         const payload = JSON.parse(spotlight) as Spotlight[];
 
+        parsedQuery.$and = [
+            ...(parsedQuery.$and || []),
+            {
+                _id: {
+                    $in: payload.map((v) => new ObjectId(v._id)),
+                },
+            },
+        ];
+
         let response: Spotlight[] = [];
 
-        if (nudity === 'yes') {
-            response = payload;
-        } else {
-            response = payload.filter((asset) => asset.nudity === 'no');
-        }
+        const assets = await model.findAssets({
+            query: parsedQuery,
+        });
+
+        response = payload.filter((asset) =>
+            assets.some((v) => v._id.toString() === asset._id.toString())
+        );
 
         res.json({
             code: 'vitruveo.studio.api.assets.spotlight.success',
