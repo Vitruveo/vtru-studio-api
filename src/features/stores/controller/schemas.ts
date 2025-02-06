@@ -15,7 +15,6 @@ export const schemaValidationForCreateStores = z.object({
             }),
         })
         .default({}),
-    cloneId: z.string().optional(),
 });
 
 export const schemaValidationOrganization = z.object({

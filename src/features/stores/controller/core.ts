@@ -29,64 +29,10 @@ route.use(middleware.checkAuth);
 
 route.post('/', validateBodyForCreateStores, async (req, res) => {
     try {
-        let clone: {
-            organization: model.StoresDocument['organization'];
-        } | null = null;
-
         const payload = req.body;
-
-        if (payload.cloneId) {
-            const store = await model.findStoresById(payload.cloneId);
-
-            if (!store) {
-                res.status(404).json({
-                    code: 'vitruveo.studio.api.stores.clone.not.found',
-                    message: 'Clone not found',
-                    transaction: nanoid(),
-                } as APIResponse);
-                return;
-            }
-
-            if (store.framework.createdBy !== req.auth.id) {
-                res.status(403).json({
-                    code: 'vitruveo.studio.api.stores.clone.forbidden',
-                    message: 'Clone forbidden',
-                    transaction: nanoid(),
-                } as APIResponse);
-                return;
-            }
-
-            if (!store?.actions) {
-                store.actions = { countClone: 0 };
-            } else if (!store.actions.countClone) {
-                store.actions.countClone = 0;
-            }
-
-            store.actions.countClone += 1;
-
-            await model.updateStores({
-                id: store._id.toString(),
-                data: store,
-            });
-
-            clone = {
-                organization: {
-                    ...store.organization,
-                    formats: {
-                        logo: {
-                            horizontal: null,
-                            square: null,
-                        },
-                        banner: null,
-                    },
-                },
-            };
-            clone.organization.url += `-${store.actions.countClone}`;
-        }
 
         const response = await model.createStores({
             ...payload,
-            ...(clone && clone),
         });
 
         res.json({
@@ -100,6 +46,75 @@ route.post('/', validateBodyForCreateStores, async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.stores.failed',
             message: `Creator stores failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/clone/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const store = await model.findStoresById(id);
+
+        if (!store) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.stores.clone.not.found',
+                message: 'Clone not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (store.framework.createdBy !== req.auth.id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.stores.clone.forbidden',
+                message: 'Clone forbidden',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (!store?.actions) {
+            store.actions = { countClone: 0 };
+        } else if (!store.actions.countClone) {
+            store.actions.countClone = 0;
+        }
+
+        store.actions.countClone += 1;
+
+        await model.updateStores({
+            id: store._id.toString(),
+            data: store,
+        });
+
+        store.organization!.url += `-${store.actions.countClone}`;
+        store.organization!.formats = {
+            logo: { horizontal: null, square: null },
+            banner: null,
+        };
+        store.status = 'draft';
+        store.framework = model.FrameworkSchema.parse({
+            createdBy: req.auth.id,
+            updatedBy: req.auth.id,
+        });
+
+        const response = await model.createStores({
+            ...store,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.stores.clone.success',
+            message: 'Clone stores success',
+            transaction: nanoid(),
+            data: response,
+        } as APIResponse);
+    } catch (error) {
+        logger('Clone stores failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.clone.failed',
+            message: `Clone stores failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
@@ -258,7 +273,7 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
         const { hasBanner, ...data } = payload.data;
 
         if (payload.stepName === 'organization') {
-            data.formats = stores.organization.formats;
+            data.formats = stores.organization?.formats;
         }
 
         if (payload.stepName === 'organization' && !hasBanner) {
