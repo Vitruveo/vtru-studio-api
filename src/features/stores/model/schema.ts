@@ -105,9 +105,9 @@ export const StoreStatusEnum = z.enum([
 ]);
 
 export const StoresSchema = z.object({
-    organization: OrganizationSchema,
-    artworks: ArtworksSchema,
-    appearanceContent: AppearanceContentSchema,
+    organization: OrganizationSchema.optional(),
+    artworks: ArtworksSchema.optional(),
+    appearanceContent: AppearanceContentSchema.optional(),
     hash: z.string().default(''),
     framework: FrameworkSchema.default({}),
     status: StoreStatusEnum.default('draft'),
