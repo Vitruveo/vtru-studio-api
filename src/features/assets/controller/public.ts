@@ -1044,7 +1044,6 @@ route.post('/spotlight', async (req, res) => {
 
         const parsedQuery = {
             ...query,
-            ...conditionsToShowAssets,
         };
 
         if (query['assetMetadata.creators.formData.name']) {
@@ -1111,6 +1110,15 @@ route.post('/spotlight', async (req, res) => {
                     },
                 }));
             }
+        }
+
+        if ('assetMetadata.taxonomy.formData.nudity' in parsedQuery) {
+            const currentNudity =
+                parsedQuery['assetMetadata.taxonomy.formData.nudity'];
+            if (currentNudity?.$in?.includes('yes'))
+                parsedQuery['assetMetadata.taxonomy.formData.nudity'] = {
+                    $in: ['yes', 'no'],
+                };
         }
 
         const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
