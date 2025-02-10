@@ -47,6 +47,11 @@ route.get('/validate/:hash', async (req, res) => {
             code: 'vitruveo.studio.api.stores.validate.success',
             message: 'Store found',
             transaction: nanoid(),
+            data: {
+                title: store.organization?.name,
+                description: store.organization?.description,
+                image: store.organization?.formats.logo.square?.path,
+            },
         } as APIResponse);
     } catch (error) {
         logger('Validate stores failed: %O', error);
