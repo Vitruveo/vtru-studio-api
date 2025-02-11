@@ -36,6 +36,7 @@ import type {
     CountAssetsWithLicenseArtCardsParams,
     FindLastConsignsParams,
     UpdateManyAssetsAutoStakeParams,
+    FindLastSoldAssets,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1087,11 +1088,12 @@ export const removeUploadedMediaKeys = async ({
     return result;
 };
 
-export const findLastSoldAssets = () =>
+export const findLastSoldAssets = ({ query }: FindLastSoldAssets) =>
     assets()
         .aggregate([
             {
                 $match: {
+                    ...query,
                     mintExplorer: { $exists: true },
                     'assetMetadata.taxonomy.formData.nudity': 'no',
                     'consignArtwork.status': 'active',

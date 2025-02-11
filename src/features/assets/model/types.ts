@@ -196,3 +196,7 @@ export interface UpateAssetsUsernameParams {
 export interface FindAssetsParams {
     query: Record<string, unknown>;
 }
+
+export interface FindLastSoldAssets {
+    query: Record<string, unknown>;
+}
