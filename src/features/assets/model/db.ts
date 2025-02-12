@@ -34,6 +34,9 @@ import type {
     FindAssetsWithArtCardsPaginatedParams,
     UpdateAssetArtCardsStatusParams,
     CountAssetsWithLicenseArtCardsParams,
+    FindLastConsignsParams,
+    UpdateManyAssetsAutoStakeParams,
+    FindLastSoldAssets,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -736,24 +739,32 @@ export const findAssetsByCreatorName = ({
         ])
         .toArray();
 
-// return a stream of assets from database
-export const findAssets = async ({
-    query,
-    sort,
-    skip,
-    limit,
-}: FindAssetsParams) => {
-    let result = assets().find(query, {}).sort(sort).skip(skip);
+export const findAssetsById = async ({ id }: FindAssetsByIdParams) =>
+    assets().findOne({ _id: new ObjectId(id) });
 
-    if (limit) result = result.limit(limit);
-
-    return result.stream();
-};
-
-export const findAssetsById = async ({ id }: FindAssetsByIdParams) => {
-    const result = await assets().findOne({ _id: new ObjectId(id) });
-    return result;
-};
+export const findLastConsigns = async ({
+    id,
+    creatorId,
+}: FindLastConsignsParams) =>
+    assets()
+        .aggregate([
+            {
+                $match: {
+                    _id: { $ne: new ObjectId(id) },
+                    'consignArtwork.status': 'active',
+                    'framework.createdBy': creatorId,
+                    mintExplorer: { $exists: false },
+                },
+            },
+            { $sort: { 'consignArtwork.createdAt': -1 } },
+            { $limit: 5 },
+            {
+                $project: {
+                    path: '$formats.preview.path',
+                },
+            },
+        ])
+        .toArray();
 
 export const countAssetsWithLicenseArtCards = async ({
     status,
@@ -1001,6 +1012,17 @@ export const updateManyAssetsStatus = async ({
     return result;
 };
 
+export const updateManyAssetsAutoStake = async ({
+    creatorId,
+    autoStake,
+}: UpdateManyAssetsAutoStakeParams) => {
+    const result = await assets().updateMany(
+        { 'framework.createdBy': creatorId },
+        { $set: { 'licenses.nft.autoStake': autoStake } }
+    );
+    return result;
+};
+
 export const findAssetsByPath = ({
     path,
     query,
@@ -1066,11 +1088,12 @@ export const removeUploadedMediaKeys = async ({
     return result;
 };
 
-export const findLastSoldAssets = () =>
+export const findLastSoldAssets = ({ query }: FindLastSoldAssets) =>
     assets()
         .aggregate([
             {
                 $match: {
+                    ...query,
                     mintExplorer: { $exists: true },
                     'assetMetadata.taxonomy.formData.nudity': 'no',
                     'consignArtwork.status': 'active',
@@ -1314,3 +1337,6 @@ export const updateAssetsUsername = async ({
         { _id: { $in: data.map((item) => new ObjectId(item._id)) } },
         { $set: { 'creator.username': username } }
     );
+
+export const findAssets = async ({ query }: FindAssetsParams) =>
+    assets().find(query).toArray();

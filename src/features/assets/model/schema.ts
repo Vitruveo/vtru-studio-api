@@ -104,6 +104,7 @@ export const AssetsSchema = z.object({
             version: z.string(),
             added: z.boolean(),
             license: z.string(),
+            autoStake: z.boolean().optional(),
             elastic: z.object({
                 editionPrice: z.number(),
                 numberOfEditions: z.number(), // TODO: Remove this field and use just availableLicenses

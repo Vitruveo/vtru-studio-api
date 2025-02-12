@@ -382,6 +382,34 @@ route.put(
     }
 );
 
+route.put('/changeAutoStakeInAllAssets', async (req, res) => {
+    const body = req.body as {
+        autoStake: boolean;
+    };
+
+    try {
+        const result = await model.updateManyAssetsAutoStake({
+            creatorId: req.auth.id,
+            autoStake: body.autoStake,
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.updateAutoStake.success',
+            message: 'Update status success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult>);
+    } catch (error) {
+        logger('Update status assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.updateAutoStake.failed',
+            message: `Update status failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
 route.put(
     '/nudity',
     needsToBeOwner({ permissions: ['asset:admin'] }),
@@ -914,7 +942,7 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
     } finally {
         await Promise.all(
             Object.values(files).map((fileName) =>
-                fs.unlink(fileName).catch(() => { })
+                fs.unlink(fileName).catch(() => {})
             )
         );
         res.end();

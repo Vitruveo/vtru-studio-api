@@ -6,13 +6,6 @@ export interface CreateAssetsParams {
     asset: AssetsDocument;
 }
 
-export interface FindAssetsParams {
-    query: any;
-    sort: any;
-    skip: number;
-    limit?: number;
-}
-
 export interface FindAssetsGroupPaginatedParams {
     query: {
         [key: string]: unknown;
@@ -91,6 +84,11 @@ export interface FindAssetsByIdParams {
     id: string | ObjectId;
 }
 
+export interface FindLastConsignsParams {
+    id: string | ObjectId;
+    creatorId: string;
+}
+
 export interface CountAssetsWithLicenseArtCardsParams {
     status: string;
 }
@@ -127,6 +125,11 @@ export interface UpdateManyAssetSpotlightParams {
 export interface UpdateManyAssetsStatusParams {
     ids: string[] | ObjectId[];
     status: string;
+}
+
+export interface UpdateManyAssetsAutoStakeParams {
+    creatorId: string | ObjectId;
+    autoStake: boolean;
 }
 
 export interface UpdateManyAssetsNudityParams {
@@ -188,4 +191,12 @@ export interface CountArtsByCreatorParams {
 export interface UpateAssetsUsernameParams {
     data: AssetsDocument[];
     username: string;
+}
+
+export interface FindAssetsParams {
+    query: Record<string, unknown>;
+}
+
+export interface FindLastSoldAssets {
+    query: Record<string, unknown>;
 }

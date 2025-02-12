@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FormatSchema } from '../model';
+import { FormatSchema, StoreStatusEnum } from '../model';
 
 export const schemaValidationForCreateStores = z.object({
     organization: z
@@ -15,7 +15,6 @@ export const schemaValidationForCreateStores = z.object({
             }),
         })
         .default({}),
-    cloneId: z.string().optional(),
 });
 
 export const schemaValidationOrganization = z.object({
@@ -24,6 +23,7 @@ export const schemaValidationOrganization = z.object({
     description: z.string().nullable().default(null),
     markup: z.number().default(0),
     formats: FormatSchema.nullable().default(null),
+    hasBanner: z.boolean().nullable().default(null),
 });
 
 export const schemaValidationArtworks = z.object({
@@ -74,7 +74,26 @@ export const schemaValidationArtworks = z.object({
     }),
 });
 
+export const schemaValidationAppearanceContent = z.object({
+    highlightColor: z.string().default('#000000'),
+    hideElements: z.object({
+        filters: z.boolean().default(false),
+        order: z.boolean().default(false),
+        header: z.boolean().default(false),
+        recentlySold: z.boolean().default(false),
+        artworkSpotlight: z.boolean().default(false),
+        artistSpotlight: z.boolean().default(false),
+        pageNavigation: z.boolean().default(false),
+        cardDetails: z.boolean().default(false),
+        assets: z.boolean().default(false),
+    }),
+});
+
 export const schemaValidationStepName = z.object({
-    stepName: z.enum(['organization', 'artworks']),
+    stepName: z.enum(['organization', 'artworks', 'appearanceContent']),
     data: z.any(),
+});
+
+export const schemaValidationStatus = z.object({
+    status: StoreStatusEnum,
 });

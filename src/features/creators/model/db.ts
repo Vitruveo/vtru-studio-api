@@ -35,6 +35,7 @@ import type {
     FindTruLevelParams,
     UpdateLicenseParams,
     CountCreatorsParams,
+    UpdateAutoStakeParams,
 } from './types';
 import { getDb, ObjectId } from '../../../services/mongo';
 
@@ -185,6 +186,17 @@ export const updateAvatar = async ({ id, fileId }: UpdateAvatarParams) => {
     const result = await creators().updateOne(
         { _id: new ObjectId(id) },
         { $set: { 'profile.avatar': fileId } }
+    );
+    return result;
+};
+
+export const updateAutoStake = async ({
+    id,
+    autoStake,
+}: UpdateAutoStakeParams) => {
+    const result = await creators().updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { autoStake } }
     );
     return result;
 };
