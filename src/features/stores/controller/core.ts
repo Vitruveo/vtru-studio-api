@@ -280,6 +280,10 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
             data.formats.banner = null;
         }
 
+        if (payload.stepName === 'organization' && !hasBanner) {
+            data.formats.banner = null;
+        }
+
         await model.updateStepStores({
             id: req.params.id,
             stepName: payload.stepName,
