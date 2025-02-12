@@ -101,6 +101,7 @@ route.get('/', async (req, res) => {
         let limit = parseInt(req.query.limit as string, 10) || 24;
         const page = parseInt(req.query.page as string, 10) || 1;
         const sort = req.query.sort as string;
+        const search = req.query.search as string;
 
         if (limit > 200) {
             limit = 200;
@@ -109,6 +110,10 @@ route.get('/', async (req, res) => {
         const query: any = {
             status: 'active',
         };
+
+        if (search && search?.length) {
+            query.search = search;
+        }
 
         const total = await model.countStores({ query });
         const totalPage = Math.ceil(total / limit);
