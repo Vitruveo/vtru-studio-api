@@ -78,7 +78,7 @@ export interface CountAssetsByCreatorIdParams
     grouped?: string;
 }
 export interface CountAssetsParams
-    extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
+    extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> { }
 
 export interface FindAssetsByIdParams {
     id: string | ObjectId;
