@@ -1129,6 +1129,7 @@ export const findLastSoldAssets = ({ query }: FindLastSoldAssets) =>
                     price: '$licenses.nft.single.editionPrice',
                     username: '$creator.username',
                     vault: '$creator.vault',
+                    framework: '$framework',
                 },
             },
         ])

@@ -1223,9 +1223,19 @@ route.post('/spotlight', async (req, res) => {
             query: parsedQuery,
         });
 
-        response = payload.filter((asset) =>
-            assets.some((v) => v._id.toString() === asset._id.toString())
-        );
+        response = payload
+            .filter((asset) =>
+                assets.some((v) => v._id.toString() === asset._id.toString())
+            )
+            .map((v) => {
+                const framework = assets.find(
+                    (asset) => asset._id.toString() === v._id.toString()
+                )?.framework;
+                if (framework) {
+                    return { ...v, framework };
+                }
+                return v;
+            });
 
         res.json({
             code: 'vitruveo.studio.api.assets.spotlight.success',
