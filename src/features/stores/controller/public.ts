@@ -5,6 +5,7 @@ import { Router } from 'express';
 import * as model from '../model';
 
 import { APIResponse } from '../../../services';
+import { querySortStores } from '../../assets/utils/queries';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
@@ -19,7 +20,6 @@ route.get('/validate/:hash', async (req, res) => {
                 message: 'Invalid hash',
                 transaction: nanoid(),
             } as APIResponse);
-
             return;
         }
 
@@ -31,7 +31,15 @@ route.get('/validate/:hash', async (req, res) => {
                 message: 'Store not found',
                 transaction: nanoid(),
             } as APIResponse);
+            return;
+        }
 
+        if (store.status !== 'active') {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.stores.validate.forbidden',
+                message: 'Store is not active',
+                transaction: nanoid(),
+            } as APIResponse);
             return;
         }
 
@@ -39,6 +47,11 @@ route.get('/validate/:hash', async (req, res) => {
             code: 'vitruveo.studio.api.stores.validate.success',
             message: 'Store found',
             transaction: nanoid(),
+            data: {
+                title: store.organization?.name,
+                description: store.organization?.description,
+                image: store.organization?.formats.logo.square?.path,
+            },
         } as APIResponse);
     } catch (error) {
         logger('Validate stores failed: %O', error);
@@ -83,4 +96,56 @@ route.get('/:subdomain', async (req, res) => {
     }
 });
 
+route.get('/', async (req, res) => {
+    try {
+        let limit = parseInt(req.query.limit as string, 10) || 24;
+        const page = parseInt(req.query.page as string, 10) || 1;
+        const sort = req.query.sort as string;
+        const search = req.query.search as string;
+
+        if (limit > 200) {
+            limit = 200;
+        }
+
+        const query: any = {
+            status: 'active',
+        };
+
+        if (search && search?.length) {
+            query.search = search;
+        }
+
+        const total = await model.countStores({ query });
+        const totalPage = Math.ceil(total / limit);
+
+        const sortQuery = querySortStores(sort);
+        const stores = await model.findStoresPaginated({
+            query,
+            skip: (page - 1) * limit,
+            limit,
+            sort: sortQuery,
+        });
+
+        res.status(200).json({
+            code: 'vitruveo.studio.api.stores.list.success',
+            message: 'Stores found',
+            data: {
+                data: stores,
+                page,
+                totalPage,
+                total,
+                limit,
+            },
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('List stores failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.list.failed',
+            message: `List failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 export { route };

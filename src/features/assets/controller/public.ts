@@ -1015,9 +1015,92 @@ route.get('/creators', async (req, res) => {
     }
 });
 
-route.get('/lastSold', async (req, res) => {
+route.post('/lastSold', async (req, res) => {
     try {
-        const assets = await model.findLastSoldAssets();
+        const { query = {} as any } = req.body as unknown as {
+            query: Record<string, unknown>;
+        };
+
+        const parsedQuery = {
+            ...query,
+        };
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: `^${creator}$`, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
+            const subjects =
+                query['assetMetadata.taxonomy.formData.subject'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
+            if (Array.isArray(parsedQuery.$and)) {
+                subjects.forEach((subject: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.subject': {
+                            $elemMatch: {
+                                $regex: subject,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = subjects.map((subject: string) => ({
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $elemMatch: {
+                            $regex: subject,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
+            const collections =
+                query['assetMetadata.taxonomy.formData.collections'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
+            if (Array.isArray(parsedQuery.$and)) {
+                collections.forEach((collection: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.collections': {
+                            $elemMatch: {
+                                $regex: collection,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = collections.map((collection: string) => ({
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $elemMatch: {
+                            $regex: collection,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+
+        if ('assetMetadata.taxonomy.formData.nudity' in parsedQuery) {
+            const currentNudity =
+                parsedQuery['assetMetadata.taxonomy.formData.nudity'];
+            if (currentNudity?.$in?.includes('yes'))
+                parsedQuery['assetMetadata.taxonomy.formData.nudity'] = {
+                    $in: ['yes', 'no'],
+                };
+        }
+
+        const assets = await model.findLastSoldAssets({ query: parsedQuery });
 
         res.json({
             code: 'vitruveo.studio.api.assets.lastSold.success',
@@ -1036,21 +1119,123 @@ route.get('/lastSold', async (req, res) => {
     }
 });
 
-route.get('/spotlight', async (req, res) => {
+route.post('/spotlight', async (req, res) => {
     try {
-        const nudity = req.query.nudity ?? 'no';
+        const { query = {} as any } = req.body as unknown as {
+            query: Record<string, unknown>;
+        };
+
+        const parsedQuery = {
+            ...query,
+        };
+
+        if (query['assetMetadata.creators.formData.name']) {
+            const creators = query['assetMetadata.creators.formData.name'].$in;
+            parsedQuery['assetMetadata.creators.formData'] = {
+                $elemMatch: {
+                    $or: creators.map((creator: string) => ({
+                        name: { $regex: `^${creator}$`, $options: 'i' },
+                    })),
+                },
+            };
+            delete parsedQuery['assetMetadata.creators.formData.name'];
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
+            const subjects =
+                query['assetMetadata.taxonomy.formData.subject'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
+            if (Array.isArray(parsedQuery.$and)) {
+                subjects.forEach((subject: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.subject': {
+                            $elemMatch: {
+                                $regex: subject,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = subjects.map((subject: string) => ({
+                    'assetMetadata.taxonomy.formData.subject': {
+                        $elemMatch: {
+                            $regex: subject,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
+            const collections =
+                query['assetMetadata.taxonomy.formData.collections'].$in;
+            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
+            if (Array.isArray(parsedQuery.$and)) {
+                collections.forEach((collection: string) => {
+                    // @ts-ignore
+                    parsedQuery.$and.push({
+                        'assetMetadata.taxonomy.formData.collections': {
+                            $elemMatch: {
+                                $regex: collection,
+                                $options: 'i',
+                            },
+                        },
+                    });
+                });
+            } else {
+                parsedQuery.$and = collections.map((collection: string) => ({
+                    'assetMetadata.taxonomy.formData.collections': {
+                        $elemMatch: {
+                            $regex: collection,
+                            $options: 'i',
+                        },
+                    },
+                }));
+            }
+        }
+
+        if ('assetMetadata.taxonomy.formData.nudity' in parsedQuery) {
+            const currentNudity =
+                parsedQuery['assetMetadata.taxonomy.formData.nudity'];
+            if (currentNudity?.$in?.includes('yes'))
+                parsedQuery['assetMetadata.taxonomy.formData.nudity'] = {
+                    $in: ['yes', 'no'],
+                };
+        }
 
         const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
 
         const payload = JSON.parse(spotlight) as Spotlight[];
 
+        parsedQuery.$and = [
+            ...(parsedQuery.$and || []),
+            {
+                _id: {
+                    $in: payload.map((v) => new ObjectId(v._id)),
+                },
+            },
+        ];
+
         let response: Spotlight[] = [];
 
-        if (nudity === 'yes') {
-            response = payload;
-        } else {
-            response = payload.filter((asset) => asset.nudity === 'no');
-        }
+        const assets = await model.findAssets({
+            query: parsedQuery,
+        });
+
+        response = payload
+            .filter((asset) =>
+                assets.some((v) => v._id.toString() === asset._id.toString())
+            )
+            .map((v) => {
+                const framework = assets.find(
+                    (asset) => asset._id.toString() === v._id.toString()
+                )?.framework;
+                if (framework) {
+                    return { ...v, framework };
+                }
+                return v;
+            });
 
         res.json({
             code: 'vitruveo.studio.api.assets.spotlight.success',
@@ -1069,7 +1254,7 @@ route.get('/spotlight', async (req, res) => {
     }
 });
 
-route.get('/artistSpotlight', async (req, res) => {
+route.get('/artistSpotlight/:name?', async (req, res) => {
     try {
         const artistSpotlight = await readFile(
             join(DIST, 'artistSpotlight.json'),
@@ -1077,11 +1262,36 @@ route.get('/artistSpotlight', async (req, res) => {
         );
         const payload = JSON.parse(artistSpotlight) as ArtistSpotlight[];
 
+        if (!req.params.name) {
+            res.json({
+                code: 'vitruveo.studio.api.assets.artistSpotlight.success',
+                message: 'Reader artist Spotlight success',
+                transaction: nanoid(),
+                data: payload,
+            } as APIResponse);
+            return;
+        }
+
+        const assets = await model.findAssets({
+            query: {
+                'framework.createdBy': {
+                    $in: payload.map((v) => v._id),
+                },
+                'assetMetadata.creators.formData.name': {
+                    $regex: new RegExp(`(^| )${req.params.name}`, 'i'),
+                },
+            },
+        });
+
         res.json({
             code: 'vitruveo.studio.api.assets.artistSpotlight.success',
             message: 'Reader artist Spotlight success',
             transaction: nanoid(),
-            data: payload,
+            data: payload.filter((v) =>
+                assets.find(
+                    (asset) => asset.framework.createdBy === v._id.toString()
+                )
+            ),
         } as APIResponse);
     } catch (error) {
         logger('Reader artist Spotlight failed: %O', error);

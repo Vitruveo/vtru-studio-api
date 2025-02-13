@@ -27,6 +27,69 @@ export const OrganizationSchema = z.object({
     }),
 });
 
+export const ArtworksSchema = z.object({
+    general: z.object({
+        shortcuts: z
+            .object({
+                hideNudity: z.boolean().optional(),
+                hideAI: z.boolean().optional(),
+                photography: z.boolean().optional(),
+                animation: z.boolean().optional(),
+                physicalArt: z.boolean().optional(),
+                digitalArt: z.boolean().optional(),
+                includeSold: z.boolean().optional(),
+                hasBTS: z.boolean().optional(),
+            })
+            .optional(),
+        licenses: z
+            .object({
+                minPrice: z.number().optional(),
+                maxPrice: z.number().optional(),
+                enabled: z.boolean().optional(),
+            })
+            .optional(),
+    }),
+    context: z.object({
+        culture: z.array(z.string()).optional(),
+        mood: z.array(z.string()).optional(),
+        orientation: z.array(z.string()).optional(),
+        precision: z.number().optional(),
+        colors: z.array(z.string()).optional(),
+    }),
+    taxonomy: z.object({
+        objectType: z.array(z.string()).optional(),
+        tags: z.array(z.string()).optional(),
+        collections: z.array(z.string()).optional(),
+        aiGeneration: z.array(z.string()).optional(),
+        arEnabled: z.array(z.string()).optional(),
+        nudity: z.array(z.string()).optional(),
+        category: z.array(z.string()).optional(),
+        medium: z.array(z.string()).optional(),
+        style: z.array(z.string()).optional(),
+        subject: z.array(z.string()).optional(),
+    }),
+    artists: z.object({
+        name: z.array(z.string()).optional(),
+        nationality: z.array(z.string()).optional(),
+        residence: z.array(z.string()).optional(),
+    }),
+});
+
+export const AppearanceContentSchema = z.object({
+    highlightColor: z.string().default('#000000'),
+    hideElements: z.object({
+        filters: z.boolean().default(false),
+        order: z.boolean().default(false),
+        header: z.boolean().default(false),
+        recentlySold: z.boolean().default(false),
+        artworkSpotlight: z.boolean().default(false),
+        artistSpotlight: z.boolean().default(false),
+        pageNavigation: z.boolean().default(false),
+        cardDetails: z.boolean().default(false),
+        assets: z.boolean().default(false),
+    }),
+});
+
 export const FrameworkSchema = z.object({
     createdAt: z.date().default(new Date()),
     updatedAt: z.date().default(new Date()),
@@ -34,10 +97,17 @@ export const FrameworkSchema = z.object({
     updatedBy: z.string().nullable().default(null),
 });
 
-export const StoreStatusEnum = z.enum(['draft', 'active', 'inactive']);
+export const StoreStatusEnum = z.enum([
+    'draft',
+    'pending',
+    'active',
+    'inactive',
+]);
 
 export const StoresSchema = z.object({
-    organization: OrganizationSchema,
+    organization: OrganizationSchema.optional(),
+    artworks: ArtworksSchema.optional(),
+    appearanceContent: AppearanceContentSchema.optional(),
     hash: z.string().default(''),
     framework: FrameworkSchema.default({}),
     status: StoreStatusEnum.default('draft'),
@@ -45,4 +115,5 @@ export const StoresSchema = z.object({
 });
 
 export type Stores = z.infer<typeof StoresSchema>;
+export type StoreStatus = z.infer<typeof StoreStatusEnum>;
 export type StoresDocument = Stores & { _id: string | ObjectId };

@@ -6,13 +6,6 @@ export interface CreateAssetsParams {
     asset: AssetsDocument;
 }
 
-export interface FindAssetsParams {
-    query: any;
-    sort: any;
-    skip: number;
-    limit?: number;
-}
-
 export interface FindAssetsGroupPaginatedParams {
     query: {
         [key: string]: unknown;
@@ -198,4 +191,12 @@ export interface CountArtsByCreatorParams {
 export interface UpateAssetsUsernameParams {
     data: AssetsDocument[];
     username: string;
+}
+
+export interface FindAssetsParams {
+    query: Record<string, unknown>;
+}
+
+export interface FindLastSoldAssets {
+    query: Record<string, unknown>;
 }

@@ -34,8 +34,9 @@ import type {
     FindAssetsWithArtCardsPaginatedParams,
     UpdateAssetArtCardsStatusParams,
     CountAssetsWithLicenseArtCardsParams,
-    UpdateManyAssetsAutoStakeParams,
     FindLastConsignsParams,
+    UpdateManyAssetsAutoStakeParams,
+    FindLastSoldAssets,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -738,20 +739,6 @@ export const findAssetsByCreatorName = ({
         ])
         .toArray();
 
-// return a stream of assets from database
-export const findAssets = async ({
-    query,
-    sort,
-    skip,
-    limit,
-}: FindAssetsParams) => {
-    let result = assets().find(query, {}).sort(sort).skip(skip);
-
-    if (limit) result = result.limit(limit);
-
-    return result.stream();
-};
-
 export const findAssetsById = async ({ id }: FindAssetsByIdParams) =>
     assets().findOne({ _id: new ObjectId(id) });
 
@@ -1101,11 +1088,12 @@ export const removeUploadedMediaKeys = async ({
     return result;
 };
 
-export const findLastSoldAssets = () =>
+export const findLastSoldAssets = ({ query }: FindLastSoldAssets) =>
     assets()
         .aggregate([
             {
                 $match: {
+                    ...query,
                     mintExplorer: { $exists: true },
                     'assetMetadata.taxonomy.formData.nudity': 'no',
                     'consignArtwork.status': 'active',
@@ -1141,6 +1129,7 @@ export const findLastSoldAssets = () =>
                     price: '$licenses.nft.single.editionPrice',
                     username: '$creator.username',
                     vault: '$creator.vault',
+                    framework: '$framework',
                 },
             },
         ])
@@ -1349,3 +1338,6 @@ export const updateAssetsUsername = async ({
         { _id: { $in: data.map((item) => new ObjectId(item._id)) } },
         { $set: { 'creator.username': username } }
     );
+
+export const findAssets = async ({ query }: FindAssetsParams) =>
+    assets().find(query).toArray();

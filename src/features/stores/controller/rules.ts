@@ -5,9 +5,11 @@ import debug from 'debug';
 
 import { APIResponse } from '../../../services';
 import {
+    schemaValidationAppearanceContent,
     schemaValidationArtworks,
     schemaValidationForCreateStores,
     schemaValidationOrganization,
+    schemaValidationStatus,
     schemaValidationStepName,
 } from './schemas';
 import { FrameworkSchema } from '../model';
@@ -148,9 +150,43 @@ export const validateBodyForUpdateStepStores = async (
         if (req.body.stepName === 'artworks') {
             req.body.data = schemaValidationArtworks.parse(req.body.data);
         }
+        if (req.body.stepName === 'appearanceContent') {
+            req.body.data = schemaValidationAppearanceContent.parse(
+                req.body.data
+            );
+        }
         next();
     } catch (error) {
         logger('Error validating body for update step stores', error);
+        res.status(400).json({
+            code: 'vitruveo.studio.api.stores.update.failed',
+            message: error instanceof Error ? error.message : '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateStatusStore = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'PATCH') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.stores.update.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        schemaValidationStatus.parse(req.body);
+        next();
+    } catch (error) {
+        logger('Error validating body for update status store', error);
         res.status(400).json({
             code: 'vitruveo.studio.api.stores.update.failed',
             message: error instanceof Error ? error.message : '',
