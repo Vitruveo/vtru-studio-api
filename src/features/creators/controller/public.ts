@@ -16,6 +16,7 @@ const route = Router();
 
 route.get('/stacks', async (req, res) => {
     try {
+        const stackTitle = req.query.search as string;
         const sort = (req.query.sort as string) || 'latest';
         const page = parseInt(req.query.page as string, 10) || 1;
         let limit = parseInt(req.query.limit as string, 10) || 25;
@@ -29,6 +30,7 @@ route.get('/stacks', async (req, res) => {
 
         const stacks = await model.findCreatorsStacks({
             query,
+            stackTitle,
             skip: (page - 1) * limit,
             limit,
             sort: sortQuery,

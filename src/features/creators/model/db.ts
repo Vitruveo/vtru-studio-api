@@ -340,6 +340,7 @@ export const countAllStacks = async ({ type }: CountAllStacksParams) =>
 
 export const findCreatorsStacks = async ({
     query,
+    stackTitle,
     skip,
     limit,
     sort,
@@ -405,7 +406,13 @@ export const findCreatorsStacks = async ({
         { $unwind: '$stacks' },
         {
             $match: {
-                'stacks.title': { $exists: true, $ne: null, $nin: [''] },
+                'stacks.title': {
+                    $regex: stackTitle ?? '.*',
+                    $options: 'i',
+                    $exists: true,
+                    $ne: null,
+                    $nin: [''],
+                },
                 $or: [
                     { 'stacks.enable': { $exists: false } },
                     { 'stacks.enable': true },
