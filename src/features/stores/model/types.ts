@@ -23,6 +23,7 @@ export interface UpdateStoresParams {
 export interface UpdateStatusStoreParams {
     id: string;
     status: StoreStatus;
+    moderatorId: string;
 }
 
 export interface UpdateStepStoresParams {
