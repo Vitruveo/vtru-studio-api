@@ -156,6 +156,7 @@ export interface UpdateCreatorSearchSlideshowParams {
 
 export interface FindCreatorsStacksParams {
     query: any;
+    stackTitle?: string;
     sort: Sort;
     skip: number;
     limit: number;

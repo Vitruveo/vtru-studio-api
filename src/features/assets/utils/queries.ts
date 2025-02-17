@@ -34,35 +34,36 @@ export interface QueryByTitleOrDescOrCreatorParams {
 export const queryByTitleOrDescOrCreator = ({
     name,
 }: QueryByTitleOrDescOrCreatorParams) => [
-    {
-        'assetMetadata.context.formData.title': {
-            $regex: name,
-            $options: 'i',
+        {
+            'assetMetadata.context.formData.title': {
+                $regex: name,
+                $options: 'i',
+            },
         },
-    },
-    {
-        'assetMetadata.context.formData.description': {
-            $regex: name,
-            $options: 'i',
+        {
+            'assetMetadata.context.formData.description': {
+                $regex: name,
+                $options: 'i',
+            },
         },
-    },
-    {
-        'assetMetadata.creators.formData': {
-            $elemMatch: {
-                name: {
-                    $regex: name,
-                    $options: 'i',
+        {
+            'assetMetadata.creators.formData': {
+                $elemMatch: {
+                    name: {
+                        $regex: name,
+                        $options: 'i',
+                    },
                 },
             },
         },
-    },
-    {
-        'creator.username': {
-            $regex: name,
-            $options: 'i',
+        {
+            'creator.username': {
+                $regex: name,
+                $options: 'i',
+            },
         },
-    },
-];
+    ];
+
 export interface querySortSearchParams {
     order: string;
     isIncludeSold: string;
@@ -122,10 +123,10 @@ export const querySortSearch = (
     sortQuery =
         hasBts === 'yes'
             ? {
-                  'mediaAuxiliary.formats.btsVideo': -1,
-                  'mediaAuxiliary.formats.btsImage': -1,
-                  ...sortQuery,
-              }
+                'mediaAuxiliary.formats.btsVideo': -1,
+                'mediaAuxiliary.formats.btsImage': -1,
+                ...sortQuery,
+            }
             : sortQuery;
 
     return sortQuery;
@@ -181,10 +182,10 @@ export const querySortGroupByCreator = (
     sortQuery =
         hasBts === 'yes'
             ? {
-                  'asset.mediaAuxiliary.formats.btsVideo': -1,
-                  'asset.mediaAuxiliary.formats.btsImage': -1,
-                  ...sortQuery,
-              }
+                'asset.mediaAuxiliary.formats.btsVideo': -1,
+                'asset.mediaAuxiliary.formats.btsImage': -1,
+                ...sortQuery,
+            }
             : sortQuery;
 
     return sortQuery;
@@ -240,25 +241,25 @@ export const querySortStores = (sort: string) => {
     let sortQuery: Sort = {};
     switch (sort) {
         case 'newToOld':
-            sortQuery = { 'framework.createdAt': -1 };
+            sortQuery = { 'framework.createdAt': -1, _id: 1 };
             break;
         case 'oldToNew':
-            sortQuery = { 'framework.createdAt': 1 };
+            sortQuery = { 'framework.createdAt': 1, _id: 1 };
             break;
         case 'nameAZ':
-            sortQuery = { insensitiveName: 1 };
+            sortQuery = { insensitiveName: 1, _id: 1 };
             break;
         case 'nameZA':
-            sortQuery = { insensitiveName: -1 };
+            sortQuery = { insensitiveName: -1, _id: 1 };
             break;
         case 'urlAZ':
-            sortQuery = { insensitiveUrl: 1 };
+            sortQuery = { insensitiveUrl: 1, _id: 1 };
             break;
         case 'urlZA':
-            sortQuery = { insensitiveUrl: -1 };
+            sortQuery = { insensitiveUrl: -1, _id: 1 };
             break;
         default:
-            sortQuery = { 'framework.createdAt': -1 };
+            sortQuery = { 'framework.createdAt': -1, _id: 1 };
             break;
     }
     return sortQuery;
