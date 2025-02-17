@@ -349,6 +349,7 @@ route.patch(
             await model.updateStatusStore({
                 id: req.params.id,
                 status: payload.status,
+                moderatorId: id,
             });
 
             res.json({
