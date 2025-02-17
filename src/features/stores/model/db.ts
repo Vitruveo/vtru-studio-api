@@ -93,7 +93,7 @@ export const findStoresPaginated = ({
                     emails: '$creator.emails',
                 },
             },
-            { $sort: sort ?? { 'framework.createdAt': -1 } },
+            { $sort: sort },
             { $skip: skip },
             { $limit: limit },
             {
