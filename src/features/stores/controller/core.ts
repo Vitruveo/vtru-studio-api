@@ -13,6 +13,7 @@ import {
 } from './rules';
 import { schemaValidationStatus, schemaValidationStepName } from './schemas';
 import { querySorStoreCreatorById } from '../utils/queries';
+import { querySortStores } from '../../assets/utils/queries';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
@@ -407,11 +408,13 @@ route.get('/', async (req, res) => {
 
         const total = await model.countStores({ query });
         const totalPage = Math.ceil(total / limit);
+        const sortQuery = querySortStores(req.query.sort as string);
 
         const response = await model.findStoresPaginated({
             query,
             limit,
             skip: (page - 1) * limit,
+            sort: sortQuery,
         });
 
         res.json({
