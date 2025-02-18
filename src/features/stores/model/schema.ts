@@ -104,6 +104,11 @@ export const StoreStatusEnum = z.enum([
     'inactive',
 ]);
 
+export const ModerationSchema = z.object({
+    owner: z.string(),
+    createdAt: z.date(),
+});
+
 export const StoresSchema = z.object({
     organization: OrganizationSchema.optional(),
     artworks: ArtworksSchema.optional(),
@@ -111,6 +116,7 @@ export const StoresSchema = z.object({
     hash: z.string().default(''),
     framework: FrameworkSchema.default({}),
     status: StoreStatusEnum.default('draft'),
+    moderation: ModerationSchema.optional(),
     actions: z.object({ countClone: z.number().default(0) }).optional(),
 });
 

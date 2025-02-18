@@ -134,8 +134,23 @@ export const updateStepStores = ({
         { $set: { [stepName]: data } }
     );
 
-export const updateStatusStore = ({ id, status }: UpdateStatusStoreParams) =>
-    stores().updateOne({ _id: new ObjectId(id) }, { $set: { status } });
+export const updateStatusStore = ({
+    id,
+    status,
+    moderatorId,
+}: UpdateStatusStoreParams) =>
+    stores().updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $set: {
+                status,
+                moderation: {
+                    owner: moderatorId,
+                    createdAt: new Date(),
+                },
+            },
+        }
+    );
 
 export const updateFormatOrganizations = ({
     id,
