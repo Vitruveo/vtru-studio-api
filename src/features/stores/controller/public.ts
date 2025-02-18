@@ -5,7 +5,7 @@ import { Router } from 'express';
 import * as model from '../model';
 
 import { APIResponse } from '../../../services';
-import { querySortStores } from '../../assets/utils/queries';
+import { querySortStores } from '../utils/queries';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
@@ -34,10 +34,10 @@ route.get('/validate/:hash', async (req, res) => {
             return;
         }
 
-        if (store.status !== 'active') {
+        if (['active', 'pending'].indexOf(store.status) === -1) {
             res.status(403).json({
                 code: 'vitruveo.studio.api.stores.validate.forbidden',
-                message: 'Store is not active',
+                message: 'Store is not valid',
                 transaction: nanoid(),
             } as APIResponse);
             return;

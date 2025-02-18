@@ -1,6 +1,5 @@
 import { nanoid } from 'nanoid';
 import { NextFunction, Request, Response } from 'express';
-import axios from 'axios';
 import debug from 'debug';
 
 import { APIResponse } from '../../../services';
@@ -13,23 +12,9 @@ import {
     schemaValidationStepName,
 } from './schemas';
 import { FrameworkSchema } from '../model';
-import { GENERAL_STORAGE_URL } from '../../../constants';
+import { isValidUrl } from '../utils/isValidUrl';
 
 const logger = debug('features:stores:controller:rules');
-
-const isValidUrl = async (
-    url: string
-): Promise<boolean | 'characters' | 'reservedWords'> => {
-    if (!url.match(/^[a-zA-Z0-9-]+$/) || url.length < 4) return 'characters';
-
-    const reservedWords = await axios.get(
-        `${GENERAL_STORAGE_URL}/reservedWords.json`
-    );
-
-    if (reservedWords.data.includes(url)) return 'reservedWords';
-
-    return true;
-};
 
 export const validateBodyForCreateStores = async (
     req: Request,
