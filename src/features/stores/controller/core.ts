@@ -13,6 +13,7 @@ import {
 } from './rules';
 import { schemaValidationStatus, schemaValidationStepName } from './schemas';
 import { querySorStoreCreatorById, querySortStores } from '../utils/queries';
+import { isValidUrl } from '../utils/isValidUrl';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
@@ -371,6 +372,26 @@ route.patch(
 route.post('/validateUrl/:id', async (req, res) => {
     try {
         const url = req.body.url as string;
+
+        const checkUrl = await isValidUrl(url);
+        if (checkUrl === 'reservedWords') {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.stores.create.failed',
+                message: 'URL contains a reserved word',
+                transaction: nanoid(),
+                data: false,
+            } as APIResponse);
+            return;
+        }
+        if (checkUrl === 'characters') {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.stores.create.failed',
+                message: 'URL format is invalid',
+                transaction: nanoid(),
+                data: false,
+            } as APIResponse);
+            return;
+        }
 
         const response = await model.CheckUrlIsUnique({
             id: req.params.id,
