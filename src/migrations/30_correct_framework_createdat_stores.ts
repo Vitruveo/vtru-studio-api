@@ -26,7 +26,7 @@ export const up = async ({ db }: MigrationParameters): Promise<void> => {
             );
         }
     } catch (error) {
-        console.log('error in migration 29', error);
+        console.log('error in migration 30', error);
         throw error;
     }
 };
