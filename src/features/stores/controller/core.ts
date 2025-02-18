@@ -12,8 +12,7 @@ import {
     validateBodyForUpdateStepStores,
 } from './rules';
 import { schemaValidationStatus, schemaValidationStepName } from './schemas';
-import { querySorStoreCreatorById } from '../utils/queries';
-import { querySortStores } from '../../assets/utils/queries';
+import { querySorStoreCreatorById, querySortStores } from '../utils/queries';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();

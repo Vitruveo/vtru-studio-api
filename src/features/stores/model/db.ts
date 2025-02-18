@@ -153,6 +153,7 @@ export const CheckUrlIsUnique = async ({ id, url }: CheckUrlIsUniqueParams) =>
     stores().findOne({
         _id: { $ne: new ObjectId(id) },
         'organization.url': url,
+        $or: [{ status: 'active' }, { status: 'pending' }],
     });
 
 export const countStoresByCreator = ({

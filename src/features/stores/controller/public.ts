@@ -5,7 +5,7 @@ import { Router } from 'express';
 import * as model from '../model';
 
 import { APIResponse } from '../../../services';
-import { querySortStores } from '../../assets/utils/queries';
+import { querySortStores } from '../utils/queries';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
