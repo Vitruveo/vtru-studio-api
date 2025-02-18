@@ -13,6 +13,7 @@ import {
 } from './rules';
 import { schemaValidationStatus, schemaValidationStepName } from './schemas';
 import { querySorStoreCreatorById, querySortStores } from '../utils/queries';
+import { isValidUrl } from '../utils/isValidUrl';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
@@ -372,16 +373,45 @@ route.post('/validateUrl/:id', async (req, res) => {
     try {
         const url = req.body.url as string;
 
+        const checkUrl = await isValidUrl(url);
+        if (checkUrl === 'reservedWords') {
+            res.json({
+                code: 'vitruveo.studio.api.stores.validateUrl.failed',
+                message: 'URL contains a reserved word',
+                transaction: nanoid(),
+                data: false,
+            } as APIResponse);
+            return;
+        }
+        if (checkUrl === 'characters') {
+            res.json({
+                code: 'vitruveo.studio.api.stores.validateUrl.failed',
+                message: 'URL format is invalid',
+                transaction: nanoid(),
+                data: false,
+            } as APIResponse);
+            return;
+        }
+
         const response = await model.CheckUrlIsUnique({
             id: req.params.id,
             url,
         });
+        if (response && response._id) {
+            res.json({
+                code: 'vitruveo.studio.api.stores.validateUrl.failed',
+                message: 'URL already in use',
+                transaction: nanoid(),
+                data: false,
+            } as APIResponse);
+            return;
+        }
 
         res.json({
             code: 'vitruveo.studio.api.stores.validateUrl.success',
             message: 'Validate url success',
             transaction: nanoid(),
-            data: !response?._id,
+            data: true,
         } as APIResponse);
     } catch (error) {
         logger('Validate url failed: %O', error);
