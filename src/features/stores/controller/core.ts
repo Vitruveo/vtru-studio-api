@@ -375,7 +375,7 @@ route.post('/validateUrl/:id', async (req, res) => {
 
         const checkUrl = await isValidUrl(url);
         if (checkUrl === 'reservedWords') {
-            res.status(400).json({
+            res.json({
                 code: 'vitruveo.studio.api.stores.create.failed',
                 message: 'URL contains a reserved word',
                 transaction: nanoid(),
@@ -384,7 +384,7 @@ route.post('/validateUrl/:id', async (req, res) => {
             return;
         }
         if (checkUrl === 'characters') {
-            res.status(400).json({
+            res.json({
                 code: 'vitruveo.studio.api.stores.create.failed',
                 message: 'URL format is invalid',
                 transaction: nanoid(),
