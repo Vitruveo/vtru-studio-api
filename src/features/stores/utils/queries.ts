@@ -26,10 +26,13 @@ export const querySortStores = (sort: string) => {
     let sortQuery: Sort = {};
     switch (sort) {
         case 'newToOld':
-            sortQuery = { 'framework.createdAt': -1 };
+            sortQuery = {
+                'moderation.createdAt': -1,
+                'framework.createdAt': -1,
+            };
             break;
         case 'oldToNew':
-            sortQuery = { 'framework.createdAt': 1 };
+            sortQuery = { 'moderation.createdAt': 1, 'framework.createdAt': 1 };
             break;
         case 'nameAZ':
             sortQuery = { insensitiveName: 1 };
@@ -44,7 +47,10 @@ export const querySortStores = (sort: string) => {
             sortQuery = { insensitiveUrl: -1 };
             break;
         default:
-            sortQuery = { 'framework.createdAt': -1 };
+            sortQuery = {
+                'moderation.createdAt': -1,
+                'framework.createdAt': -1,
+            };
             break;
     }
     return sortQuery;
