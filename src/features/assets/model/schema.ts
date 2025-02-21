@@ -167,6 +167,19 @@ export const AssetsSchema = z.object({
             })
             .default({ formData: [] }),
     }),
+    stores: z
+        .object({
+            visibility: z
+                .enum([
+                    'visibleInAllStores',
+                    'visibleInSelectedStores',
+                    'hiddenInSelectedStores',
+                    'hiddenInAllStores',
+                ])
+                .default('visibleInAllStores'),
+            list: z.array(z.string()).default([]),
+        })
+        .optional(),
     actions: ActionsSchema.optional(),
     terms: TermsSchema,
     consignArtwork: z
