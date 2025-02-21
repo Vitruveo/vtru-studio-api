@@ -24,6 +24,7 @@ import {
     schemaAssetUpdateManyStatus,
     schemaValidationForCreate,
     schemaAssetUpdateManyNudity,
+    schemaValidationForPutStoresVisibility,
 } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 import { model } from '../../creators';
@@ -181,6 +182,24 @@ export const validateBodyForUpdateManyStatus = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForUpdateManyStatus.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUpdateStoresVisibility = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.body = schemaValidationForPutStoresVisibility.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUpdateStoresVisibility.failed',
             message: '',
             transaction: nanoid(),
             args: error,

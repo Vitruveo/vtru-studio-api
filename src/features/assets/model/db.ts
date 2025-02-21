@@ -37,6 +37,7 @@ import type {
     FindLastConsignsParams,
     UpdateManyAssetsAutoStakeParams,
     FindLastSoldAssets,
+    StoresVisibilityParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1008,6 +1009,17 @@ export const updateManyAssetsStatus = async ({
     const result = await assets().updateMany(
         { _id: { $in: ids.map((id) => new ObjectId(id)) } },
         { $set: { 'consignArtwork.status': status } }
+    );
+    return result;
+};
+
+export const updateStoresVisibility = async ({
+    id,
+    stores,
+}: StoresVisibilityParams) => {
+    const result = await assets().updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { stores } }
     );
     return result;
 };

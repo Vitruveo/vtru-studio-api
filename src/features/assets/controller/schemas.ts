@@ -195,6 +195,7 @@ export const schemaAuxiliaryMedia = z.object({
         }),
     }),
 });
+
 export const schemaAssetArtCardsStatus = z.enum([
     'pending',
     'approved',
@@ -487,4 +488,16 @@ export const schemaContractExplorer = z.object({
         updatedAt: z.date().default(new Date()),
         updatedBy: z.string().nullable().default(null),
     }),
+});
+
+export const schemaValidationForPutStoresVisibility = z.object({
+    visibility: z
+        .enum([
+            'visibleInAllStores',
+            'visibleInSelectedStores',
+            'hiddenInSelectedStores',
+            'hiddenInAllStores',
+        ])
+        .default('visibleInAllStores'),
+    list: z.array(z.string()).default([]),
 });

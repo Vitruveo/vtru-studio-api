@@ -52,6 +52,7 @@ route.get('/groupByCreator', async (req, res) => {
             sort,
             hasBts,
             hasNftAutoStake,
+            storesId,
         } = req.query as unknown as {
             query: Record<string, unknown>;
             page: string;
@@ -60,6 +61,7 @@ route.get('/groupByCreator', async (req, res) => {
             sort: QueryPaginatedParams['sort'];
             hasBts: string;
             hasNftAutoStake: boolean;
+            storesId: boolean;
         };
 
         const pageNumber = Number(page);
@@ -185,6 +187,23 @@ route.get('/groupByCreator', async (req, res) => {
             parsedQuery.$and = parsedQuery.$and
                 ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
+        }
+
+        if (storesId) {
+            parsedQuery.$or = [
+                ...(parsedQuery.$or || []),
+                { stores: { $exists: false } },
+                { stores: null },
+                { 'stores.visibility': 'visibleInAllStores' },
+                {
+                    'stores.visibility': 'visibleInSelectedStores',
+                    'stores.list': storesId,
+                },
+                {
+                    'stores.visibility': 'hiddenInSelectedStores',
+                    'stores.list': { $nin: [storesId] },
+                },
+            ];
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
@@ -436,6 +455,7 @@ route.get('/search', async (req, res) => {
             showAdditionalAssets,
             hasBts,
             hasNftAutoStake,
+            storesId,
         } = req.query as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -594,6 +614,23 @@ route.get('/search', async (req, res) => {
                 : [{ 'licenses.nft.autoStake': true }];
         }
 
+        if (storesId) {
+            parsedQuery.$or = [
+                ...(parsedQuery.$or || []),
+                { stores: { $exists: false } },
+                { stores: null },
+                { 'stores.visibility': 'visibleInAllStores' },
+                {
+                    'stores.visibility': 'visibleInSelectedStores',
+                    'stores.list': storesId,
+                },
+                {
+                    'stores.visibility': 'hiddenInSelectedStores',
+                    'stores.list': { $nin: [storesId] },
+                },
+            ];
+        }
+
         const maxAssetPrice = await model.findMaxPrice();
 
         if (parsedQuery?._id?.$in)
@@ -667,6 +704,7 @@ route.post('/search', async (req, res) => {
             showAdditionalAssets,
             hasBts,
             hasNftAutoStake,
+            storesId,
         } = req.body as unknown as QueryPaginatedParams;
 
         const pageNumber = Number(page);
@@ -831,6 +869,23 @@ route.post('/search', async (req, res) => {
             parsedQuery._id.$in = parsedQuery._id.$in.map(
                 (id: string) => new ObjectId(id)
             );
+
+        if (storesId) {
+            parsedQuery.$or = [
+                ...(parsedQuery.$or || []),
+                { stores: { $exists: false } },
+                { stores: null },
+                { 'stores.visibility': 'visibleInAllStores' },
+                {
+                    'stores.visibility': 'visibleInSelectedStores',
+                    'stores.list': storesId,
+                },
+                {
+                    'stores.visibility': 'hiddenInSelectedStores',
+                    'stores.list': { $nin: [storesId] },
+                },
+            ];
+        }
 
         const result = await model.countAssets({
             query: parsedQuery,
@@ -1017,8 +1072,9 @@ route.get('/creators', async (req, res) => {
 
 route.post('/lastSold', async (req, res) => {
     try {
-        const { query = {} as any } = req.body as unknown as {
+        const { query = {} as any, storesId } = req.body as unknown as {
             query: Record<string, unknown>;
+            storesId: string;
         };
 
         const parsedQuery = {
@@ -1098,6 +1154,23 @@ route.post('/lastSold', async (req, res) => {
                 parsedQuery['assetMetadata.taxonomy.formData.nudity'] = {
                     $in: ['yes', 'no'],
                 };
+        }
+
+        if (storesId) {
+            parsedQuery.$or = [
+                ...(parsedQuery.$or || []),
+                { stores: { $exists: false } },
+                { stores: null },
+                { 'stores.visibility': 'visibleInAllStores' },
+                {
+                    'stores.visibility': 'visibleInSelectedStores',
+                    'stores.list': storesId,
+                },
+                {
+                    'stores.visibility': 'hiddenInSelectedStores',
+                    'stores.list': { $nin: [storesId] },
+                },
+            ];
         }
 
         const assets = await model.findLastSoldAssets({ query: parsedQuery });
@@ -1121,8 +1194,9 @@ route.post('/lastSold', async (req, res) => {
 
 route.post('/spotlight', async (req, res) => {
     try {
-        const { query = {} as any } = req.body as unknown as {
+        const { query = {} as any, storesId } = req.body as unknown as {
             query: Record<string, unknown>;
+            storesId: string;
         };
 
         const parsedQuery = {
@@ -1202,6 +1276,23 @@ route.post('/spotlight', async (req, res) => {
                 parsedQuery['assetMetadata.taxonomy.formData.nudity'] = {
                     $in: ['yes', 'no'],
                 };
+        }
+
+        if (storesId) {
+            parsedQuery.$or = [
+                ...(parsedQuery.$or || []),
+                { stores: { $exists: false } },
+                { stores: null },
+                { 'stores.visibility': 'visibleInAllStores' },
+                {
+                    'stores.visibility': 'visibleInSelectedStores',
+                    'stores.list': storesId,
+                },
+                {
+                    'stores.visibility': 'hiddenInSelectedStores',
+                    'stores.list': { $nin: [storesId] },
+                },
+            ];
         }
 
         const spotlight = await readFile(join(DIST, 'spotlight.json'), 'utf-8');
