@@ -997,7 +997,7 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
     } finally {
         await Promise.all(
             Object.values(files).map((fileName) =>
-                fs.unlink(fileName).catch(() => { })
+                fs.unlink(fileName).catch(() => {})
             )
         );
         res.end();
@@ -1007,7 +1007,7 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
 route.patch('/:id/printLicense/price', async (req, res) => {
     try {
         const { id } = req.auth;
-        const { unitPrice, availableLicenses } = req.body as z.infer<
+        const { unitPrice } = req.body as z.infer<
             typeof schemaValidationForPatchPrintLicensePrice
         >;
 
@@ -1035,7 +1035,6 @@ route.patch('/:id/printLicense/price', async (req, res) => {
             id: asset._id,
             asset: {
                 'licenses.print.unitPrice': unitPrice,
-                'licenses.print.availableLicenses': availableLicenses,
             },
         });
 

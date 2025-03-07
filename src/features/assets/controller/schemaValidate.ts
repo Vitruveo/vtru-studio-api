@@ -359,7 +359,6 @@ export const schemaValidationForPatchAssetPrice = z.object({
 
 export const schemaValidationForPatchPrintLicensePrice = z.object({
     unitPrice: z.number().min(0),
-    availableLicenses: z.number().min(0),
 });
 
 export const schemaValidationForPatchPrintLicenseAdded = z.object({
