@@ -1072,6 +1072,9 @@ export const updateUploadedMediaKeys = async ({
     return result;
 };
 
+export const replaceAsset = (id: string, asset: AssetsDocument) =>
+    assets().replaceOne({ _id: new ObjectId(id) }, asset);
+
 export const replaceUploadedMediaKey = async ({
     id,
     oldMediaKey,
