@@ -21,6 +21,7 @@ import {
     schemaCreatorValidation,
 } from './schemaValidate';
 import { mustBeOwner } from '../../common/rules';
+import { filterValidValues } from '../../../utils/removeEmptyValues';
 
 const logger = debug('features:assets:controller:consign');
 
@@ -57,6 +58,22 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
             } as APIResponse);
             return;
         }
+
+        asset.assetMetadata.taxonomy.formData.tags = filterValidValues(
+            asset.assetMetadata.taxonomy.formData.tags
+        );
+        asset.assetMetadata.taxonomy.formData.collections = filterValidValues(
+            asset.assetMetadata.taxonomy.formData.collections
+        );
+        asset.assetMetadata.taxonomy.formData.medium = filterValidValues(
+            asset.assetMetadata.taxonomy.formData.medium
+        );
+        asset.assetMetadata.taxonomy.formData.style = filterValidValues(
+            asset.assetMetadata.taxonomy.formData.style
+        );
+        asset.assetMetadata.taxonomy.formData.subject = filterValidValues(
+            asset.assetMetadata.taxonomy.formData.subject
+        );
 
         // Validate schema asset
         schemaAssetValidation.parse(asset);
@@ -141,6 +158,8 @@ route.get('/validation/:id', mustBeOwner, async (req, res) => {
             } as APIResponse);
             return;
         }
+
+        await model.replaceAsset(asset._id.toString(), asset);
 
         res.json({
             code: 'vitruveo.studio.api.assets.consign.validation.success',
