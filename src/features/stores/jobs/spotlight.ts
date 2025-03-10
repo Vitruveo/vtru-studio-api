@@ -58,6 +58,7 @@ export const spotlight = async () => {
             response.map((store) => ({
                 _id: store._id.toString(),
                 name: store.organization!.name,
+                url: store.organization!.url || '',
                 description: store.organization?.description || '',
                 logo: store.organization?.formats.logo.square?.path,
             }))
