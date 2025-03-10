@@ -45,3 +45,8 @@ export interface CheckUrlIsUniqueParams {
     id: string;
     url: string;
 }
+
+export interface FindStoresMissingSpotlightParams {
+    ids: string[];
+    limit: number;
+}

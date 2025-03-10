@@ -112,7 +112,8 @@ export const ModerationSchema = z.object({
 
 export const ActionsSchema = z.object({
     countClone: z.number().default(0),
-    spotlight: z.boolean().default(false).optional(),
+    spotlight: z.boolean().default(false).optional(), // to moderation
+    displaySpotlight: z.boolean().default(false).optional(), // to show
 });
 
 export const StoresSchema = z.object({
