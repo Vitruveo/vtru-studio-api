@@ -310,6 +310,67 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
 });
 
 route.patch(
+    '/status/:id/creator',
+    validateBodyForUpdateStatusStore,
+    async (req, res) => {
+        try {
+            const { status } = req.body as z.infer<
+                typeof schemaValidationStatus
+            >;
+
+            const stores = await model.findStoresById(req.params.id);
+
+            if (!stores) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.stores.update.status.not.found',
+                    message: 'Store not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (stores.framework.createdBy !== req.auth.id) {
+                res.status(403).json({
+                    code: 'vitruveo.studio.api.stores.update.forbidden',
+                    message: 'Update forbidden',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (!['active', 'hidden'].includes(stores.status)) {
+                res.status(400).json({
+                    code: 'vitruveo.studio.api.stores.update.status.invalid',
+                    message: 'Update status invalid',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            await model.updateStatusStoresFromCreator({
+                id: req.params.id,
+                status,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.stores.update.status.success',
+                message: 'Update status success',
+                transaction: nanoid(),
+            } as APIResponse);
+        } catch (error) {
+            logger('Update status stores failed: %O', error);
+
+            res.status(500).json({
+                code: 'vitruveo.studio.api.stores.update.status.failed',
+                message: `Update status failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.patch(
     '/status/:id',
     validateBodyForUpdateStatusStore,
     async (req, res) => {

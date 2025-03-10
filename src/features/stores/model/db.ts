@@ -7,6 +7,7 @@ import type {
     FindStoresPaginatedParams,
     UpdateFormatOrganizationsParams,
     UpdateStatusStoreParams,
+    UpdateStatusStoresFromCreatorParams,
     UpdateStepStoresParams,
     UpdateStoresParams,
 } from './types';
@@ -177,6 +178,12 @@ export const updateStepStores = ({
         { _id: new ObjectId(id) },
         { $set: { [stepName]: data } }
     );
+
+export const updateStatusStoresFromCreator = ({
+    id,
+    status,
+}: UpdateStatusStoresFromCreatorParams) =>
+    stores().updateOne({ _id: new ObjectId(id) }, { $set: { status } });
 
 export const updateStatusStore = ({
     id,
