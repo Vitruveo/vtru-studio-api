@@ -84,6 +84,7 @@ route.post('/clone/:id', async (req, res) => {
         }
 
         store.actions.countClone += 1;
+        store.actions.spotlight = false;
 
         await model.updateStores({
             id: store._id.toString(),
