@@ -1,9 +1,14 @@
 import debug from 'debug';
 import { readFile } from 'fs/promises';
+import fs from 'fs';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
-import { join } from 'path';
+import path, { join } from 'path';
+import { PassThrough } from 'stream';
+import { pipeline } from 'stream/promises';
+import { fork } from 'child_process';
+import axios from 'axios';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -23,6 +28,7 @@ import {
     querySortGroupByCreator,
 } from '../utils/queries';
 import { DIST } from '../../../constants/static';
+import { ASSET_STORAGE_URL } from '../../../constants';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1513,6 +1519,94 @@ route.get('/slideshow/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.slideshow.get.failed',
             message: `Reader get slideshow failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/printOutputGenerator/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const asset = await model.findAssetsById({ id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.get.notFound',
+                message: 'Asset not found for the given ID',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+        res.setHeader(
+            'Expires',
+            new Date(Date.now() + 604800000).toUTCString()
+        );
+
+        res.setHeader('Content-Type', 'image/jpeg');
+
+        const outputStream = new PassThrough();
+
+        pipeline(outputStream, res).catch((err) => {
+            logger('Error in output stream pipeline: %O', err);
+        });
+
+        const child = fork(
+            path.join(__dirname, '../utils/printGenerator/event.ts')
+        );
+
+        child.on('message', (message) => {
+            const { type, data, error } = message as any;
+            if (type === 'data') {
+                outputStream.write(Buffer.from(data));
+            } else if (type === 'end') {
+                outputStream.end();
+            } else if (type === 'error') {
+                logger('Error in child process: %O', error);
+                outputStream.end();
+                res.status(500).end();
+            }
+        });
+
+        child.on('error', (err) => {
+            logger('Child process error: %O', err);
+            outputStream.end();
+            res.status(500).end();
+        });
+
+        try {
+            const artworkBuffer = await axios.get(
+                `${ASSET_STORAGE_URL}/${asset.formats.original?.path}`,
+                {
+                    responseType: 'arraybuffer',
+                }
+            );
+
+            const artworkPath = path.join(__dirname, `wallArt.png`);
+            const sourceBuffer = fs.readFileSync(artworkPath);
+
+            child.send({
+                sourceBuffer,
+                artworkBuffer: artworkBuffer.data,
+            });
+        } catch (fetchError) {
+            logger('Error loading images: %O', fetchError);
+            outputStream.end();
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
+                message: `Failed to load images: ${fetchError}`,
+                args: fetchError,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    } catch (error) {
+        logger('Error generating print output for asset: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
+            message: `Failed to generate print output for asset: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
