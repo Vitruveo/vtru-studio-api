@@ -6,9 +6,32 @@ import * as model from '../model';
 
 import { APIResponse } from '../../../services';
 import { querySortStores } from '../utils/queries';
+import { redis } from '../../../services/redis';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
+
+route.get('/spotlight', async (req, res) => {
+    try {
+        const spotlight = await redis.get('stores:spotlight');
+
+        res.status(200).json({
+            code: 'vitruveo.studio.api.stores.spotlight.success',
+            message: 'Spotlight found',
+            data: JSON.parse(spotlight || '[]'),
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('Spotlight stores failed: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.spotlight',
+            message: `Spotlight failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.get('/validate/:hash', async (req, res) => {
     try {
@@ -148,4 +171,5 @@ route.get('/', async (req, res) => {
         } as APIResponse);
     }
 });
+
 export { route };

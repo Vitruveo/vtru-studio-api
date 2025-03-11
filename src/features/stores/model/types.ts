@@ -20,6 +20,10 @@ export interface UpdateStoresParams {
     data: Partial<Stores>;
 }
 
+export interface UpdateStatusStoresFromCreatorParams {
+    id: string;
+    status: 'draft' | 'pending' | 'active' | 'inactive' | 'hidden' | undefined;
+}
 export interface UpdateStatusStoreParams {
     id: string;
     status: StoreStatus;
@@ -44,4 +48,9 @@ export interface UpdateFormatOrganizationsParams {
 export interface CheckUrlIsUniqueParams {
     id: string;
     url: string;
+}
+
+export interface FindStoresMissingSpotlightParams {
+    ids: string[];
+    limit: number;
 }
