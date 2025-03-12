@@ -102,3 +102,7 @@ export const schemaValidationStepName = z.object({
 export const schemaValidationStatus = z.object({
     status: StoreStatusEnum,
 });
+
+export const schemaValidationSpotlight = z.object({
+    spotlight: z.boolean(),
+});

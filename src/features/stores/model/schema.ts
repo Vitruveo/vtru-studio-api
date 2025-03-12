@@ -102,11 +102,18 @@ export const StoreStatusEnum = z.enum([
     'pending',
     'active',
     'inactive',
+    'hidden',
 ]);
 
 export const ModerationSchema = z.object({
     owner: z.string(),
     createdAt: z.date(),
+});
+
+export const ActionsSchema = z.object({
+    countClone: z.number().default(0),
+    spotlight: z.boolean().default(false).optional(), // to moderation
+    displaySpotlight: z.boolean().default(false).optional(), // to show
 });
 
 export const StoresSchema = z.object({
@@ -117,7 +124,7 @@ export const StoresSchema = z.object({
     framework: FrameworkSchema.default({}),
     status: StoreStatusEnum.default('draft'),
     moderation: ModerationSchema.optional(),
-    actions: z.object({ countClone: z.number().default(0) }).optional(),
+    actions: ActionsSchema.optional(),
 });
 
 export type Stores = z.infer<typeof StoresSchema>;

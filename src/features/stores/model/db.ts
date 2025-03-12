@@ -3,14 +3,59 @@ import { COLLECTION_STORES, Stores, StoresSchema } from './schema';
 import type {
     CheckUrlIsUniqueParams,
     FindStoresByCreatorParams,
+    FindStoresMissingSpotlightParams,
     FindStoresPaginatedParams,
     UpdateFormatOrganizationsParams,
     UpdateStatusStoreParams,
+    UpdateStatusStoresFromCreatorParams,
     UpdateStepStoresParams,
     UpdateStoresParams,
 } from './types';
 
 const stores = () => getDb().collection<Stores>(COLLECTION_STORES);
+
+export const findStoresToSpotlight = () =>
+    stores()
+        .find({
+            'actions.spotlight': { $exists: true, $eq: true },
+            'actions.displaySpotlight': { $exists: false },
+            status: 'active',
+        })
+        .limit(50)
+        .toArray();
+
+export const findStoresMissingSpotlight = ({
+    ids,
+    limit,
+}: FindStoresMissingSpotlightParams) =>
+    stores()
+        .find({
+            _id: { $nin: ids.map((id) => new ObjectId(id)) },
+            'actions.spotlight': { $exists: true, $eq: true },
+            'actions.displaySpotlight': { $exists: false },
+            status: 'active',
+        })
+        .limit(limit)
+        .toArray();
+
+export const countStoresToSpotlight = () =>
+    stores().countDocuments({
+        'actions.spotlight': { $exists: true, $eq: true },
+        'actions.displaySpotlight': { $exists: false },
+        status: 'active',
+    });
+
+export const clearSpotlight = () =>
+    stores().updateMany(
+        { 'actions.displaySpotlight': { $exists: true, $eq: true } },
+        { $unset: { 'actions.displaySpotlight': '' } }
+    );
+
+export const updateDisplaySpotlight = (ids: string[]) =>
+    stores().updateMany(
+        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+        { $set: { 'actions.displaySpotlight': true } }
+    );
 
 export const createStores = (data: Stores) => {
     const envelope = StoresSchema.parse(data);
@@ -133,6 +178,12 @@ export const updateStepStores = ({
         { _id: new ObjectId(id) },
         { $set: { [stepName]: data } }
     );
+
+export const updateStatusStoresFromCreator = ({
+    id,
+    status,
+}: UpdateStatusStoresFromCreatorParams) =>
+    stores().updateOne({ _id: new ObjectId(id) }, { $set: { status } });
 
 export const updateStatusStore = ({
     id,
