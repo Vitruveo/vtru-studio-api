@@ -57,7 +57,7 @@ route.get('/validate/:hash', async (req, res) => {
             return;
         }
 
-        if (['active', 'pending'].indexOf(store.status) === -1) {
+        if (['active', 'pending', 'hidden'].indexOf(store.status) === -1) {
             res.status(403).json({
                 code: 'vitruveo.studio.api.stores.validate.forbidden',
                 message: 'Store is not valid',
