@@ -16,6 +16,7 @@ export interface QueryPaginatedParams {
     showAdditionalAssets: string;
     hasBts: string;
     hasNftAutoStake: boolean;
+    storesId?: string;
 }
 
 export interface QueryCollectionParams {
@@ -107,4 +108,15 @@ export interface GroupedParams {
     limit: string;
     name: string;
     sort: QueryPaginatedParams['sort'];
+}
+
+export type StoresVisibilityStatus =
+    | 'visibleInAllStores'
+    | 'visibleInSelectedStores'
+    | 'hiddenInSelectedStores'
+    | 'hiddenInAllStores';
+
+export interface StoresVisibilityBody {
+    visibility: StoresVisibilityStatus;
+    list: string[];
 }

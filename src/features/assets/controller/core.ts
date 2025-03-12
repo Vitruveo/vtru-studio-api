@@ -32,6 +32,7 @@ import {
     validateBodyForUpdateManyStatus,
     validateBodyForUpdateStatus,
     validateBodyForUpdateStep,
+    validateBodyForUpdateStoresVisibility,
 } from './rules';
 import { sendToExchangeCreators } from '../../creators/upload';
 import { handleExtractColor } from '../../../services/extractColor';
@@ -45,6 +46,7 @@ import { schemaAssetUpdateManyNudity } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 import { AssetsPaginatedResponse } from '../model/types';
 import { querySortStudioCreatorById } from '../utils/queries';
+import { StoresVisibilityBody } from './types';
 
 const logger = debug('features:assets:controller');
 const route = Router();
@@ -409,6 +411,55 @@ route.put('/changeAutoStakeInAllAssets', async (req, res) => {
         } as APIResponse);
     }
 });
+
+route.put(
+    '/:id/storesVisibility',
+    validateBodyForUpdateStoresVisibility,
+    async (req, res) => {
+        const body = req.body as StoresVisibilityBody;
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.storesVisibility.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset.framework.createdBy !== req.auth.id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.assets.storesVisibility.notAllowed',
+                message: 'You are not allowed to update stores visibility',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        try {
+            const result = await model.updateStoresVisibility({
+                id: req.params.id,
+                stores: body,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.assets.storesVisibility.success',
+                message: 'Update stores visibility success',
+                transaction: nanoid(),
+                data: result,
+            } as APIResponse<UpdateResult>);
+        } catch (error) {
+            logger('Update stores visibility failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.storesVisibility.failed',
+                message: `Update stores visibility failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
 
 route.put(
     '/nudity',

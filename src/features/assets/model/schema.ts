@@ -157,6 +157,20 @@ export const AssetsSchema = z.object({
                 colors: ColorsSchema,
             }),
         }),
+        taxonomy: z.object({
+            formData: z.object({
+                objectType: z.string(),
+                category: z.string(),
+                tags: z.array(z.string()).default([]),
+                collections: z.array(z.string()).default([]),
+                medium: z.array(z.string()).default([]),
+                style: z.array(z.string()).default([]),
+                subject: z.array(z.string()).default([]),
+                aiGeneration: z.string(),
+                arenabled: z.string().default('no'),
+                nudity: z.string(),
+            }),
+        }),
         creators: z
             .object({
                 formData: z.array(
@@ -167,6 +181,19 @@ export const AssetsSchema = z.object({
             })
             .default({ formData: [] }),
     }),
+    stores: z
+        .object({
+            visibility: z
+                .enum([
+                    'visibleInAllStores',
+                    'visibleInSelectedStores',
+                    'hiddenInSelectedStores',
+                    'hiddenInAllStores',
+                ])
+                .default('visibleInAllStores'),
+            list: z.array(z.string()).default([]),
+        })
+        .optional(),
     actions: ActionsSchema.optional(),
     terms: TermsSchema,
     consignArtwork: z

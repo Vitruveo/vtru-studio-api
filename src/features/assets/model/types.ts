@@ -78,7 +78,7 @@ export interface CountAssetsByCreatorIdParams
     grouped?: string;
 }
 export interface CountAssetsParams
-    extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> { }
+    extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
 
 export interface FindAssetsByIdParams {
     id: string | ObjectId;
@@ -199,4 +199,18 @@ export interface FindAssetsParams {
 
 export interface FindLastSoldAssets {
     query: Record<string, unknown>;
+}
+
+export type StoresVisibilityStatus =
+    | 'visibleInAllStores'
+    | 'visibleInSelectedStores'
+    | 'hiddenInSelectedStores'
+    | 'hiddenInAllStores';
+
+export interface StoresVisibilityParams {
+    id: string | ObjectId;
+    stores: {
+        visibility: StoresVisibilityStatus;
+        list: string[];
+    };
 }
