@@ -255,6 +255,8 @@ route.post('/groupByCreator', async (req, res) => {
     try {
         const {
             query = {} as any,
+            minPrice,
+            maxPrice,
             page = 1,
             limit = 10,
             name,
@@ -263,6 +265,8 @@ route.post('/groupByCreator', async (req, res) => {
             hasNftAutoStake,
         } = req.body as unknown as {
             query: Record<string, unknown>;
+            minPrice: number;
+            maxPrice: number;
             page: string;
             limit: string;
             name: string;
@@ -394,6 +398,23 @@ route.post('/groupByCreator', async (req, res) => {
             parsedQuery.$and = parsedQuery.$and
                 ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
                 : [{ 'licenses.nft.autoStake': true }];
+        }
+
+        if (
+            typeof maxPrice === 'number' &&
+            typeof minPrice === 'number' &&
+            Number(minPrice) >= 0 &&
+            Number(maxPrice) > 0
+        ) {
+            parsedQuery.$and = [
+                ...(parsedQuery.$and || []),
+                {
+                    $or: queryByPrice({
+                        min: Number(minPrice),
+                        max: Number(maxPrice),
+                    }),
+                },
+            ];
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
@@ -752,8 +773,8 @@ route.post('/search', async (req, res) => {
         };
 
         if (
-            maxPrice &&
-            minPrice &&
+            typeof maxPrice === 'number' &&
+            typeof minPrice === 'number' &&
             Number(minPrice) >= 0 &&
             Number(maxPrice) > 0
         ) {
