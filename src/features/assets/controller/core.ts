@@ -1007,7 +1007,7 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
 route.patch('/:id/printLicense/price', async (req, res) => {
     try {
         const { id } = req.auth;
-        const { unitPrice } = req.body as z.infer<
+        const { merchandisePrice, displayPrice } = req.body as z.infer<
             typeof schemaValidationForPatchPrintLicensePrice
         >;
 
@@ -1034,7 +1034,8 @@ route.patch('/:id/printLicense/price', async (req, res) => {
         const result = await model.updateAssets({
             id: asset._id,
             asset: {
-                'licenses.print.unitPrice': unitPrice,
+                'licenses.print.merchandisePrice': merchandisePrice,
+                'licenses.print.displayPrice': displayPrice,
             },
         });
 
