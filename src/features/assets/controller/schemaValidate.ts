@@ -187,18 +187,19 @@ const PrintLicenseSchema = z
     .object({
         version: z.string(),
         added: z.boolean(),
-        unitPrice: NumberInt,
+        displayPrice: z.number(),
+        merchandisePrice: z.number(),
         availableLicenses: z.number().min(1).default(1),
     })
     .refine(
         (value) => {
             if (value.added) {
-                return value.unitPrice > 0;
+                return value.displayPrice > 0 && value.merchandisePrice > 0;
             }
             return true;
         },
         {
-            message: 'Unit price must be greater than 0.',
+            message: 'price must be greater than 0.',
         }
     );
 
