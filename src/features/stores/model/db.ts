@@ -1,4 +1,5 @@
 import { getDb, ObjectId } from '../../../services';
+import { statusMapper } from '../controller/core';
 import { COLLECTION_STORES, Stores, StoresSchema } from './schema';
 import type {
     CheckUrlIsUniqueParams,
@@ -91,7 +92,7 @@ export const findStoresPaginated = ({
 }: FindStoresPaginatedParams) =>
     stores()
         .aggregate([
-            { $match: { status: query.status } },
+            { $match: statusMapper[query.status as keyof typeof statusMapper] },
             {
                 $match: {
                     $or: [

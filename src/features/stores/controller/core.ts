@@ -23,10 +23,10 @@ import { isValidUrl } from '../utils/isValidUrl';
 const logger = debug('features:stores:controller:core');
 const route = Router();
 
-const statusMapper = {
+export const statusMapper = {
     draft: { status: 'draft' },
     pending: { status: 'pending' },
-    active: { status: 'active' },
+    active: { status: { $in: ['active', 'hidden'] } },
     inactive: { status: 'inactive' },
     all: {},
 };
@@ -500,7 +500,7 @@ route.get('/', async (req, res) => {
         const search = req.query.search as string;
 
         const query: any = {
-            ...statusMapper[status],
+            status,
             search,
         };
 
