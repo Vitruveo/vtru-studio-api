@@ -77,6 +77,24 @@ export const schemaValidationArtworks = z.object({
             wallets: z.array(z.string()).optional(),
         })
         .optional(),
+    exclude: z.object({
+        arts: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+        artists: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+    }),
 });
 
 export const schemaValidationAppearanceContent = z.object({
