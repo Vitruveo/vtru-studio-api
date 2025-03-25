@@ -142,7 +142,7 @@ route.get('/', async (req, res) => {
         const totalPage = Math.ceil(total / limit);
 
         const sortQuery = querySortStores(sort);
-        const stores = await model.findStoresPaginated({
+        const stores = await model.findStoresPaginatedPublic({
             query,
             skip: (page - 1) * limit,
             limit,

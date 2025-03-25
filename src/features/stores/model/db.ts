@@ -153,6 +153,75 @@ export const findStoresPaginated = ({
         ])
         .toArray();
 
+export const findStoresPaginatedPublic = ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindStoresPaginatedParams) =>
+    stores()
+        .aggregate([
+            { $match: { status: query.status } },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'organization.name': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'organization.url': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                    insensitiveName: { $toLower: '$organization.name' },
+                    insensitiveUrl: { $toLower: '$organization.url' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $addFields: {
+                    username: '$creator.username',
+                    emails: '$creator.emails',
+                },
+            },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+            {
+                $project: {
+                    creator: 0,
+                    creatorId: 0,
+                    insensitiveName: 0,
+                    insensitiveUrl: 0,
+                },
+            },
+        ])
+        .toArray();
+
 export const findStoresByHash = (hash: string) => stores().findOne({ hash });
 
 export const findStoresById = (id: string) =>
