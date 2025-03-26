@@ -1,4 +1,5 @@
 import { getDb, ObjectId } from '../../../services';
+import { statusMapper } from '../controller/core';
 import { COLLECTION_STORES, Stores, StoresSchema } from './schema';
 import type {
     CheckUrlIsUniqueParams,
@@ -84,6 +85,75 @@ export const findStoresByCreatorPaginated = ({
         .toArray();
 
 export const findStoresPaginated = ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindStoresPaginatedParams) =>
+    stores()
+        .aggregate([
+            { $match: statusMapper[query.status as keyof typeof statusMapper] },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'organization.name': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'organization.url': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                    insensitiveName: { $toLower: '$organization.name' },
+                    insensitiveUrl: { $toLower: '$organization.url' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $addFields: {
+                    username: '$creator.username',
+                    emails: '$creator.emails',
+                },
+            },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+            {
+                $project: {
+                    creator: 0,
+                    creatorId: 0,
+                    insensitiveName: 0,
+                    insensitiveUrl: 0,
+                },
+            },
+        ])
+        .toArray();
+
+export const findStoresPaginatedPublic = ({
     query,
     skip,
     limit,

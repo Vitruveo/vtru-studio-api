@@ -23,6 +23,7 @@ import {
     querySortGroupByCreator,
 } from '../utils/queries';
 import { DIST } from '../../../constants/static';
+import { createTagRegex } from '../utils/createTag';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -317,6 +318,13 @@ route.post('/groupByCreator', async (req, res) => {
         }
 
         const sortQuery = querySortGroupByCreator(sort, hasBts);
+
+        if (query['assetMetadata.taxonomy.formData.tags']?.$in) {
+            const tags = query['assetMetadata.taxonomy.formData.tags'].$in;
+            parsedQuery['assetMetadata.taxonomy.formData.tags'] = {
+                $in: createTagRegex(tags),
+            };
+        }
 
         if (query['assetMetadata.creators.formData.name']) {
             const creators = query['assetMetadata.creators.formData.name'].$in;
@@ -790,6 +798,13 @@ route.post('/search', async (req, res) => {
             if (name) addSearchByTitleDescCreator(name);
         } else if (name) {
             addSearchByTitleDescCreator(name);
+        }
+
+        if (query['assetMetadata.taxonomy.formData.tags']?.$in) {
+            const tags = query['assetMetadata.taxonomy.formData.tags'].$in;
+            parsedQuery['assetMetadata.taxonomy.formData.tags'] = {
+                $in: createTagRegex(tags),
+            };
         }
 
         let filterColors: number[][] = [];
