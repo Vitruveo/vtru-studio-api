@@ -891,6 +891,11 @@ route.post('/search', async (req, res) => {
                 (id: string) => new ObjectId(id)
             );
 
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
+                (id: string) => new ObjectId(id)
+            );
+
         if (storesId) {
             parsedQuery.$or = [
                 ...(parsedQuery.$or || []),
