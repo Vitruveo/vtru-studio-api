@@ -73,6 +73,27 @@ export const ArtworksSchema = z.object({
         nationality: z.array(z.string()).optional(),
         residence: z.array(z.string()).optional(),
     }),
+    portfolio: z.object({
+        wallets: z.array(z.string()).optional(),
+    }),
+    exclude: z.object({
+        arts: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+        artists: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+    }),
 });
 
 export const AppearanceContentSchema = z.object({
