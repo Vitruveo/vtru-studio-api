@@ -95,6 +95,24 @@ export const schemaValidationArtworks = z.object({
             )
             .optional(),
     }),
+    include: z.object({
+        arts: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+        artists: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+    }),
 });
 
 export const schemaValidationAppearanceContent = z.object({
