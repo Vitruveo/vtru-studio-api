@@ -213,6 +213,23 @@ route.get('/groupByCreator', async (req, res) => {
 
         delete parsedQuery.grouped;
 
+        if (parsedQuery?._id?.$in)
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
+                (id: string) => new ObjectId(id)
+            );
+        if (parsedQuery['framework.createdBy']?.$in)
+            parsedQuery['framework.createdBy'].$in = parsedQuery[
+                'framework.createdBy'
+            ].$in.map((id: string) => new ObjectId(id));
+        if (parsedQuery['framework.createdBy']?.$nin)
+            parsedQuery['framework.createdBy'].$nin = parsedQuery[
+                'framework.createdBy'
+            ].$nin.map((id: string) => new ObjectId(id));
+
         const assets = await model.findAssetGroupPaginated({
             query: parsedQuery,
             limit: limitNumber,
@@ -430,6 +447,23 @@ route.post('/groupByCreator', async (req, res) => {
             : 'all';
 
         delete parsedQuery.grouped;
+
+        if (parsedQuery?._id?.$in)
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
+                (id: string) => new ObjectId(id)
+            );
+        if (parsedQuery['framework.createdBy']?.$in)
+            parsedQuery['framework.createdBy'].$in = parsedQuery[
+                'framework.createdBy'
+            ].$in.map((id: string) => new ObjectId(id));
+        if (parsedQuery['framework.createdBy']?.$nin)
+            parsedQuery['framework.createdBy'].$nin = parsedQuery[
+                'framework.createdBy'
+            ].$nin.map((id: string) => new ObjectId(id));
 
         const assets = await model.findAssetGroupPaginated({
             query: parsedQuery,
@@ -666,6 +700,18 @@ route.get('/search', async (req, res) => {
             parsedQuery._id.$in = parsedQuery._id.$in.map(
                 (id: string) => new ObjectId(id)
             );
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
+                (id: string) => new ObjectId(id)
+            );
+        if (parsedQuery['framework.createdBy']?.$in)
+            parsedQuery['framework.createdBy'].$in = parsedQuery[
+                'framework.createdBy'
+            ].$in.map((id: string) => new ObjectId(id));
+        if (parsedQuery['framework.createdBy']?.$nin)
+            parsedQuery['framework.createdBy'].$nin = parsedQuery[
+                'framework.createdBy'
+            ].$nin.map((id: string) => new ObjectId(id));
 
         const result = await model.countAssets({
             query: parsedQuery,
@@ -910,6 +956,14 @@ route.post('/search', async (req, res) => {
             parsedQuery._id.$nin = parsedQuery._id.$nin.map(
                 (id: string) => new ObjectId(id)
             );
+        if (parsedQuery['framework.createdBy']?.$in)
+            parsedQuery['framework.createdBy'].$in = parsedQuery[
+                'framework.createdBy'
+            ].$in.map((id: string) => new ObjectId(id));
+        if (parsedQuery['framework.createdBy']?.$nin)
+            parsedQuery['framework.createdBy'].$nin = parsedQuery[
+                'framework.createdBy'
+            ].$nin.map((id: string) => new ObjectId(id));
 
         if (storesId) {
             parsedQuery.$or = [
@@ -927,6 +981,8 @@ route.post('/search', async (req, res) => {
                 },
             ];
         }
+
+        console.log('parsedQuery', parsedQuery);
 
         const result = await model.countAssets({
             query: parsedQuery,
