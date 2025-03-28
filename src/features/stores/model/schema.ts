@@ -94,6 +94,25 @@ export const ArtworksSchema = z.object({
             )
             .optional(),
     }),
+    include: z.object({
+        arts: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+        artists: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+    }),
+    searchOption: z.string().optional(),
 });
 
 export const AppearanceContentSchema = z.object({
