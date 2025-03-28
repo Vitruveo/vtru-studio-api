@@ -207,6 +207,11 @@ route.get('/groupByCreator', async (req, res) => {
             ];
         }
 
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
+                (id: string) => new ObjectId(id)
+            );
+
         if (parsedQuery?._id?.$in && parsedQuery?.['framework.createdBy'].$in) {
             parsedQuery.$or = [
                 {
@@ -453,6 +458,11 @@ route.post('/groupByCreator', async (req, res) => {
                 },
             ];
         }
+
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
+                (id: string) => new ObjectId(id)
+            );
 
         if (parsedQuery?._id?.$in && parsedQuery?.['framework.createdBy'].$in) {
             parsedQuery.$or = [
@@ -717,6 +727,11 @@ route.get('/search', async (req, res) => {
                 },
             ];
         }
+
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
+                (id: string) => new ObjectId(id)
+            );
 
         if (parsedQuery?._id?.$in && parsedQuery?.['framework.createdBy'].$in) {
             parsedQuery.$or = [
