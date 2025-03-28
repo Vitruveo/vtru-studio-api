@@ -207,6 +207,35 @@ route.get('/groupByCreator', async (req, res) => {
             ];
         }
 
+        if (parsedQuery?._id?.$in && parsedQuery?.['framework.createdBy'].$in) {
+            parsedQuery.$or = [
+                {
+                    _id: {
+                        $in: parsedQuery._id.$in.map(
+                            (id: string) => new ObjectId(id)
+                        ),
+                    },
+                },
+                {
+                    'framework.createdBy': {
+                        $in: parsedQuery['framework.createdBy'].$in,
+                    },
+                },
+            ];
+            delete parsedQuery['framework.createdBy'].$in;
+            delete parsedQuery._id.$in;
+            if (Object.keys(parsedQuery._id).length === 0) {
+                delete parsedQuery._id;
+            }
+            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
+                delete parsedQuery['framework.createdBy'];
+            }
+        } else if (parsedQuery?._id?.$in) {
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
+        }
+
         const grouped = groupedOptions.includes(query.grouped as string)
             ? (query.grouped as string)
             : 'all';
@@ -423,6 +452,35 @@ route.post('/groupByCreator', async (req, res) => {
                     }),
                 },
             ];
+        }
+
+        if (parsedQuery?._id?.$in && parsedQuery?.['framework.createdBy'].$in) {
+            parsedQuery.$or = [
+                {
+                    _id: {
+                        $in: parsedQuery._id.$in.map(
+                            (id: string) => new ObjectId(id)
+                        ),
+                    },
+                },
+                {
+                    'framework.createdBy': {
+                        $in: parsedQuery['framework.createdBy'].$in,
+                    },
+                },
+            ];
+            delete parsedQuery['framework.createdBy'].$in;
+            delete parsedQuery._id.$in;
+            if (Object.keys(parsedQuery._id).length === 0) {
+                delete parsedQuery._id;
+            }
+            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
+                delete parsedQuery['framework.createdBy'];
+            }
+        } else if (parsedQuery?._id?.$in) {
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
         }
 
         const grouped = groupedOptions.includes(query.grouped as string)
@@ -658,6 +716,35 @@ route.get('/search', async (req, res) => {
                     'stores.list': { $nin: [storesId] },
                 },
             ];
+        }
+
+        if (parsedQuery?._id?.$in && parsedQuery?.['framework.createdBy'].$in) {
+            parsedQuery.$or = [
+                {
+                    _id: {
+                        $in: parsedQuery._id.$in.map(
+                            (id: string) => new ObjectId(id)
+                        ),
+                    },
+                },
+                {
+                    'framework.createdBy': {
+                        $in: parsedQuery['framework.createdBy'].$in,
+                    },
+                },
+            ];
+            delete parsedQuery['framework.createdBy'].$in;
+            delete parsedQuery._id.$in;
+            if (Object.keys(parsedQuery._id).length === 0) {
+                delete parsedQuery._id;
+            }
+            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
+                delete parsedQuery['framework.createdBy'];
+            }
+        } else if (parsedQuery?._id?.$in) {
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
         }
 
         const maxAssetPrice = await model.findMaxPrice();
