@@ -923,7 +923,10 @@ route.post('/search', async (req, res) => {
             ];
         }
 
-        if (parsedQuery?._id?.$in && parsedQuery?.['framework.createdBy'].$in) {
+        if (
+            parsedQuery?._id?.$in &&
+            parsedQuery?.['framework.createdBy']?.$in
+        ) {
             parsedQuery.$or = [
                 {
                     _id: {
