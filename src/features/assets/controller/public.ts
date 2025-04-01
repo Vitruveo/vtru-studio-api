@@ -1608,7 +1608,7 @@ route.post('/generator/pack', async (req, res) => {
             return;
         }
         if (ids.length > GENERATE_PACK_LIMIT) {
-            ids.splice(GENERATE_PACK_LIMIT);
+            ids.slice(0, GENERATE_PACK_LIMIT);
         }
 
         res.setHeader('Content-Type', 'application/zip');
