@@ -1,12 +1,12 @@
 import debug from 'debug';
+import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { ObjectId } from 'mongodb';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
-import { APIResponse } from '../../../services';
+import { APIResponse, generateBufferPack, ObjectId } from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
@@ -14,6 +14,7 @@ import {
     QueryPaginatedParams,
     ResponseAssetsPaginated,
     Spotlight,
+    StorePackItem,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
 import {
@@ -24,6 +25,13 @@ import {
 } from '../utils/queries';
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
+import {
+    ASSET_STORAGE_URL,
+    GENERAL_STORAGE_URL,
+    GENERATE_PACK_LIMIT,
+    SEARCH_URL,
+} from '../../../constants';
+import { validatePath } from '../utils/validatePath';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1581,6 +1589,70 @@ route.get('/slideshow/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.slideshow.get.failed',
             message: `Reader get slideshow failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/generator/pack', async (req, res) => {
+    try {
+        const { ids } = req.body as { ids: string[] };
+
+        if (!ids || ids.length === 0) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.pack.get.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+        if (ids.length > GENERATE_PACK_LIMIT) {
+            ids.splice(GENERATE_PACK_LIMIT);
+        }
+
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=pack.zip');
+
+        const assetsForStorePack = await model.findAssetsForStorePack({
+            query: { _id: { $in: ids.map((item) => new ObjectId(item)) } },
+        });
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.pipe(res);
+
+        const data: StorePackItem[] = await Promise.all(
+            assetsForStorePack.map(async (item) => {
+                const avatarPath = `${GENERAL_STORAGE_URL}/${item.creator.avatar}`;
+                const isvalidAvatar = await validatePath(avatarPath);
+                const avatar = isvalidAvatar
+                    ? avatarPath
+                    : resolve('public/images/xibit-icon-redondo-litemode.png');
+
+                return {
+                    id: item._id,
+                    path: `${ASSET_STORAGE_URL}/${item.formats.exhibition?.path}`,
+                    title: item.assetMetadata.context.formData.title,
+                    username: item.creator.username,
+                    avatar,
+                    qrCode: `${SEARCH_URL}/${item.creator.username}/${item._id}/go`,
+                    logo: resolve('public/images/XIBIT-logo_dark.png'),
+                };
+            })
+        );
+
+        const buffers = await generateBufferPack(data);
+
+        buffers.forEach((item) => {
+            archive.append(item.buffer, { name: `${item.id}.png` });
+        });
+
+        archive.finalize();
+    } catch (error) {
+        logger('Reader get pack failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.pack.get.failed',
+            message: `Reader get pack failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

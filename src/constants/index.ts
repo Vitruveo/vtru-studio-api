@@ -27,3 +27,4 @@ export * from './batch';
 export * from './static';
 export * from './spotlight';
 export * from './discord';
+export * from './folio';

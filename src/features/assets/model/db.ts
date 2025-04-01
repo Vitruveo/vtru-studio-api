@@ -38,6 +38,7 @@ import type {
     UpdateManyAssetsAutoStakeParams,
     FindLastSoldAssets,
     StoresVisibilityParams,
+    FindAssetsForStorePackParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -1456,3 +1457,76 @@ export const updateAssetsUsername = async ({
 
 export const findAssets = async ({ query }: FindAssetsParams) =>
     assets().find(query).toArray();
+
+export const findAssetsForStorePack = async ({
+    query,
+}: FindAssetsForStorePackParams) => {
+    const aggregate = [
+        { $match: query },
+        {
+            $addFields: {
+                creatorId: {
+                    $toObjectId: '$framework.createdBy',
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'creatorId',
+                foreignField: '_id',
+                as: 'creatorDetails',
+            },
+        },
+        {
+            $unwind: {
+                path: '$creatorDetails',
+            },
+        },
+        {
+            $addFields: {
+                vault: '$creatorDetails.vault',
+                'creator.avatar': '$creatorDetails.profile.avatar',
+            },
+        },
+        {
+            $project: {
+                creatorId: 0,
+                creatorDetails: 0,
+                actions: 0,
+                c2pa: 0,
+                contractExplorer: 0,
+                exists: 0,
+                insensitiveCreator: 0,
+                insensitiveTitle: 0,
+                ipfs: 0,
+                mediaAuxiliary: 0,
+                status: 0,
+                terms: 0,
+                uploadedMediaKeys: 0,
+                vault: 0,
+                'assetMetadata.isCompleted': 0,
+                'assetMetadata.context.formData.colors': 0,
+                'assetMetadata.context.formData.culture': 0,
+                'assetMetadata.context.formData.mood': 0,
+                'assetMetadata.context.formData.orientation': 0,
+                'assetMetadata.context.formData.description': 0,
+                'assetMetadata.provenance': 0,
+                'assetMetadata.taxonomy': 0,
+                'assetMetadata.creators': 0,
+                'formats.original': 0,
+                'formats.exhibition.name': 0,
+                'formats.exhibition.size': 0,
+                'formats.exhibition.validation': 0,
+                'formats.display': 0,
+                'formats.print': 0,
+                'formats.preview': 0,
+                licenses: 0,
+                consignArtwork: 0,
+                framework: 0,
+            },
+        },
+    ];
+
+    return assets().aggregate(aggregate).toArray();
+};
