@@ -25,7 +25,12 @@ import {
 } from '../utils/queries';
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
-import { ASSET_STORAGE_URL, GENERAL_STORAGE_URL } from '../../../constants';
+import {
+    ASSET_STORAGE_URL,
+    GENERAL_STORAGE_URL,
+    GENERATE_PACK_LIMIT,
+    SEARCH_URL,
+} from '../../../constants';
 import { validatePath } from '../utils/validatePath';
 
 // this is used to filter assets that are not ready to be shown
@@ -1592,7 +1597,6 @@ route.get('/slideshow/:id', async (req, res) => {
 
 route.post('/generator/pack', async (req, res) => {
     try {
-        const limit = 8;
         const { ids } = req.body as { ids: string[] };
 
         if (!ids || ids.length === 0) {
@@ -1603,8 +1607,8 @@ route.post('/generator/pack', async (req, res) => {
             } as APIResponse);
             return;
         }
-        if (ids.length > limit) {
-            ids.splice(limit);
+        if (ids.length > GENERATE_PACK_LIMIT) {
+            ids.splice(GENERATE_PACK_LIMIT);
         }
 
         res.setHeader('Content-Type', 'application/zip');
@@ -1631,8 +1635,7 @@ route.post('/generator/pack', async (req, res) => {
                     title: item.assetMetadata.context.formData.title,
                     username: item.creator.username,
                     avatar,
-                    // TODO: pegar o ambiente se é produção ou desenvolvimento
-                    qrCode: `xibit.app/${item.creator.username}/${item._id}/go`,
+                    qrCode: `${SEARCH_URL}/${item.creator.username}/${item._id}/go`,
                     logo: resolve('public/images/XIBIT-logo_dark.png'),
                 };
             })
