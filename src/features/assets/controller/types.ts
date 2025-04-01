@@ -121,21 +121,6 @@ export interface StoresVisibilityBody {
     list: string[];
 }
 
-export interface BuidlQuery {
-    [key: string]:
-    | string
-    | boolean
-    | {
-        $in: string[];
-    }
-    | {
-        [key: string]: {
-            $regex: string;
-            $options: string;
-        };
-    }[];
-}
-
 export interface StorePackItem {
     id: string;
     path: string;

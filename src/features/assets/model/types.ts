@@ -217,8 +217,4 @@ export interface StoresVisibilityParams {
 
 export interface FindAssetsForStorePackParams {
     query: any;
-    limit: number;
-    colors: number[][];
-    precision: number;
-    sort: Sort;
 }

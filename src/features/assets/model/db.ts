@@ -1460,10 +1460,6 @@ export const findAssets = async ({ query }: FindAssetsParams) =>
 
 export const findAssetsForStorePack = async ({
     query,
-    limit,
-    sort,
-    colors,
-    precision,
 }: FindAssetsForStorePackParams) => {
     const aggregate = [
         { $match: query },
@@ -1471,30 +1467,6 @@ export const findAssetsForStorePack = async ({
             $addFields: {
                 creatorId: {
                     $toObjectId: '$framework.createdBy',
-                },
-                exists: {
-                    $cond: {
-                        if: {
-                            $gt: [colors?.length, 0],
-                        },
-                        then: {
-                            $anyElementTrue: {
-                                $map: {
-                                    input: '$assetMetadata.context.formData.colors',
-                                    as: 'colors',
-                                    in: {
-                                        $or: buildFilterColorsQuery(
-                                            colors!,
-                                            precision
-                                        ),
-                                    },
-                                },
-                            },
-                        },
-                        else: {
-                            $literal: true,
-                        },
-                    },
                 },
             },
         },
@@ -1554,8 +1526,6 @@ export const findAssetsForStorePack = async ({
                 framework: 0,
             },
         },
-        { $sort: sort },
-        { $limit: limit },
     ];
 
     return assets().aggregate(aggregate).toArray();

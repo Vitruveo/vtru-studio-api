@@ -3,15 +3,12 @@ import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { ObjectId } from 'mongodb';
 import { join, resolve } from 'path';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
-import * as storeModel from '../../stores/model';
-import { APIResponse, generateBufferPack } from '../../../services';
+import { APIResponse, generateBufferPack, ObjectId } from '../../../services';
 import {
     ArtistSpotlight,
-    BuidlQuery,
     CarouselResponse,
     QueryCollectionParams,
     QueryPaginatedParams,
@@ -29,7 +26,6 @@ import {
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
 import { ASSET_STORAGE_URL, GENERAL_STORAGE_URL } from '../../../constants';
-import { convertHEXtoRGB } from '../../../utils/convertHexToRGB';
 import { validatePath } from '../utils/validatePath';
 
 // this is used to filter assets that are not ready to be shown
@@ -1594,152 +1590,35 @@ route.get('/slideshow/:id', async (req, res) => {
     }
 });
 
-route.get('/generator/pack/:id', async (req, res) => {
+route.post('/generator/pack', async (req, res) => {
     try {
-        const { id } = req.params;
+        const limit = 8;
+        const { ids } = req.body as { ids: string[] };
 
-        const store = await storeModel.findStoresById(id);
-
-        if (!store) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.assets.pack.notFound',
-                message: 'Reader get store not found',
+        if (!ids || ids.length === 0) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.pack.get.invalidParams',
+                message: 'Invalid params',
                 transaction: nanoid(),
             } as APIResponse);
             return;
+        }
+        if (ids.length > limit) {
+            ids.splice(limit);
         }
 
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', 'attachment; filename=pack.zip');
 
+        const assetsForStorePack = await model.findAssetsForStorePack({
+            query: { _id: { $in: ids.map((item) => new ObjectId(item)) } },
+        });
+
         const archive = archiver('zip', { zlib: { level: 9 } });
         archive.pipe(res);
 
-        let buildQuery: any = {};
-
-        if (store.artworks?.searchOption === 'filter') {
-            const buildFilters = {
-                context: store.artworks?.context,
-                taxonomy: store.artworks?.taxonomy,
-                artists: store.artworks?.artists,
-            };
-
-            buildQuery = Object.entries(buildFilters).reduce<BuidlQuery>(
-                (acc, cur) => {
-                    const [key, value] = cur;
-
-                    Object.entries(value || {}).forEach((item) => {
-                        const [keyFilter, valueFilter] = item as [
-                            string,
-                            string | string[],
-                        ];
-                        if (!valueFilter) return;
-                        if (Array.isArray(valueFilter) && !valueFilter.length)
-                            return;
-
-                        if (Array.isArray(valueFilter)) {
-                            acc[
-                                `assetMetadata.${key}.formData.${keyFilter === 'arEnabled'
-                                    ? 'arenabled'
-                                    : keyFilter
-                                }`
-                            ] = {
-                                $in: valueFilter,
-                            };
-                            return;
-                        }
-                        acc[`assetMetadata.${key}.formData.${keyFilter}`] =
-                            valueFilter;
-                    });
-
-                    return acc;
-                },
-                {}
-            );
-            if (Object.keys(store.artworks?.exclude?.arts || {}).length > 0) {
-                buildQuery._id = {
-                    $nin: store.artworks.exclude.arts!.map(
-                        (item) => new ObjectId(item.value)
-                    ),
-                };
-            }
-            if (
-                Object.keys(store.artworks?.exclude?.artists || {}).length > 0
-            ) {
-                buildQuery['framework.createdBy'] = {
-                    $nin: store.artworks.exclude.artists!.map(
-                        (item) => item.value
-                    ),
-                };
-            }
-            if (
-                Object.keys(store.artworks?.portfolio?.wallets || {}).length > 0
-            ) {
-                buildQuery['mintExplorer.adress'] = {
-                    $in: store.artworks.portfolio.wallets!,
-                };
-            }
-        }
-        if (store.artworks?.searchOption === 'select') {
-            if (
-                Object.keys(store.artworks?.include?.arts || {}).length > 0 &&
-                Object.keys(store.artworks?.include?.artists || {}).length > 0
-            ) {
-                buildQuery.$or = [
-                    {
-                        _id: {
-                            $in: store.artworks.include.arts!.map(
-                                (item) => new ObjectId(item.value)
-                            ),
-                        },
-                    },
-                    {
-                        'framework.createdBy': {
-                            $in: store.artworks.include.artists!.map(
-                                (item) => item.value
-                            ),
-                        },
-                    },
-                ];
-            } else if (
-                Object.keys(store.artworks?.include?.arts || {}).length > 0
-            ) {
-                buildQuery._id = {
-                    $in: store.artworks.include.arts!.map(
-                        (item) => new ObjectId(item.value)
-                    ),
-                };
-            } else if (
-                Object.keys(store.artworks?.include?.artists || {}).length > 0
-            ) {
-                buildQuery['framework.createdBy'] = {
-                    $in: store.artworks.include.artists!.map(
-                        (item) => item.value
-                    ),
-                };
-            }
-        }
-        buildQuery['assetMetadata.context.formData.orientation'] = {
-            $in: ['vertical'],
-        };
-        buildQuery['consignArtwork.status'] = 'active';
-        buildQuery['contractExplorer.tx'] = { $exists: true };
-
-        const colors = store.artworks?.context.colors;
-
-        const assetsFromStore = await model.findAssetsForStorePack({
-            query: buildQuery,
-            limit: 8,
-            sort: querySortSearch(
-                { order: 'latest', isIncludeSold: 'false' },
-                ''
-            ),
-            precision: Number(store.artworks?.context.precision) || 0.7,
-            colors: colors ? colors.map((color) => convertHEXtoRGB(color)) : [],
-        });
-
         const data: StorePackItem[] = await Promise.all(
-            assetsFromStore.map(async (item) => {
+            assetsForStorePack.map(async (item) => {
                 const avatarPath = `${GENERAL_STORAGE_URL}/${item.creator.avatar}`;
                 const isvalidAvatar = await validatePath(avatarPath);
                 const avatar = isvalidAvatar
