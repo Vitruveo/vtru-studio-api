@@ -1584,11 +1584,15 @@ route.post('/printOutputGenerator/:id', async (req, res) => {
                 }
             );
 
-            const artworkPath = path.join(__dirname, `wallArt.png`);
-            const sourceBuffer = fs.readFileSync(artworkPath);
+            // const artworkPath = path.join(__dirname, `wallArt.png`);
+            // const sourceBuffer = fs.readFileSync(artworkPath);
+
+            const sourceBuffer = await axios.get(req.body.source, {
+                responseType: 'arraybuffer',
+            });
 
             child.send({
-                sourceBuffer,
+                sourceBuffer: sourceBuffer.data,
                 artworkBuffer: artworkBuffer.data,
             });
         } catch (fetchError) {

@@ -1,6 +1,6 @@
 {
     "name": "vtru-studio-api",
-    "version": "1.0.684",
+    "version": "1.0.685",
     "description": "",
     "main": "index.js",
     "scripts": {
@@ -60,6 +60,7 @@
         "@sentry/node": "^7.82.0",
         "amqplib": "^0.10.3",
         "axios": "^1.6.2",
+        "canvas": "^3.1.0",
         "cors": "^2.8.5",
         "cron": "^3.1.7",
         "dayjs": "^1.11.10",
