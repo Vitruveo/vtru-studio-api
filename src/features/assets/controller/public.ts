@@ -1,4 +1,5 @@
 import debug from 'debug';
+import os from 'os';
 import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
@@ -23,6 +24,7 @@ import {
     querySortSearch,
     querySortGroupByCreator,
 } from '../utils/queries';
+import { fork } from 'child_process';
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
 import {
@@ -31,8 +33,8 @@ import {
     GENERATE_PACK_LIMIT,
     SEARCH_URL,
 } from '../../../constants';
+import { splitIntoChunks } from '../utils/splitInChunks';
 import { validatePath } from '../utils/validatePath';
-import { fork } from 'child_process';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1636,63 +1638,59 @@ route.post('/generator/pack', async (req, res) => {
                     title: item.assetMetadata.context.formData.title,
                     username: item.creator.username,
                     avatar,
-                    qrCode: `${SEARCH_URL}/${item.creator.username}/${item._id}/go`,
+                    qrCode: `${SEARCH_URL}/${item._id}/go`,
                     logo: resolve('public/images/XIBIT-logo_dark.png'),
                 };
             })
         );
 
-        const childCount = 4;
-        const tasksPerChild = Math.ceil(data.length / childCount);
-        const results: { buffer: Buffer; id: string }[] = [];
+        const childCount = os.cpus().length;
+        const chunks = splitIntoChunks(data, childCount);
 
         let completedTasks = 0;
+        let allResults: { buffer: Buffer; id: string }[] = [];
 
-        for (let i = 0; i < childCount; i += 1) {
-            const startIndex = i * tasksPerChild;
-            const endIndex = Math.min(startIndex + tasksPerChild, data.length);
-            const childTasks = data.slice(startIndex, endIndex);
+        chunks.forEach((chunk) => {
+            if (chunk.length === 0) return;
 
             const child = fork(
                 join(__dirname, '../../../services/pack/index.ts')
             );
 
-            child.send({ data: childTasks });
+            child.send({ data: chunk });
 
             child.on('message', (message) => {
                 const { type, data, error } = message as any;
-                if (type === 'complete') {
-                    results.push(...data);
-                    completedTasks += 1;
 
-                    if (completedTasks === childCount) {
-                        results.forEach((result) => {
+                if (type === 'complete') {
+                    allResults = [...allResults, ...data];
+                    completedTasks++;
+
+                    if (
+                        completedTasks ===
+                        chunks.filter((c) => c.length > 0).length
+                    ) {
+                        allResults.forEach((buffer) => {
                             const bufferData =
-                                result.buffer instanceof Buffer
-                                    ? result.buffer
-                                    : Buffer.from(result.buffer);
+                                buffer.buffer instanceof Buffer
+                                    ? buffer.buffer
+                                    : Buffer.from(buffer.buffer);
                             archive.append(bufferData, {
-                                name: `${result.id}.png`,
+                                name: `${buffer.id}.png`,
                             });
                         });
-                        child.kill();
                         archive.finalize();
                     }
+                    child.kill();
                 }
+
                 if (type === 'error') {
                     logger('Pack error: %O', error);
                     res.status(500).end();
                     child.kill();
                 }
             });
-
-            child.on('error', (err) => {
-                logger('Child process error: %O', err);
-                res.status(500).send({
-                    error: 'Error during processing images',
-                });
-            });
-        }
+        });
     } catch (error) {
         logger('Reader get pack failed: %O', error);
         res.status(500).json({
