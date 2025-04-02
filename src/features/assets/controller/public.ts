@@ -1746,11 +1746,12 @@ route.post('/generator/pack', async (req, res) => {
             if (chunk.length === 0) return;
 
             const child = fork(
-                join(__dirname, '../../../services/pack/index.ts'),
-                [],
-                {
-                    execArgv: ['-r', 'ts-node/register'],
-                }
+                join(
+                    __dirname,
+                    process.env.NODE_ENV === 'dev'
+                        ? '../../../services/pack/index.ts'
+                        : '../../../services/pack/index.js'
+                )
             );
 
             child.send({ data: chunk });
