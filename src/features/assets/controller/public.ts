@@ -6,7 +6,11 @@ import { Router } from 'express';
 import { join, resolve } from 'path';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
-import { APIResponse, generateBufferPack, ObjectId } from '../../../services';
+import {
+    APIResponse,
+    generateBufferForPack,
+    ObjectId,
+} from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
@@ -1641,11 +1645,9 @@ route.post('/generator/pack', async (req, res) => {
             })
         );
 
-        const buffers = await generateBufferPack(data);
+        const buffer = await generateBufferForPack(data[0]);
 
-        buffers.forEach((item) => {
-            archive.append(item.buffer, { name: `${item.id}.png` });
-        });
+        archive.append(buffer.buffer, { name: `${buffer.id}.png` });
 
         archive.finalize();
     } catch (error) {
