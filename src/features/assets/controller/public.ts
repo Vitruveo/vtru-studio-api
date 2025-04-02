@@ -1,4 +1,5 @@
 import debug from 'debug';
+import os from 'os';
 import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
@@ -6,11 +7,9 @@ import { Router } from 'express';
 import path, { join, resolve } from 'path';
 import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
-import { fork } from 'child_process';
-
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
-import { APIResponse, generateBufferPack, ObjectId } from '../../../services';
+import { APIResponse, ObjectId } from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
@@ -27,6 +26,7 @@ import {
     querySortSearch,
     querySortGroupByCreator,
 } from '../utils/queries';
+import { fork } from 'child_process';
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
 import {
@@ -35,6 +35,7 @@ import {
     GENERATE_PACK_LIMIT,
     SEARCH_URL,
 } from '../../../constants';
+import { splitIntoChunks } from '../utils/splitInChunks';
 import { validatePath } from '../utils/validatePath';
 
 // this is used to filter assets that are not ready to be shown
@@ -1729,19 +1730,70 @@ route.post('/generator/pack', async (req, res) => {
                     title: item.assetMetadata.context.formData.title,
                     username: item.creator.username,
                     avatar,
-                    qrCode: `${SEARCH_URL}/${item.creator.username}/${item._id}/go`,
+                    qrCode: `${SEARCH_URL}/${item._id}/go`,
                     logo: resolve('public/images/XIBIT-logo_dark.png'),
                 };
             })
         );
 
-        const buffers = await generateBufferPack(data);
+        const childCount = os.cpus().length;
+        const chunks = splitIntoChunks(data, childCount);
 
-        buffers.forEach((item) => {
-            archive.append(item.buffer, { name: `${item.id}.png` });
+        let completedTasks = 0;
+        let allResults: { buffer: Buffer; id: string }[] = [];
+
+        chunks.forEach((chunk) => {
+            if (chunk.length === 0) return;
+
+            const child = fork(
+                join(
+                    __dirname,
+                    process.env.NODE_ENV === 'dev'
+                        ? '../../../services/pack/index.ts'
+                        : '../../../services/pack/index.js'
+                )
+            );
+
+            child.send({ data: chunk });
+
+            child.on('message', (message) => {
+                const { type, data, error } = message as any;
+
+                if (type === 'complete') {
+                    allResults = [...allResults, ...data];
+                    completedTasks++;
+
+                    if (
+                        completedTasks ===
+                        chunks.filter((c) => c.length > 0).length
+                    ) {
+                        allResults.forEach((buffer) => {
+                            const bufferData =
+                                buffer.buffer instanceof Buffer
+                                    ? buffer.buffer
+                                    : Buffer.from(buffer.buffer);
+                            archive.append(bufferData, {
+                                name: `${buffer.id}.png`,
+                            });
+                        });
+                        archive.finalize();
+                    }
+                    child.kill();
+                }
+
+                if (type === 'error') {
+                    logger('Pack error: %O', error);
+                    res.status(500).end();
+                    child.kill();
+                }
+            });
+
+            child.on('error', (error) => {
+                logger('Child process error: %O', error);
+                res.status(500).end();
+                child.kill();
+            });
         });
-
-        archive.finalize();
     } catch (error) {
         logger('Reader get pack failed: %O', error);
         res.status(500).json({
