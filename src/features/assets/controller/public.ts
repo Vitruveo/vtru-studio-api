@@ -1525,9 +1525,16 @@ route.get('/slideshow/:id', async (req, res) => {
     }
 });
 
-route.post('/printOutputGenerator/:id', async (req, res) => {
+route.get('/printOutputGenerator/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { source } = req.query;
+
+        if (!source) {
+            res.status(400).json({ message: 'Source is required' });
+            return;
+        }
+
         const asset = await model.findAssetsById({ id });
 
         if (!asset) {
@@ -1584,10 +1591,7 @@ route.post('/printOutputGenerator/:id', async (req, res) => {
                 }
             );
 
-            // const artworkPath = path.join(__dirname, `wallArt.png`);
-            // const sourceBuffer = fs.readFileSync(artworkPath);
-
-            const sourceBuffer = await axios.get(req.body.source, {
+            const sourceBuffer = await axios.get(source as string, {
                 responseType: 'arraybuffer',
             });
 
