@@ -4,7 +4,9 @@ import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { join, resolve } from 'path';
+import path, { join, resolve } from 'path';
+import { PassThrough } from 'stream';
+import { pipeline } from 'stream/promises';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse, ObjectId } from '../../../services';
@@ -1592,6 +1594,96 @@ route.get('/slideshow/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.slideshow.get.failed',
             message: `Reader get slideshow failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/printOutputGenerator/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { source } = req.query;
+
+        if (!source) {
+            res.status(400).json({ message: 'Source is required' });
+            return;
+        }
+
+        const asset = await model.findAssetsById({ id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.get.notFound',
+                message: 'Asset not found for the given ID',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+        res.setHeader(
+            'Expires',
+            new Date(Date.now() + 604800000).toUTCString()
+        );
+
+        res.setHeader('Content-Type', 'image/jpeg');
+
+        const outputStream = new PassThrough();
+
+        pipeline(outputStream, res).catch((err) => {
+            logger('Error in output stream pipeline: %O', err);
+        });
+
+        const child = fork(
+            path.join(
+                __dirname,
+                process.env.NODE_ENV === 'dev'
+                    ? '../utils/printGenerator/event.ts'
+                    : '../utils/printGenerator/event.js'
+            )
+        );
+
+        child.on('message', (message) => {
+            const { type, data, error } = message as any;
+            if (type === 'data') {
+                outputStream.write(Buffer.from(data));
+            } else if (type === 'end') {
+                outputStream.end();
+            } else if (type === 'error') {
+                logger('Error in child process: %O', error);
+                outputStream.end();
+                res.status(500).end();
+            }
+        });
+
+        child.on('error', (err) => {
+            logger('Child process error: %O', err);
+            outputStream.end();
+            res.status(500).end();
+        });
+
+        try {
+            child.send({
+                assetPath: asset.formats.original?.path,
+                source,
+            });
+        } catch (fetchError) {
+            logger('Error loading images: %O', fetchError);
+            outputStream.end();
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
+                message: `Failed to load images: ${fetchError}`,
+                args: fetchError,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    } catch (error) {
+        logger('Error generating print output for asset: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
+            message: `Failed to generate print output for asset: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
