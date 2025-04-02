@@ -7,6 +7,7 @@ import { Router } from 'express';
 import path, { join, resolve } from 'path';
 import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
+import { fork } from 'child_process';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse, ObjectId } from '../../../services';
@@ -26,7 +27,6 @@ import {
     querySortSearch,
     querySortGroupByCreator,
 } from '../utils/queries';
-import { fork } from 'child_process';
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
 import {
@@ -1758,11 +1758,11 @@ route.post('/generator/pack', async (req, res) => {
             child.send({ data: chunk });
 
             child.on('message', (message) => {
-                const { type, data, error } = message as any;
+                const { type, data: bufferResponse, error } = message as any;
 
                 if (type === 'complete') {
-                    allResults = [...allResults, ...data];
-                    completedTasks++;
+                    allResults = [...allResults, ...bufferResponse];
+                    completedTasks += 1;
 
                     if (
                         completedTasks ===
