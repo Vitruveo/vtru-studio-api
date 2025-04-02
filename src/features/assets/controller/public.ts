@@ -1642,57 +1642,47 @@ route.post('/generator/pack', async (req, res) => {
             })
         );
 
-        const childCount = 4;
-        const tasksPerChild = Math.ceil(data.length / childCount);
-        const results: { buffer: Buffer; id: string }[] = [];
+        const promises = data.map(
+            (item) =>
+                new Promise((resolvePromise, rejectPromise) => {
+                    const child = fork(
+                        join(__dirname, '../../../services/pack/index.ts')
+                    );
 
-        let completedTasks = 0;
+                    child.send({ data: item });
 
-        for (let i = 0; i < childCount; i += 1) {
-            const startIndex = i * tasksPerChild;
-            const endIndex = Math.min(startIndex + tasksPerChild, data.length);
-            const childTasks = data.slice(startIndex, endIndex);
+                    child.on('message', (message) => {
+                        const { type, data: buffer, error } = message as any;
+                        if (type === 'complete') {
+                            resolvePromise(buffer);
+                        }
+                        if (type === 'error') {
+                            logger('Pack error: %O', error);
+                            rejectPromise();
+                        }
+                    });
 
-            const child = fork(
-                join(__dirname, '../../../services/pack/index.ts')
-            );
+                    child.on('error', (err) => {
+                        logger('Child process error: %O', err);
+                        rejectPromise();
+                    });
+                })
+        );
 
-            child.send({ data: childTasks });
+        const buffers: any = await Promise.all(promises);
 
-            child.on('message', (message) => {
-                const { type, data, error } = message as any;
-                if (type === 'complete') {
-                    results.push(...data);
-                    completedTasks += 1;
+        buffers.forEach((result: any) => {
+            const bufferData =
+                result.buffer instanceof Buffer
+                    ? result.buffer
+                    : Buffer.from(result.buffer);
 
-                    if (completedTasks === childCount) {
-                        results.forEach((result) => {
-                            const bufferData =
-                                result.buffer instanceof Buffer
-                                    ? result.buffer
-                                    : Buffer.from(result.buffer);
-                            archive.append(bufferData, {
-                                name: `${result.id}.png`,
-                            });
-                        });
-                        child.kill();
-                        archive.finalize();
-                    }
-                }
-                if (type === 'error') {
-                    logger('Pack error: %O', error);
-                    res.status(500).end();
-                    child.kill();
-                }
+            archive.append(bufferData, {
+                name: `${result.id}.png`,
             });
+        });
 
-            child.on('error', (err) => {
-                logger('Child process error: %O', err);
-                res.status(500).send({
-                    error: 'Error during processing images',
-                });
-            });
-        }
+        archive.finalize();
     } catch (error) {
         logger('Reader get pack failed: %O', error);
         res.status(500).json({
