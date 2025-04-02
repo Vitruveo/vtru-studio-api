@@ -322,7 +322,7 @@ route.post('/', validateBodyForCreate, async (req, res) => {
                     creator: asset?.creator,
                 };
                 clone.assetMetadata.context.formData.title += ` ${asset.actions.countClone}`;
-                clone.licenses.print.added = false;
+                // clone.licenses.print.added = false;
             }
         }
 
