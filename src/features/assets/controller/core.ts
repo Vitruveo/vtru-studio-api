@@ -237,7 +237,7 @@ route.get('/creatorMy', validateQueries, async (req, res) => {
 
 route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
     try {
-        let asset = await model.findAssetsById({ id: req.params.id });
+        let asset = await model.findAssetsByIdFull({ id: req.params.id });
 
         if (!asset) {
             res.status(404).json({
@@ -260,7 +260,7 @@ route.get('/:id', mustBeOwner, validateParamsId, async (req, res) => {
                 },
             });
 
-            asset = await model.findAssetsById({ id: req.params.id });
+            asset = await model.findAssetsByIdFull({ id: req.params.id });
         }
 
         res.json({

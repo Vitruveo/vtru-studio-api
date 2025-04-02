@@ -805,6 +805,9 @@ export const findAssetsByCreatorName = ({
         ])
         .toArray();
 
+export const findAssetsByIdFull = async ({ id }: FindAssetsByIdParams) =>
+    assets().findOne({ _id: new ObjectId(id) });
+
 export const findAssetsById = async ({ id }: FindAssetsByIdParams) =>
     assets().findOne(
         { _id: new ObjectId(id) },
