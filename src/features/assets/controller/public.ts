@@ -1642,31 +1642,57 @@ route.post('/generator/pack', async (req, res) => {
             })
         );
 
-        const child = fork(join(__dirname, '../../../services/pack/index.ts'));
-        child.send({ data });
+        const childCount = 4;
+        const tasksPerChild = Math.ceil(data.length / childCount);
+        const results: { buffer: Buffer; id: string }[] = [];
 
-        child.on('message', (message) => {
-            const { type, data, error } = message as any;
-            if (type === 'complete') {
-                data.forEach((buffer: { buffer: Buffer; id: string }) => {
-                    const bufferData = Buffer.isBuffer(buffer.buffer)
-                        ? buffer.buffer
-                        : Buffer.from(buffer.buffer);
-                    archive.append(bufferData, { name: `${buffer.id}.png` });
+        let completedTasks = 0;
+
+        for (let i = 0; i < childCount; i += 1) {
+            const startIndex = i * tasksPerChild;
+            const endIndex = Math.min(startIndex + tasksPerChild, data.length);
+            const childTasks = data.slice(startIndex, endIndex);
+
+            const child = fork(
+                join(__dirname, '../../../services/pack/index.ts')
+            );
+
+            child.send({ data: childTasks });
+
+            child.on('message', (message) => {
+                const { type, data, error } = message as any;
+                if (type === 'complete') {
+                    results.push(...data);
+                    completedTasks += 1;
+
+                    if (completedTasks === childCount) {
+                        results.forEach((result) => {
+                            const bufferData =
+                                result.buffer instanceof Buffer
+                                    ? result.buffer
+                                    : Buffer.from(result.buffer);
+                            archive.append(bufferData, {
+                                name: `${result.id}.png`,
+                            });
+                        });
+                        child.kill();
+                        archive.finalize();
+                    }
+                }
+                if (type === 'error') {
+                    logger('Pack error: %O', error);
+                    res.status(500).end();
+                    child.kill();
+                }
+            });
+
+            child.on('error', (err) => {
+                logger('Child process error: %O', err);
+                res.status(500).send({
+                    error: 'Error during processing images',
                 });
-                archive.finalize();
-            }
-            if (type === 'error') {
-                logger('Pack error: %O', error);
-                res.status(500).end();
-                child.kill();
-            }
-        });
-
-        child.on('error', (err) => {
-            logger('Child process error: %O', err);
-            res.status(500).send({ error: 'Error during processing images' });
-        });
+            });
+        }
     } catch (error) {
         logger('Reader get pack failed: %O', error);
         res.status(500).json({
