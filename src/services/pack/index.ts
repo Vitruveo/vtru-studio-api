@@ -117,13 +117,15 @@ const generateBufferForPack = async (item: StorePackItem) => {
 process.on('message', async (message) => {
     try {
         const { data } = message as any;
+        const tasks: StorePackItem[] = data;
 
-        const buffer = await generateBufferForPack(data);
+        const imagesPromises = tasks.map((item) => generateBufferForPack(item));
+        const buffers = await Promise.all(imagesPromises);
 
         if (process.send) {
             process.send({
                 type: 'complete',
-                data: buffer,
+                data: buffers,
             });
         }
     } catch (error) {

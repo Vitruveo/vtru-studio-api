@@ -1653,9 +1653,13 @@ route.post('/generator/pack', async (req, res) => {
         chunks.forEach((chunk) => {
             if (chunk.length === 0) return;
 
-            const child = fork(join(__dirname, '../../../services/pack/index.ts'), [], {
-                execArgv: ['-r', 'ts-node/register']
-            });
+            const child = fork(
+                join(__dirname, '../../../services/pack/index.ts'),
+                [],
+                {
+                    execArgv: ['-r', 'ts-node/register'],
+                }
+            );
 
             child.send({ data: chunk });
 
@@ -1689,6 +1693,12 @@ route.post('/generator/pack', async (req, res) => {
                     res.status(500).end();
                     child.kill();
                 }
+            });
+
+            child.on('error', (error) => {
+                logger('Child process error: %O', error);
+                res.status(500).end();
+                child.kill();
             });
         });
     } catch (error) {
