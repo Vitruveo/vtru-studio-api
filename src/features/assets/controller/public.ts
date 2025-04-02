@@ -1719,11 +1719,15 @@ route.post('/generator/pack', async (req, res) => {
 
         const data: StorePackItem[] = await Promise.all(
             assetsForStorePack.map(async (item) => {
-                const avatarPath = `${GENERAL_STORAGE_URL}/${item.creator.avatar}`;
-                const isvalidAvatar = await validatePath(avatarPath);
-                const avatar = isvalidAvatar
-                    ? avatarPath
-                    : resolve('public/images/xibit-icon-redondo-litemode.png');
+                let avatar = resolve(
+                    'public/images/xibit-icon-redondo-litemode.png'
+                );
+
+                if (item.creator.avatar) {
+                    const avatarPath = `${GENERAL_STORAGE_URL}/${item.creator.avatar}`;
+                    const isvalidAvatar = await validatePath(avatarPath);
+                    avatar = isvalidAvatar ? avatarPath : avatar;
+                }
 
                 return {
                     id: item._id,
