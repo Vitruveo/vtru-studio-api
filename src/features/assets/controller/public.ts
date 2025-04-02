@@ -4,7 +4,7 @@ import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import path, { join, resolve } from 'path';
+import path, { join } from 'path';
 import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
 import { fork } from 'child_process';
@@ -1719,9 +1719,7 @@ route.post('/generator/pack', async (req, res) => {
 
         const data: StorePackItem[] = await Promise.all(
             assetsForStorePack.map(async (item) => {
-                let avatar = resolve(
-                    'public/images/xibit-icon-redondo-litemode.png'
-                );
+                let avatar = `${GENERAL_STORAGE_URL}/xibit-icon.png`;
 
                 if (item.creator.avatar) {
                     const avatarPath = `${GENERAL_STORAGE_URL}/${item.creator.avatar}`;
@@ -1736,7 +1734,7 @@ route.post('/generator/pack', async (req, res) => {
                     username: item.creator.username,
                     avatar,
                     qrCode: `${SEARCH_URL}/${item._id}/go`,
-                    logo: resolve('public/images/XIBIT-logo_dark.png'),
+                    logo: `${GENERAL_STORAGE_URL}/xibit-logo.png`,
                 };
             })
         );
