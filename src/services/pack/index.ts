@@ -16,7 +16,7 @@ const sizes = {
 const margin = 80;
 const characterLimit = 20;
 
-export const generateBufferForPack = async (item: StorePackItem) => {
+const generateBufferForPack = async (item: StorePackItem) => {
     registerFont(resolve('public/fonts/Inter.ttf'), {
         family: 'Inter',
         style: 'normal',
@@ -113,3 +113,29 @@ export const generateBufferForPack = async (item: StorePackItem) => {
         buffer: canvas.toBuffer('image/png'),
     };
 };
+
+process.on('message', async (message) => {
+    try {
+        const { data } = message as any;
+        const tasks: StorePackItem[] = data;
+
+        const imagesPromises = tasks.map((item) => generateBufferForPack(item));
+        const buffers = await Promise.all(imagesPromises);
+
+        if (process.send) {
+            process.send({
+                type: 'complete',
+                data: buffers,
+            });
+        }
+    } catch (error) {
+        console.log('Error generating pack: ', error);
+        if (process.send) {
+            process.send({
+                type: 'error',
+                error: error instanceof Error ? error.message : String(error),
+            });
+            process.exit(1);
+        }
+    }
+});

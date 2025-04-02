@@ -6,11 +6,7 @@ import { Router } from 'express';
 import { join, resolve } from 'path';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
-import {
-    APIResponse,
-    generateBufferForPack,
-    ObjectId,
-} from '../../../services';
+import { APIResponse, ObjectId } from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
@@ -36,6 +32,7 @@ import {
     SEARCH_URL,
 } from '../../../constants';
 import { validatePath } from '../utils/validatePath';
+import { fork } from 'child_process';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1645,11 +1642,31 @@ route.post('/generator/pack', async (req, res) => {
             })
         );
 
-        const buffer = await generateBufferForPack(data[0]);
+        const child = fork(join(__dirname, '../../../services/pack/index.ts'));
+        child.send({ data });
 
-        archive.append(buffer.buffer, { name: `${buffer.id}.png` });
+        child.on('message', (message) => {
+            const { type, data, error } = message as any;
+            if (type === 'complete') {
+                data.forEach((buffer: { buffer: Buffer; id: string }) => {
+                    const bufferData = Buffer.isBuffer(buffer.buffer)
+                        ? buffer.buffer
+                        : Buffer.from(buffer.buffer);
+                    archive.append(bufferData, { name: `${buffer.id}.png` });
+                });
+                archive.finalize();
+            }
+            if (type === 'error') {
+                logger('Pack error: %O', error);
+                res.status(500).end();
+                child.kill();
+            }
+        });
 
-        archive.finalize();
+        child.on('error', (err) => {
+            logger('Child process error: %O', err);
+            res.status(500).send({ error: 'Error during processing images' });
+        });
     } catch (error) {
         logger('Reader get pack failed: %O', error);
         res.status(500).json({
