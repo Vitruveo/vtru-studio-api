@@ -1635,10 +1635,12 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
         });
 
         const child = fork(
-            path.join(__dirname, '../utils/printGenerator/event.ts'),
-            {
-                execArgv: ['-r', 'ts-node/register'],
-            }
+            path.join(
+                __dirname,
+                process.env.NODE_ENV === 'dev'
+                    ? '../utils/printGenerator/event.ts'
+                    : '../utils/printGenerator/event.js'
+            )
         );
 
         child.on('message', (message) => {
