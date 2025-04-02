@@ -13,21 +13,10 @@ import { connect, getDb, ObjectId } from '../src/services/mongo';
 import { download, list } from '../src/services/aws/s3';
 import { ASSET_STORAGE_NAME, ASSET_TEMP_DIR } from '../src/constants';
 import { handleExtractColor } from '../src/services/extractColor';
+import { convertHEXtoRGB } from '../src/utils/convertHexToRGB';
 
 const assetsCollection = () =>
     getDb().collection<AssetsDocument>(COLLECTION_ASSETS);
-
-const convertHEXtoRGB = (hex: string) => {
-    const parts = /#?(..)(..)(..)/.exec(hex);
-    if (!parts) {
-        throw new Error(`${hex} is not a valid HEX color.`);
-    }
-    return [
-        parseInt(parts[1], 16),
-        parseInt(parts[2], 16),
-        parseInt(parts[3], 16),
-    ];
-};
 
 const updateAssetColors = async (assetId: string, colors: number[][]) => {
     await assetsCollection().updateOne(

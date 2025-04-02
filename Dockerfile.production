@@ -12,6 +12,7 @@ COPY build ./
 COPY tools ./tools/
 COPY entrypoint.sh ./
 COPY static ./static/
+COPY public ./public/
 
 ENTRYPOINT [ "/app/entrypoint.sh" ]
 CMD [ "wait" ]

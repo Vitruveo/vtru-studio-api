@@ -1,17 +1,16 @@
 import debug from 'debug';
+import archiver from 'archiver';
 import { readFile } from 'fs/promises';
-import fs from 'fs';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { ObjectId } from 'mongodb';
-import path, { join } from 'path';
+import path, { join, resolve } from 'path';
 import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
 import { fork } from 'child_process';
-import axios from 'axios';
+
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
-import { APIResponse } from '../../../services';
+import { APIResponse, generateBufferPack, ObjectId } from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
@@ -19,6 +18,7 @@ import {
     QueryPaginatedParams,
     ResponseAssetsPaginated,
     Spotlight,
+    StorePackItem,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
 import {
@@ -28,7 +28,14 @@ import {
     querySortGroupByCreator,
 } from '../utils/queries';
 import { DIST } from '../../../constants/static';
-import { ASSET_STORAGE_URL } from '../../../constants';
+import { createTagRegex } from '../utils/createTag';
+import {
+    ASSET_STORAGE_URL,
+    GENERAL_STORAGE_URL,
+    GENERATE_PACK_LIMIT,
+    SEARCH_URL,
+} from '../../../constants';
+import { validatePath } from '../utils/validatePath';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -323,6 +330,13 @@ route.post('/groupByCreator', async (req, res) => {
         }
 
         const sortQuery = querySortGroupByCreator(sort, hasBts);
+
+        if (query['assetMetadata.taxonomy.formData.tags']?.$in) {
+            const tags = query['assetMetadata.taxonomy.formData.tags'].$in;
+            parsedQuery['assetMetadata.taxonomy.formData.tags'] = {
+                $in: createTagRegex(tags),
+            };
+        }
 
         if (query['assetMetadata.creators.formData.name']) {
             const creators = query['assetMetadata.creators.formData.name'].$in;
@@ -798,6 +812,13 @@ route.post('/search', async (req, res) => {
             addSearchByTitleDescCreator(name);
         }
 
+        if (query['assetMetadata.taxonomy.formData.tags']?.$in) {
+            const tags = query['assetMetadata.taxonomy.formData.tags'].$in;
+            parsedQuery['assetMetadata.taxonomy.formData.tags'] = {
+                $in: createTagRegex(tags),
+            };
+        }
+
         let filterColors: number[][] = [];
         if (query['assetMetadata.context.formData.colors']?.$in) {
             const colors = query['assetMetadata.context.formData.colors']
@@ -892,8 +913,8 @@ route.post('/search', async (req, res) => {
 
         const maxAssetPrice = await model.findMaxPrice();
 
-        if (parsedQuery?._id?.$in)
-            parsedQuery._id.$in = parsedQuery._id.$in.map(
+        if (parsedQuery?._id?.$nin)
+            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
                 (id: string) => new ObjectId(id)
             );
 
@@ -912,6 +933,38 @@ route.post('/search', async (req, res) => {
                     'stores.list': { $nin: [storesId] },
                 },
             ];
+        }
+
+        if (
+            parsedQuery?._id?.$in &&
+            parsedQuery?.['framework.createdBy']?.$in
+        ) {
+            parsedQuery.$or = [
+                {
+                    _id: {
+                        $in: parsedQuery._id.$in.map(
+                            (id: string) => new ObjectId(id)
+                        ),
+                    },
+                },
+                {
+                    'framework.createdBy': {
+                        $in: parsedQuery['framework.createdBy'].$in,
+                    },
+                },
+            ];
+            delete parsedQuery['framework.createdBy'].$in;
+            delete parsedQuery._id.$in;
+            if (Object.keys(parsedQuery._id).length === 0) {
+                delete parsedQuery._id;
+            }
+            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
+                delete parsedQuery['framework.createdBy'];
+            }
+        } else if (parsedQuery?._id?.$in) {
+            parsedQuery._id.$in = parsedQuery._id.$in.map(
+                (id: string) => new ObjectId(id)
+            );
         }
 
         const result = await model.countAssets({
@@ -1605,20 +1658,9 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
         });
 
         try {
-            const artworkBuffer = await axios.get(
-                `${ASSET_STORAGE_URL}/${asset.formats.original?.path}`,
-                {
-                    responseType: 'arraybuffer',
-                }
-            );
-
-            const sourceBuffer = await axios.get(source as string, {
-                responseType: 'arraybuffer',
-            });
-
             child.send({
-                sourceBuffer: sourceBuffer.data,
-                artworkBuffer: artworkBuffer.data,
+                assetPath: asset.formats.original?.path,
+                source,
             });
         } catch (fetchError) {
             logger('Error loading images: %O', fetchError);
@@ -1636,6 +1678,70 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
             message: `Failed to generate print output for asset: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/generator/pack', async (req, res) => {
+    try {
+        const { ids } = req.body as { ids: string[] };
+
+        if (!ids || ids.length === 0) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.pack.get.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+        if (ids.length > GENERATE_PACK_LIMIT) {
+            ids.slice(0, GENERATE_PACK_LIMIT);
+        }
+
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=pack.zip');
+
+        const assetsForStorePack = await model.findAssetsForStorePack({
+            query: { _id: { $in: ids.map((item) => new ObjectId(item)) } },
+        });
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.pipe(res);
+
+        const data: StorePackItem[] = await Promise.all(
+            assetsForStorePack.map(async (item) => {
+                const avatarPath = `${GENERAL_STORAGE_URL}/${item.creator.avatar}`;
+                const isvalidAvatar = await validatePath(avatarPath);
+                const avatar = isvalidAvatar
+                    ? avatarPath
+                    : resolve('public/images/xibit-icon-redondo-litemode.png');
+
+                return {
+                    id: item._id,
+                    path: `${ASSET_STORAGE_URL}/${item.formats.exhibition?.path}`,
+                    title: item.assetMetadata.context.formData.title,
+                    username: item.creator.username,
+                    avatar,
+                    qrCode: `${SEARCH_URL}/${item.creator.username}/${item._id}/go`,
+                    logo: resolve('public/images/XIBIT-logo_dark.png'),
+                };
+            })
+        );
+
+        const buffers = await generateBufferPack(data);
+
+        buffers.forEach((item) => {
+            archive.append(item.buffer, { name: `${item.id}.png` });
+        });
+
+        archive.finalize();
+    } catch (error) {
+        logger('Reader get pack failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.pack.get.failed',
+            message: `Reader get pack failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);
