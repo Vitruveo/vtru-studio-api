@@ -33,6 +33,7 @@ import {
     ASSET_STORAGE_URL,
     GENERAL_STORAGE_URL,
     GENERATE_PACK_LIMIT,
+    NODE_ENV,
     SEARCH_URL,
 } from '../../../constants';
 import { splitIntoChunks } from '../utils/splitInChunks';
@@ -1638,7 +1639,7 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
         const child = fork(
             path.join(
                 __dirname,
-                process.env.NODE_ENV === 'dev'
+                NODE_ENV === 'dev'
                     ? '../utils/printGenerator/event.ts'
                     : '../utils/printGenerator/event.js'
             )
@@ -1748,7 +1749,7 @@ route.post('/generator/pack', async (req, res) => {
             const child = fork(
                 join(
                     __dirname,
-                    process.env.NODE_ENV === 'dev'
+                    NODE_ENV === 'dev'
                         ? '../../../services/pack/index.ts'
                         : '../../../services/pack/index.js'
                 )
