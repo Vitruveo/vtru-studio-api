@@ -1,16 +1,62 @@
 import { getDb, ObjectId } from '../../../services';
+import { statusMapper } from '../controller/core';
 import { COLLECTION_STORES, Stores, StoresSchema } from './schema';
 import type {
     CheckUrlIsUniqueParams,
     FindStoresByCreatorParams,
+    FindStoresMissingSpotlightParams,
     FindStoresPaginatedParams,
     UpdateFormatOrganizationsParams,
     UpdateStatusStoreParams,
+    UpdateStatusStoresFromCreatorParams,
     UpdateStepStoresParams,
     UpdateStoresParams,
 } from './types';
 
 const stores = () => getDb().collection<Stores>(COLLECTION_STORES);
+
+export const findStoresToSpotlight = () =>
+    stores()
+        .find({
+            'actions.spotlight': { $exists: true, $eq: true },
+            'actions.displaySpotlight': { $exists: false },
+            status: 'active',
+        })
+        .limit(50)
+        .toArray();
+
+export const findStoresMissingSpotlight = ({
+    ids,
+    limit,
+}: FindStoresMissingSpotlightParams) =>
+    stores()
+        .find({
+            _id: { $nin: ids.map((id) => new ObjectId(id)) },
+            'actions.spotlight': { $exists: true, $eq: true },
+            'actions.displaySpotlight': { $exists: false },
+            status: 'active',
+        })
+        .limit(limit)
+        .toArray();
+
+export const countStoresToSpotlight = () =>
+    stores().countDocuments({
+        'actions.spotlight': { $exists: true, $eq: true },
+        'actions.displaySpotlight': { $exists: false },
+        status: 'active',
+    });
+
+export const clearSpotlight = () =>
+    stores().updateMany(
+        { 'actions.displaySpotlight': { $exists: true, $eq: true } },
+        { $unset: { 'actions.displaySpotlight': '' } }
+    );
+
+export const updateDisplaySpotlight = (ids: string[]) =>
+    stores().updateMany(
+        { _id: { $in: ids.map((id) => new ObjectId(id)) } },
+        { $set: { 'actions.displaySpotlight': true } }
+    );
 
 export const createStores = (data: Stores) => {
     const envelope = StoresSchema.parse(data);
@@ -39,6 +85,75 @@ export const findStoresByCreatorPaginated = ({
         .toArray();
 
 export const findStoresPaginated = ({
+    query,
+    skip,
+    limit,
+    sort,
+}: FindStoresPaginatedParams) =>
+    stores()
+        .aggregate([
+            { $match: statusMapper[query.status as keyof typeof statusMapper] },
+            {
+                $match: {
+                    $or: [
+                        {
+                            'organization.name': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                        {
+                            'organization.url': {
+                                $regex: query.search ?? '.*',
+                                $options: 'i',
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                $addFields: {
+                    creatorId: {
+                        $toObjectId: '$framework.createdBy',
+                    },
+                    insensitiveName: { $toLower: '$organization.name' },
+                    insensitiveUrl: { $toLower: '$organization.url' },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'creators',
+                    localField: 'creatorId',
+                    foreignField: '_id',
+                    as: 'creator',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$creator',
+                },
+            },
+            {
+                $addFields: {
+                    username: '$creator.username',
+                    emails: '$creator.emails',
+                },
+            },
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+            {
+                $project: {
+                    creator: 0,
+                    creatorId: 0,
+                    insensitiveName: 0,
+                    insensitiveUrl: 0,
+                },
+            },
+        ])
+        .toArray();
+
+export const findStoresPaginatedPublic = ({
     query,
     skip,
     limit,
@@ -102,6 +217,15 @@ export const findStoresPaginated = ({
                     creatorId: 0,
                     insensitiveName: 0,
                     insensitiveUrl: 0,
+                    actions: 0,
+                    artworks: 0,
+                    emails: 0,
+                    hash: 0,
+                    moderation: 0,
+                    status: 0,
+                    'organization.markup': 0,
+                    'organization.formats.banner': 0,
+                    'organization.formats.logo.horizontal': 0,
                 },
             },
         ])
@@ -133,6 +257,12 @@ export const updateStepStores = ({
         { _id: new ObjectId(id) },
         { $set: { [stepName]: data } }
     );
+
+export const updateStatusStoresFromCreator = ({
+    id,
+    status,
+}: UpdateStatusStoresFromCreatorParams) =>
+    stores().updateOne({ _id: new ObjectId(id) }, { $set: { status } });
 
 export const updateStatusStore = ({
     id,

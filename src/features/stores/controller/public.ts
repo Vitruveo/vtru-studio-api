@@ -6,9 +6,32 @@ import * as model from '../model';
 
 import { APIResponse } from '../../../services';
 import { querySortStores } from '../utils/queries';
+import { redis } from '../../../services/redis';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
+
+route.get('/spotlight', async (req, res) => {
+    try {
+        const spotlight = await redis.get('stores:spotlight');
+
+        res.status(200).json({
+            code: 'vitruveo.studio.api.stores.spotlight.success',
+            message: 'Spotlight found',
+            data: JSON.parse(spotlight || '[]'),
+            transaction: nanoid(),
+        } as APIResponse);
+    } catch (error) {
+        logger('Spotlight stores failed: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.stores.spotlight',
+            message: `Spotlight failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
 
 route.get('/validate/:hash', async (req, res) => {
     try {
@@ -34,7 +57,7 @@ route.get('/validate/:hash', async (req, res) => {
             return;
         }
 
-        if (['active', 'pending'].indexOf(store.status) === -1) {
+        if (['active', 'pending', 'hidden'].indexOf(store.status) === -1) {
             res.status(403).json({
                 code: 'vitruveo.studio.api.stores.validate.forbidden',
                 message: 'Store is not valid',
@@ -119,7 +142,7 @@ route.get('/', async (req, res) => {
         const totalPage = Math.ceil(total / limit);
 
         const sortQuery = querySortStores(sort);
-        const stores = await model.findStoresPaginated({
+        const stores = await model.findStoresPaginatedPublic({
             query,
             skip: (page - 1) * limit,
             limit,
@@ -148,4 +171,5 @@ route.get('/', async (req, res) => {
         } as APIResponse);
     }
 });
+
 export { route };

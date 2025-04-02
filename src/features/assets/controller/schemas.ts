@@ -231,15 +231,18 @@ export const schemaLicenses = z.object({
         print: z.object({
             version: z.string(),
             added: z.boolean(),
-            unitPrice: z.number(),
+            displayPrice: z.number(),
+            merchandisePrice: z.number(),
             availableLicenses: z.number().min(0).default(1),
         }),
-        remix: z.object({
-            version: z.string(),
-            added: z.boolean(),
-            unitPrice: z.number(),
-            availableLicenses: z.number().min(0).default(1),
-        }),
+        remix: z
+            .object({
+                version: z.string(),
+                added: z.boolean(),
+                unitPrice: z.number(),
+                availableLicenses: z.number().min(0).default(1),
+            })
+            .optional(),
         artCards: z
             .object({
                 added: z.boolean(),

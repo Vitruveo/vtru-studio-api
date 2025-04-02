@@ -8,20 +8,25 @@ import { middleware } from '../../users';
 import { APIResponse } from '../../../services';
 import {
     validateBodyForCreateStores,
+    validateBodyForUpdateSpotlightStore,
     validateBodyForUpdateStatusStore,
     validateBodyForUpdateStepStores,
 } from './rules';
-import { schemaValidationStatus, schemaValidationStepName } from './schemas';
+import {
+    schemaValidationStatus,
+    schemaValidationStepName,
+    schemaValidationSpotlight,
+} from './schemas';
 import { querySorStoreCreatorById, querySortStores } from '../utils/queries';
 import { isValidUrl } from '../utils/isValidUrl';
 
 const logger = debug('features:stores:controller:core');
 const route = Router();
 
-const statusMapper = {
+export const statusMapper = {
     draft: { status: 'draft' },
     pending: { status: 'pending' },
-    active: { status: 'active' },
+    active: { status: { $in: ['active', 'hidden'] } },
     inactive: { status: 'inactive' },
     all: {},
 };
@@ -84,6 +89,8 @@ route.post('/clone/:id', async (req, res) => {
         }
 
         store.actions.countClone += 1;
+        store.actions.spotlight = false;
+        store.actions.displaySpotlight = false;
 
         await model.updateStores({
             id: store._id.toString(),
@@ -308,6 +315,67 @@ route.patch('/:id', validateBodyForUpdateStepStores, async (req, res) => {
 });
 
 route.patch(
+    '/status/:id/creator',
+    validateBodyForUpdateStatusStore,
+    async (req, res) => {
+        try {
+            const { status } = req.body as z.infer<
+                typeof schemaValidationStatus
+            >;
+
+            const stores = await model.findStoresById(req.params.id);
+
+            if (!stores) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.stores.update.status.not.found',
+                    message: 'Store not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (stores.framework.createdBy !== req.auth.id) {
+                res.status(403).json({
+                    code: 'vitruveo.studio.api.stores.update.forbidden',
+                    message: 'Update forbidden',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (!['active', 'hidden'].includes(stores.status)) {
+                res.status(400).json({
+                    code: 'vitruveo.studio.api.stores.update.status.invalid',
+                    message: 'Update status invalid',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            await model.updateStatusStoresFromCreator({
+                id: req.params.id,
+                status,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.stores.update.status.success',
+                message: 'Update status success',
+                transaction: nanoid(),
+            } as APIResponse);
+        } catch (error) {
+            logger('Update status stores failed: %O', error);
+
+            res.status(500).json({
+                code: 'vitruveo.studio.api.stores.update.status.failed',
+                message: `Update status failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
+
+route.patch(
     '/status/:id',
     validateBodyForUpdateStatusStore,
     async (req, res) => {
@@ -432,7 +500,7 @@ route.get('/', async (req, res) => {
         const search = req.query.search as string;
 
         const query: any = {
-            ...statusMapper[status],
+            status,
             search,
         };
 
@@ -470,4 +538,60 @@ route.get('/', async (req, res) => {
     }
 });
 
+route.patch(
+    '/spotlight/:id',
+    validateBodyForUpdateSpotlightStore,
+    async (req, res) => {
+        try {
+            const id = req.params.id as string;
+            const { spotlight } = req.body as z.infer<
+                typeof schemaValidationSpotlight
+            >;
+            const stores = await model.findStoresById(id);
+
+            if (!stores) {
+                res.status(404).json({
+                    code: 'vitruveo.studio.api.stores.update.spotlight.not.found',
+                    message: 'Store not found',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (req.auth.type !== 'user') {
+                res.status(403).json({
+                    code: 'vitruveo.studio.api.stores.update.spotlight.forbidden',
+                    message: 'Update Spotlight forbidden',
+                    transaction: nanoid(),
+                } as APIResponse);
+                return;
+            }
+
+            if (!stores?.actions) {
+                stores.actions = { spotlight, countClone: 0 };
+            } else {
+                stores.actions.spotlight = spotlight;
+            }
+
+            await model.updateStores({
+                id: req.params.id,
+                data: stores,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.stores.update.spotlight.success',
+                message: 'Update action spotlight success',
+                transaction: nanoid(),
+            } as APIResponse);
+        } catch (error) {
+            logger('Update Spotlight stores failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.stores.update.spotlight.failed',
+                message: `Spotlight failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
 export { route };

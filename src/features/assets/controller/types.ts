@@ -120,3 +120,13 @@ export interface StoresVisibilityBody {
     visibility: StoresVisibilityStatus;
     list: string[];
 }
+
+export interface StorePackItem {
+    id: string;
+    path: string;
+    title: string;
+    username: string;
+    avatar: string;
+    qrCode: string;
+    logo: string;
+}

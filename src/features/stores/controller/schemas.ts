@@ -77,6 +77,43 @@ export const schemaValidationArtworks = z.object({
             wallets: z.array(z.string()).optional(),
         })
         .optional(),
+    exclude: z.object({
+        arts: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+        artists: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+    }),
+    include: z.object({
+        arts: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+        artists: z
+            .array(
+                z.object({
+                    value: z.string(),
+                    label: z.string(),
+                })
+            )
+            .optional(),
+    }),
+    searchOption: z.string().optional(),
 });
 
 export const schemaValidationAppearanceContent = z.object({
@@ -101,4 +138,8 @@ export const schemaValidationStepName = z.object({
 
 export const schemaValidationStatus = z.object({
     status: StoreStatusEnum,
+});
+
+export const schemaValidationSpotlight = z.object({
+    spotlight: z.boolean(),
 });

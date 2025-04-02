@@ -38,6 +38,7 @@ import type {
     UpdateManyAssetsAutoStakeParams,
     FindLastSoldAssets,
     StoresVisibilityParams,
+    FindAssetsForStorePackParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -237,6 +238,44 @@ export const findAssetGroupPaginated = ({
                 countWithSold: 0,
                 creatorId: 0,
                 creator: 0,
+                paths: 0,
+                vault: 0,
+                'asset.actions': 0,
+                'asset.c2pa': 0,
+                'asset.ipfs': 0,
+                'asset.mediaAuxiliary': 0,
+                'asset.status': 0,
+                'asset.terms': 0,
+                'asset.contractExplorer': 0,
+                'asset.uploadedMediaKeys': 0,
+                'asset.assetMetadata.isCompleted': 0,
+                'asset.assetMetadata.context.formData.colors': 0,
+                'asset.assetMetadata.context.formData.culture': 0,
+                'asset.assetMetadata.context.formData.mood': 0,
+                'asset.assetMetadata.context.formData.orientation': 0,
+                'asset.assetMetadata.creators': 0,
+                'asset.assetMetadata.provenance': 0,
+                'asset.assetMetadata.taxonomy': 0,
+                'formats.original.name': 0,
+                'formats.original.path': 0,
+                'formats.original.size': 0,
+                'formats.original.width': 0,
+                'formats.original.height': 0,
+                'formats.original.validation': 0,
+                'asset.formats.exhibition': 0,
+                'asset.formats.display': 0,
+                'asset.formats.print': 0,
+                'asset.formats.preview.validation': 0,
+                'asset.formats.preview.size': 0,
+                'formats.preview.name': 0,
+                'asset.licenses.print': 0,
+                'asset.licenses.remix': 0,
+                'asset.licenses.stream': 0,
+                'asset.licenses.nft.elastic': 0,
+                'asset.licenses.nft.license': 0,
+                'asset.licenses.nft.unlimited': 0,
+                'asset.licenses.nft.version': 0,
+                'asset.licenses.nft.added': 0,
             },
         },
         { $sort: sort },
@@ -345,6 +384,45 @@ export const findAssetsPaginated = ({
             $project: {
                 creatorId: 0,
                 creatorDetails: 0,
+                actions: 0,
+                c2pa: 0,
+                contractExplorer: 0,
+                exists: 0,
+                insensitiveCreator: 0,
+                insensitiveTitle: 0,
+                ipfs: 0,
+                mediaAuxiliary: 0,
+                status: 0,
+                terms: 0,
+                uploadedMediaKeys: 0,
+                vault: 0,
+                'assetMetadata.isCompleted': 0,
+                'assetMetadata.context.formData.colors': 0,
+                'assetMetadata.context.formData.culture': 0,
+                'assetMetadata.context.formData.mood': 0,
+                'assetMetadata.context.formData.orientation': 0,
+                'assetMetadata.provenance': 0,
+                'assetMetadata.taxonomy': 0,
+                'formats.original.name': 0,
+                'formats.original.path': 0,
+                'formats.original.size': 0,
+                'formats.original.width': 0,
+                'formats.original.height': 0,
+                'formats.original.validation': 0,
+                'formats.exhibition': 0,
+                'formats.display': 0,
+                'formats.print': 0,
+                'formats.preview.validation': 0,
+                'formats.preview.size': 0,
+                'formats.preview.name': 0,
+                'licenses.print': 0,
+                'licenses.remix': 0,
+                'licenses.stream': 0,
+                'licenses.nft.elastic': 0,
+                'licenses.nft.license': 0,
+                'licenses.nft.unlimited': 0,
+                'licenses.nft.version': 0,
+                'licenses.nft.added': 0,
             },
         },
         { $sort: sort },
@@ -741,7 +819,42 @@ export const findAssetsByCreatorName = ({
         .toArray();
 
 export const findAssetsById = async ({ id }: FindAssetsByIdParams) =>
-    assets().findOne({ _id: new ObjectId(id) });
+    assets().findOne(
+        { _id: new ObjectId(id) },
+        {
+            projection: {
+                actions: 0,
+                status: 0,
+                terms: 0,
+                uploadedMediaKeys: 0,
+                c2pa: 0,
+                ipfs: 0,
+                'assetMetadata.isCompleted': 0,
+                'contractExplorer.assetId': 0,
+                'contractExplorer.assetRefId': 0,
+                'contractExplorer.blockNumber': 0,
+                'contractExplorer.contractAddress': 0,
+                'contractExplorer.createdAt': 0,
+                'contractExplorer.creatorRefId': 0,
+                'contractExplorer.licenses': 0,
+                'contractExplorer.tx': 0,
+                'formats.display.size': 0,
+                'formats.exhibition.size': 0,
+                'formats.preview.size': 0,
+                'formats.original.size': 0,
+                'formats.original.width': 0,
+                'formats.original.height': 0,
+                'licenses.print': 0,
+                'licenses.remix': 0,
+                'licenses.stream': 0,
+                'licenses.nft.elastic': 0,
+                'licenses.nft.license': 0,
+                'licenses.nft.unlimited': 0,
+                'licenses.nft.version': 0,
+                'licenses.nft.added': 0,
+            },
+        }
+    );
 
 export const findLastConsigns = async ({
     id,
@@ -1072,6 +1185,9 @@ export const updateUploadedMediaKeys = async ({
     return result;
 };
 
+export const replaceAsset = (id: string, asset: AssetsDocument) =>
+    assets().replaceOne({ _id: new ObjectId(id) }, asset);
+
 export const replaceUploadedMediaKey = async ({
     id,
     oldMediaKey,
@@ -1353,3 +1469,76 @@ export const updateAssetsUsername = async ({
 
 export const findAssets = async ({ query }: FindAssetsParams) =>
     assets().find(query).toArray();
+
+export const findAssetsForStorePack = async ({
+    query,
+}: FindAssetsForStorePackParams) => {
+    const aggregate = [
+        { $match: query },
+        {
+            $addFields: {
+                creatorId: {
+                    $toObjectId: '$framework.createdBy',
+                },
+            },
+        },
+        {
+            $lookup: {
+                from: 'creators',
+                localField: 'creatorId',
+                foreignField: '_id',
+                as: 'creatorDetails',
+            },
+        },
+        {
+            $unwind: {
+                path: '$creatorDetails',
+            },
+        },
+        {
+            $addFields: {
+                vault: '$creatorDetails.vault',
+                'creator.avatar': '$creatorDetails.profile.avatar',
+            },
+        },
+        {
+            $project: {
+                creatorId: 0,
+                creatorDetails: 0,
+                actions: 0,
+                c2pa: 0,
+                contractExplorer: 0,
+                exists: 0,
+                insensitiveCreator: 0,
+                insensitiveTitle: 0,
+                ipfs: 0,
+                mediaAuxiliary: 0,
+                status: 0,
+                terms: 0,
+                uploadedMediaKeys: 0,
+                vault: 0,
+                'assetMetadata.isCompleted': 0,
+                'assetMetadata.context.formData.colors': 0,
+                'assetMetadata.context.formData.culture': 0,
+                'assetMetadata.context.formData.mood': 0,
+                'assetMetadata.context.formData.orientation': 0,
+                'assetMetadata.context.formData.description': 0,
+                'assetMetadata.provenance': 0,
+                'assetMetadata.taxonomy': 0,
+                'assetMetadata.creators': 0,
+                'formats.original': 0,
+                'formats.exhibition.name': 0,
+                'formats.exhibition.size': 0,
+                'formats.exhibition.validation': 0,
+                'formats.display': 0,
+                'formats.print': 0,
+                'formats.preview': 0,
+                licenses: 0,
+                consignArtwork: 0,
+                framework: 0,
+            },
+        },
+    ];
+
+    return assets().aggregate(aggregate).toArray();
+};

@@ -127,7 +127,8 @@ export const AssetsSchema = z.object({
         print: z.object({
             version: z.string(),
             added: z.boolean(),
-            unitPrice: z.number(),
+            displayPrice: z.number(),
+            merchandisePrice: z.number(),
             availableLicenses: z.number(),
         }),
         remix: z.object({
@@ -155,6 +156,20 @@ export const AssetsSchema = z.object({
                 moods: z.array(z.string()),
                 tags: z.array(z.string()),
                 colors: ColorsSchema,
+            }),
+        }),
+        taxonomy: z.object({
+            formData: z.object({
+                objectType: z.string(),
+                category: z.string(),
+                tags: z.array(z.string()).default([]),
+                collections: z.array(z.string()).default([]),
+                medium: z.array(z.string()).default([]),
+                style: z.array(z.string()).default([]),
+                subject: z.array(z.string()).default([]),
+                aiGeneration: z.string(),
+                arenabled: z.string().default('no'),
+                nudity: z.string(),
             }),
         }),
         creators: z
