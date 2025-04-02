@@ -29,3 +29,5 @@ export * from './static';
 export * from './spotlight';
 export * from './discord';
 export * from './folio';
+export * from './stripe';
+export * from './xibit';
