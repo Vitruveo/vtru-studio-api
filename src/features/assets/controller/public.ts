@@ -1,6 +1,5 @@
 import debug from 'debug';
 import { readFile } from 'fs/promises';
-import fs from 'fs';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
@@ -8,7 +7,7 @@ import path, { join } from 'path';
 import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
 import { fork } from 'child_process';
-import axios from 'axios';
+
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
 import { APIResponse } from '../../../services';
@@ -28,7 +27,6 @@ import {
     querySortGroupByCreator,
 } from '../utils/queries';
 import { DIST } from '../../../constants/static';
-import { ASSET_STORAGE_URL } from '../../../constants';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1584,20 +1582,9 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
         });
 
         try {
-            const artworkBuffer = await axios.get(
-                `${ASSET_STORAGE_URL}/${asset.formats.original?.path}`,
-                {
-                    responseType: 'arraybuffer',
-                }
-            );
-
-            const sourceBuffer = await axios.get(source as string, {
-                responseType: 'arraybuffer',
-            });
-
             child.send({
-                sourceBuffer: sourceBuffer.data,
-                artworkBuffer: artworkBuffer.data,
+                assetPath: asset.formats.original?.path,
+                source,
             });
         } catch (fetchError) {
             logger('Error loading images: %O', fetchError);
