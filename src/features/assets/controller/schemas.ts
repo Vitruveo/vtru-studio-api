@@ -504,3 +504,8 @@ export const schemaValidationForPutStoresVisibility = z.object({
         .default('visibleInAllStores'),
     list: z.array(z.string()).default([]),
 });
+
+export const schemaValidationForCreateCheckouSession = z.object({
+    assetId: z.string(),
+    productId: z.string(),
+});
