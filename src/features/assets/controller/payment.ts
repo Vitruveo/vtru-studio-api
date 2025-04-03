@@ -12,6 +12,7 @@ import {
     API_BASE_URL,
     ASSET_STORAGE_URL,
     SEARCH_URL,
+    XIBIT_CATALOG_BASE_URL,
     XIBIT_PRODUCTS_BASE_URL,
 } from '../../../constants';
 import { validateBodyForCreateCheckoutSession } from './rules';
@@ -38,9 +39,18 @@ interface Product {
     }[];
 }
 
+interface Catalog {
+    sections: {
+        categories: string[];
+        priceMultiplier: number;
+    }[];
+}
+
 const orderService = async ({ assetId, productId }: OrderService) => {
     const asset = await model.findAssetsById({ id: assetId });
     if (!asset) throw new Error('Asset not found');
+
+    const catalogs = await axios.get<Catalog>(XIBIT_CATALOG_BASE_URL);
 
     const products = await axios.get<Product>(XIBIT_PRODUCTS_BASE_URL);
     const product = products.data.vertical.find(
@@ -48,12 +58,21 @@ const orderService = async ({ assetId, productId }: OrderService) => {
     );
     if (!product) throw new Error('Product not found');
 
+    const section = catalogs.data.sections.find((item) =>
+        item.categories.includes(product.categoryId)
+    );
+    if (!section) throw new Error('Section not found');
+
     const artworkLicense = () => {
         if (product.categoryId === 'mugs')
-            return asset.licenses.nft.single.editionPrice * 0.1;
-        if (product.categoryId === 'frames')
             return (
-                asset.licenses.nft.single.editionPrice * 0.0008 * product.area
+                asset.licenses.nft.single.editionPrice * section.priceMultiplier
+            );
+        if (product.categoryId === 'frames' || product.categoryId === 'posters')
+            return (
+                asset.licenses.nft.single.editionPrice *
+                section.priceMultiplier *
+                product.area
             );
         return 0;
     };
