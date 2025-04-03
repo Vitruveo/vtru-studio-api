@@ -9,6 +9,7 @@ import * as modelOrders from '../../orders/model';
 import { APIResponse } from '../../../services';
 import { createSession, retrieveSession } from '../../../services/stripe';
 import {
+    API_BASE_URL,
     ASSET_STORAGE_URL,
     SEARCH_URL,
     XIBIT_PRODUCTS_BASE_URL,
@@ -83,7 +84,7 @@ route.post(
                 typeof schemaValidationForCreateCheckouSession
             >;
 
-            const domainURL = `${req.protocol}://${req.headers.host}/assets/payment`;
+            const domainURL = `${API_BASE_URL}/assets/payment`;
 
             const order = await orderService({ assetId, productId });
 
