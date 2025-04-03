@@ -86,9 +86,8 @@ const orderService = async ({ assetId, productId }: OrderService) => {
     const chroma = product.images
         .find((item) => item.includes('chroma'))!
         .replace(/^~\//, '');
-    const imageUrl = `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${assetId}/${product.productId}/${chroma}`;
-
-    console.log('imageUrl', imageUrl);
+    const imageUrlBucket = `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${assetId}/${product.productId}/${chroma}`;
+    const imageUrl = imageUrlBucket.replace('.png', '.jpeg');
 
     return {
         assetId,
