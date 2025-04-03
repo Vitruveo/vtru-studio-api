@@ -39,7 +39,8 @@ import {
 } from '../../../constants';
 import { splitIntoChunks } from '../utils/splitInChunks';
 import { validatePath } from '../utils/validatePath';
-import { uploadBuffer, verifyEObterURL } from '../../../services/aws';
+import { exists } from '../../../services/aws';
+import { sendToExchangePrintOutputs } from '../../../services/printOutput';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1618,13 +1619,15 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
             'jpeg'
         );
 
-        const existingUrl = await verifyEObterURL(
-            ASSET_STORAGE_PRINT_OUTPUTS_NAME,
-            key
-        );
+        const existingUrl = await exists({
+            bucketUrl: `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com`,
+            key,
+        });
 
         if (existingUrl) {
-            res.redirect(existingUrl);
+            res.redirect(
+                `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${key}`
+            );
             return;
         }
 
@@ -1673,11 +1676,12 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
             } else if (type === 'end') {
                 outputStream.end();
                 const finalBuffer = Buffer.concat(imageBuffer);
-                uploadBuffer({
-                    buffer: finalBuffer,
-                    bucket: ASSET_STORAGE_PRINT_OUTPUTS_NAME,
-                    key,
-                });
+                sendToExchangePrintOutputs(
+                    JSON.stringify({
+                        buffer: finalBuffer,
+                        key,
+                    })
+                );
             } else if (type === 'error') {
                 logger('Error in child process: %O', error);
                 outputStream.end();
