@@ -62,13 +62,34 @@ const generateBufferForPack = async (item: StorePackItem) => {
 
         // imagem
         const img = await fetchImage(item.path);
-        ctx.drawImage(
-            img,
-            margin,
-            sizes.canvaHeight - sizes.imageHeight - margin,
-            sizes.canvaWidth - 2 * margin,
-            sizes.imageHeight
-        );
+        const imgAspectRatio = img.width / img.height;
+        const isSquare = Math.abs(imgAspectRatio - 1) < 0.01;
+
+        if (isSquare) {
+            let drawWidth = 0;
+            const drawHeight =
+                Math.min(sizes.imageHeight, sizes.canvaWidth) - 2 * margin;
+            drawWidth = drawHeight;
+
+            const offsetX = (sizes.canvaWidth - drawWidth - 156) / 2;
+            const offsetY = (sizes.imageHeight - drawHeight) / 2;
+
+            ctx.drawImage(
+                img,
+                margin + offsetX,
+                sizes.canvaHeight - sizes.imageHeight + offsetY,
+                drawWidth,
+                drawHeight
+            );
+        } else {
+            ctx.drawImage(
+                img,
+                margin,
+                sizes.canvaHeight - sizes.imageHeight - margin,
+                sizes.canvaWidth - 2 * margin,
+                sizes.imageHeight
+            );
+        }
 
         // titulo
         const truncatedTitle =
