@@ -3,6 +3,7 @@ import { PassThrough } from 'stream';
 import { generateMockup } from './mockupGenerator';
 import { ASSET_STORAGE_URL } from '../../../../constants';
 
+// TODO:
 process.on('message', async (message) => {
     const outputStream = new PassThrough();
 
@@ -18,6 +19,8 @@ process.on('message', async (message) => {
     outputStream.on('end', () => {
         if (process.send) {
             process.send({ type: 'end' });
+
+            process.exit(0);
         }
     });
 
@@ -27,6 +30,8 @@ process.on('message', async (message) => {
                 type: 'error',
                 error: err.message,
             });
+
+            process.exit(0);
         }
     });
 
@@ -78,7 +83,6 @@ process.on('message', async (message) => {
             });
         }
         outputStream.end();
-    } finally {
         process.exit(0);
     }
 });
