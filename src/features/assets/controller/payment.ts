@@ -11,6 +11,7 @@ import { createSession, retrieveSession } from '../../../services/stripe';
 import {
     API_BASE_URL,
     ASSET_STORAGE_PRINT_OUTPUTS_NAME,
+    ASSET_STORAGE_URL,
     SEARCH_URL,
     XIBIT_CATALOG_BASE_URL,
     XIBIT_PRODUCTS_BASE_URL,
@@ -96,6 +97,7 @@ const orderService = async ({ assetId, productId }: OrderService) => {
         product: product.title,
         description: product.description,
         imageUrl,
+        assetUrl: `${ASSET_STORAGE_URL}/${asset.formats.exhibition?.path}`,
         price: Number(total.toFixed(2)) * 100,
         quantity: 1,
     };
