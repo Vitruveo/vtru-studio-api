@@ -237,16 +237,13 @@ export async function generateMockup(
     outputPath: PassThrough
 ): Promise<void> {
     try {
-        console.log('Loading source image...');
         const sourceImage = await sharp(sourcePath)
             .ensureAlpha()
             .keepMetadata()
             .toBuffer();
         const sourceMetadata = await sharp(sourceImage).metadata();
 
-        console.log('Detecting chromakey metadata...');
         const corners = await readCornersFromSharpBuffer(sourceImage);
-        console.log(corners);
 
         const artworkLayers: { input: Buffer }[] = [];
 
@@ -255,16 +252,11 @@ export async function generateMockup(
             return;
         }
 
-        console.log(`Loading artwork: ${artworkPath}`);
         const artwork = await loadImage(artworkPath);
 
         if (!artwork || artwork.width === 0 || artwork.height === 0) {
             throw new Error(`Artwork ${artworkPath} failed to load.`);
         }
-
-        console.log(
-            `Applying perspective transformation for artwork: ${artworkPath}`
-        );
 
         const warpCanvas = createCanvas(
             sourceMetadata.width!,
@@ -294,8 +286,6 @@ export async function generateMockup(
             .jpeg();
 
         pipeline.pipe(outputPath);
-
-        console.log(`Mockup saved to ${outputPath}`);
     } catch (error) {
         console.error('Error generating mockup:', error);
     }

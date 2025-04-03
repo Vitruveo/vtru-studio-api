@@ -30,12 +30,14 @@ import {
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
 import {
+    ASSET_STORAGE_PRINT_OUTPUTS_NAME,
     ASSET_STORAGE_URL,
     GENERAL_STORAGE_URL,
     GENERATE_PACK_LIMIT,
     SEARCH_URL,
 } from '../../../constants';
 import { validatePath } from '../utils/validatePath';
+import { uploadBuffer, verifyEObterURL } from '../../../services/aws';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1602,10 +1604,25 @@ route.get('/slideshow/:id', async (req, res) => {
 route.get('/printOutputGenerator/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { source } = req.query;
+        const { source } = req.query as { source: string };
 
         if (!source) {
             res.status(400).json({ message: 'Source is required' });
+            return;
+        }
+
+        const key = `${id}/${source.split('assets/')[1]}`.replace(
+            'png',
+            'jpeg'
+        );
+
+        const existingUrl = await verifyEObterURL(
+            ASSET_STORAGE_PRINT_OUTPUTS_NAME,
+            key
+        );
+
+        if (existingUrl) {
+            res.redirect(existingUrl);
             return;
         }
 
@@ -1643,12 +1660,22 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
             )
         );
 
+        const imageBuffer: Buffer[] = [];
+
         child.on('message', (message) => {
             const { type, data, error } = message as any;
             if (type === 'data') {
-                outputStream.write(Buffer.from(data));
+                const chunk = Buffer.from(data);
+                imageBuffer.push(chunk);
+                outputStream.write(chunk);
             } else if (type === 'end') {
                 outputStream.end();
+                const finalBuffer = Buffer.concat(imageBuffer);
+                uploadBuffer({
+                    buffer: finalBuffer,
+                    bucket: ASSET_STORAGE_PRINT_OUTPUTS_NAME,
+                    key,
+                });
             } else if (type === 'error') {
                 logger('Error in child process: %O', error);
                 outputStream.end();
@@ -1664,7 +1691,7 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
 
         try {
             child.send({
-                assetPath: asset.formats.original?.path,
+                assetPath: asset.formats.exhibition?.path,
                 source,
             });
         } catch (fetchError) {
