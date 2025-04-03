@@ -89,8 +89,6 @@ const orderService = async ({ assetId, productId }: OrderService) => {
     const imageUrlBucket = `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${assetId}/${product.productId}/${chroma}`;
     const imageUrl = imageUrlBucket.replace('.png', '.jpeg');
 
-    console.log({ imageUrl, imageUrlBucket });
-
     return {
         assetId,
         productId,
