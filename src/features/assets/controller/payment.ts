@@ -88,6 +88,8 @@ const orderService = async ({ assetId, productId }: OrderService) => {
         .replace(/^~\//, '');
     const imageUrl = `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${assetId}/${product.productId}/${chroma}`;
 
+    console.log('imageUrl', imageUrl);
+
     return {
         assetId,
         productId,
