@@ -10,7 +10,7 @@ import { APIResponse } from '../../../services';
 import { createSession, retrieveSession } from '../../../services/stripe';
 import {
     API_BASE_URL,
-    ASSET_STORAGE_URL,
+    ASSET_STORAGE_PRINT_OUTPUTS_NAME,
     SEARCH_URL,
     XIBIT_CATALOG_BASE_URL,
     XIBIT_PRODUCTS_BASE_URL,
@@ -36,6 +36,7 @@ interface Product {
         area: number;
         price: number;
         shipping: number;
+        images: string[];
     }[];
 }
 
@@ -82,13 +83,18 @@ const orderService = async ({ assetId, productId }: OrderService) => {
 
     const total = artworkLicense() + merchandiseFee + platformFee + shipping;
 
+    const chroma = product.images
+        .find((item) => item.includes('chroma'))!
+        .replace(/^~\//, '');
+    const imageUrl = `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${assetId}/${product.productId}/${chroma}`;
+
     return {
         assetId,
         productId,
         vendorProductId: product.vendorProductId,
         product: product.title,
         description: product.description,
-        imageUrl: `${ASSET_STORAGE_URL}/${asset.formats.original!.path}`,
+        imageUrl,
         price: Number(total.toFixed(2)) * 100,
         quantity: 1,
     };
