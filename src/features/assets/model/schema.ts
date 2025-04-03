@@ -127,8 +127,9 @@ export const AssetsSchema = z.object({
         print: z.object({
             version: z.string(),
             added: z.boolean(),
-            displayPrice: z.number(),
-            merchandisePrice: z.number(),
+            unitPrice: z.number(),
+            displayPrice: z.number().optional(),
+            merchandisePrice: z.number().optional(),
             availableLicenses: z.number(),
         }),
         remix: z.object({

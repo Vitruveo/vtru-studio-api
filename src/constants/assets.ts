@@ -12,3 +12,7 @@ export const ASSET_STORAGE_URL = process.env.ASSET_STORAGE_URL || '';
 export const ASSET_STORAGE_PRINT_OUTPUTS_NAME =
     process.env.ASSET_STORAGE_PRINT_OUTPUTS_NAME ||
     'vitruveo-studio-qa-print-outputs';
+
+export const ASSET_STORORAGE_PRINT_OUTPUTS_URL =
+    process.env.ASSET_STORORAGE_PRINT_OUTPUTS_URL ||
+    'https://vitruveo-studio-qa-print-outputs.s3.amazonaws.com';
