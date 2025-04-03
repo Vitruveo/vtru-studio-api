@@ -21,7 +21,7 @@ export const exists = async ({ key, bucketUrl }: ExistsOptions) => {
     }
 };
 
-export async function verifyEObterURL(
+export async function verifyAndGetURL(
     bucket: string,
     key: string
 ): Promise<string | null> {
