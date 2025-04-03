@@ -5,6 +5,12 @@ import { ASSET_STORAGE_URL } from '../../../../constants';
 
 // TODO:
 process.on('message', async (message) => {
+    const { action } = message as any;
+
+    if (action === 'end') {
+        process.exit(0);
+    }
+
     const outputStream = new PassThrough();
 
     outputStream.on('data', (chunk) => {
@@ -19,8 +25,6 @@ process.on('message', async (message) => {
     outputStream.on('end', () => {
         if (process.send) {
             process.send({ type: 'end' });
-
-            process.exit(0);
         }
     });
 
@@ -30,8 +34,6 @@ process.on('message', async (message) => {
                 type: 'error',
                 error: err.message,
             });
-
-            process.exit(0);
         }
     });
 
@@ -83,6 +85,5 @@ process.on('message', async (message) => {
             });
         }
         outputStream.end();
-        process.exit(0);
     }
 });

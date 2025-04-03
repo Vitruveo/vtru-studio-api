@@ -1696,6 +1696,9 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
         });
 
         res.on('close', () => {
+            child.send({
+                action: 'end',
+            });
             child.removeAllListeners();
         });
 
@@ -1703,6 +1706,7 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
             child.send({
                 assetPath: asset.formats.exhibition?.path,
                 source,
+                action: 'render',
             });
         } catch (fetchError) {
             logger('Error loading images: %O', fetchError);
