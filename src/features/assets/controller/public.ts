@@ -1695,6 +1695,10 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
             res.status(500).end();
         });
 
+        res.on('close', () => {
+            child.removeAllListeners();
+        });
+
         try {
             child.send({
                 assetPath: asset.formats.exhibition?.path,

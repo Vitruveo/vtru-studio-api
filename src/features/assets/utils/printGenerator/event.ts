@@ -69,7 +69,7 @@ process.on('message', async (message) => {
             throw new Error(`Error retrieving artwork: ${error.message}`);
         }
 
-        generateMockup(sourceBuffer, artworkBuffer, outputStream);
+        await generateMockup(sourceBuffer, artworkBuffer, outputStream);
     } catch (error: any) {
         if (process.send) {
             process.send({
@@ -78,5 +78,7 @@ process.on('message', async (message) => {
             });
         }
         outputStream.end();
+    } finally {
+        process.exit(0);
     }
 });
