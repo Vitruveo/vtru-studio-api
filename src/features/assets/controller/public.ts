@@ -30,7 +30,7 @@ import {
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
 import {
-    ASSET_STORAGE_PRINT_OUTPUTS_NAME,
+    PRINT_OUTPUTS_STORAGE_NAME,
     ASSET_STORAGE_URL,
     GENERAL_STORAGE_URL,
     GENERATE_PACK_LIMIT,
@@ -1620,13 +1620,13 @@ route.get('/printOutputGenerator/:id', async (req, res) => {
         );
 
         const existingUrl = await exists({
-            bucketUrl: `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com`,
+            bucketUrl: `https://${PRINT_OUTPUTS_STORAGE_NAME}.s3.amazonaws.com`,
             key,
         });
 
         if (existingUrl) {
             res.redirect(
-                `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${key}`
+                `https://${PRINT_OUTPUTS_STORAGE_NAME}.s3.amazonaws.com/${key}`
             );
             return;
         }
