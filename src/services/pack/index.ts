@@ -47,14 +47,12 @@ async function fetchImage(url: string) {
 }
 
 const generateBufferForPack = async (item: StorePackItem) => {
-    logger('Generating buffer for pack %o', JSON.stringify(item));
-
-    logger('Registring fonts');
     registerFont(resolve('public/fonts/Inter.ttf'), {
         family: 'Inter',
         style: 'normal',
         weight: 'bold',
     });
+
     try {
         // canvas
         const canvas = createCanvas(sizes.canvaWidth, sizes.canvaHeight);
@@ -63,7 +61,6 @@ const generateBufferForPack = async (item: StorePackItem) => {
         ctx.fillRect(0, 0, sizes.canvaWidth, sizes.canvaHeight);
 
         // imagem
-        logger('Loading image %s', item.path);
         const img = await fetchImage(item.path);
         ctx.drawImage(
             img,
@@ -73,7 +70,6 @@ const generateBufferForPack = async (item: StorePackItem) => {
             sizes.imageHeight
         );
 
-        logger('Drawing title');
         // titulo
         const truncatedTitle =
             item.title.length > characterLimit
@@ -86,7 +82,6 @@ const generateBufferForPack = async (item: StorePackItem) => {
         const titleY = 270;
         ctx.fillText(truncatedTitle, titleX, titleY);
 
-        logger('Drawing username');
         // username
         ctx.fillStyle = '#ff0000';
         ctx.font = '58px Inter';
@@ -95,7 +90,6 @@ const generateBufferForPack = async (item: StorePackItem) => {
         const usernameY = 466;
         ctx.fillText(item.username, usernameX, usernameY);
 
-        logger('Drawing avatar %s', item.avatar);
         // avatar
         const avatarImg = await fetchImage(item.avatar);
         const avatarX = 120;
@@ -121,7 +115,6 @@ const generateBufferForPack = async (item: StorePackItem) => {
         );
         ctx.restore();
 
-        logger('Drawing qrCode');
         // qrCode
         const qrCodeCanvas = createCanvas(sizes.qrCodeSize, sizes.qrCodeSize);
         await Qrcode.toCanvas(qrCodeCanvas, item.qrCode, {
@@ -139,7 +132,6 @@ const generateBufferForPack = async (item: StorePackItem) => {
         ctx.fillRect(qrCodeX, qrCodeY, sizes.qrCodeSize, sizes.qrCodeSize);
         ctx.drawImage(qrCodeCanvas, qrCodeX, qrCodeY);
 
-        logger('Drawing logo %s', item.logo);
         // logo
         const logoImg = await fetchImage(item.logo);
         const logoX = sizes.canvaWidth - sizes.logoWidth - 1.5 * margin;
@@ -152,7 +144,6 @@ const generateBufferForPack = async (item: StorePackItem) => {
             buffer: canvas.toBuffer('image/png'),
         };
     } catch (error) {
-        console.log(error);
         logger(`Error generating buffer for pack ${item.id}: `, error);
         throw error;
     }
