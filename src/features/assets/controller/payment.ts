@@ -10,7 +10,7 @@ import { APIResponse } from '../../../services';
 import { createSession, retrieveSession } from '../../../services/stripe';
 import {
     API_BASE_URL,
-    ASSET_STORAGE_PRINT_OUTPUTS_NAME,
+    PRINT_OUTPUTS_STORAGE_NAME,
     ASSET_STORAGE_URL,
     SEARCH_URL,
     XIBIT_CATALOG_BASE_URL,
@@ -87,7 +87,7 @@ const orderService = async ({ assetId, productId }: OrderService) => {
     const chroma = product.images
         .find((item) => item.includes('chroma'))!
         .replace(/^~\//, '');
-    const imageUrlBucket = `https://${ASSET_STORAGE_PRINT_OUTPUTS_NAME}.s3.amazonaws.com/${assetId}/${product.productId}/${chroma}`;
+    const imageUrlBucket = `https://${PRINT_OUTPUTS_STORAGE_NAME}.s3.amazonaws.com/${assetId}/${product.productId}/${chroma}`;
     const imageUrl = imageUrlBucket.replace('.png', '.jpeg');
 
     return {
