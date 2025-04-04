@@ -11,6 +11,7 @@ import { route as scopeRouter } from './scope';
 import { route as adminRouter } from './admin';
 import { route as slideshowRouter } from './slideshow';
 import { route as artCardsRouter } from './artCards';
+import { route as paymentRouter } from './payment';
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.use('/assets/store', storeRouter);
 router.use('/assets/scope', scopeRouter);
 router.use('/assets/admin', adminRouter);
 router.use('/assets/artCards', artCardsRouter);
+router.use('/assets/payment', paymentRouter);
 router.use('/assets', coreRouter);
 
 export { router };

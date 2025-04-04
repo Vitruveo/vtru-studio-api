@@ -43,7 +43,11 @@ import {
 } from '../../../constants';
 import { download } from '../../../services/stream';
 import { schemaAssetUpdateManyNudity } from './schemas';
-import { schemaValidationForPatchAssetPrice } from './schemaValidate';
+import {
+    schemaValidationForPatchAssetPrice,
+    schemaValidationForPatchPrintLicenseAdded,
+    schemaValidationForPatchPrintLicensePrice,
+} from './schemaValidate';
 import { AssetsPaginatedResponse } from '../model/types';
 import { querySortStudioCreatorById } from '../utils/queries';
 import { StoresVisibilityBody } from './types';
@@ -997,6 +1001,109 @@ route.get('/:id/colors', async (req: Request<{ id: string }>, res) => {
             )
         );
         res.end();
+    }
+});
+
+route.patch('/:id/printLicense/price', async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const { merchandisePrice, displayPrice } = req.body as z.infer<
+            typeof schemaValidationForPatchPrintLicensePrice
+        >;
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset.framework.createdBy !== id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notAllowed',
+                message: 'You are not allowed to update price',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const result = await model.updateAssets({
+            id: asset._id,
+            asset: {
+                'licenses.print.merchandisePrice': merchandisePrice,
+                'licenses.print.displayPrice': displayPrice,
+            },
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.price.success',
+            message: 'Update price success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult>);
+    } catch (error) {
+        logger('Update price assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.price.failed',
+            message: `Update price failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.patch('/:id/printLicense/added', async (req, res) => {
+    try {
+        const { id } = req.auth;
+        const { added } = req.body as z.infer<
+            typeof schemaValidationForPatchPrintLicenseAdded
+        >;
+
+        const asset = await model.findAssetsById({ id: req.params.id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notFound',
+                message: 'Asset not found',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        if (asset.framework.createdBy !== id) {
+            res.status(403).json({
+                code: 'vitruveo.studio.api.admin.assets.price.notAllowed',
+                message: 'You are not allowed to update price',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        const result = await model.updateAssets({
+            id: asset._id,
+            asset: {
+                'licenses.print.added': added,
+            },
+        });
+
+        res.json({
+            code: 'vitruveo.studio.api.admin.assets.price.success',
+            message: 'Update added success',
+            transaction: nanoid(),
+            data: result,
+        } as APIResponse<UpdateResult>);
+    } catch (error) {
+        logger('Update price assets failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.admin.assets.price.failed',
+            message: `Update price failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
     }
 });
 

@@ -1,12 +1,16 @@
 import debug from 'debug';
+import os from 'os';
+import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
-import { ObjectId } from 'mongodb';
-import { join } from 'path';
+import path, { join } from 'path';
+import { PassThrough } from 'stream';
+import { pipeline } from 'stream/promises';
+import { fork } from 'child_process';
 import * as model from '../model';
 import * as creatorModel from '../../creators/model';
-import { APIResponse } from '../../../services';
+import { APIResponse, ObjectId } from '../../../services';
 import {
     ArtistSpotlight,
     CarouselResponse,
@@ -14,6 +18,7 @@ import {
     QueryPaginatedParams,
     ResponseAssetsPaginated,
     Spotlight,
+    StorePackItem,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
 import {
@@ -24,6 +29,18 @@ import {
 } from '../utils/queries';
 import { DIST } from '../../../constants/static';
 import { createTagRegex } from '../utils/createTag';
+import {
+    PRINT_OUTPUTS_STORAGE_NAME,
+    ASSET_STORAGE_URL,
+    GENERAL_STORAGE_URL,
+    GENERATE_PACK_LIMIT,
+    NODE_ENV,
+    SEARCH_URL,
+} from '../../../constants';
+import { splitIntoChunks } from '../utils/splitInChunks';
+import { validatePath } from '../utils/validatePath';
+import { exists } from '../../../services/aws';
+import { sendToExchangePrintOutputs } from '../../../services/printOutput';
 
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
@@ -1692,6 +1709,249 @@ route.get('/slideshow/:id', async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.slideshow.get.failed',
             message: `Reader get slideshow failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.get('/printOutputGenerator/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { source } = req.query as { source: string };
+
+        if (!source) {
+            res.status(400).json({ message: 'Source is required' });
+            return;
+        }
+
+        const key = `${id}/${source.split('assets/')[1]}`.replace(
+            'png',
+            'jpeg'
+        );
+
+        const existingUrl = await exists({
+            bucketUrl: `https://${PRINT_OUTPUTS_STORAGE_NAME}.s3.amazonaws.com`,
+            key,
+        });
+
+        if (existingUrl) {
+            res.redirect(
+                `https://${PRINT_OUTPUTS_STORAGE_NAME}.s3.amazonaws.com/${key}`
+            );
+            return;
+        }
+
+        const asset = await model.findAssetsById({ id });
+
+        if (!asset) {
+            res.status(404).json({
+                code: 'vitruveo.studio.api.assets.get.notFound',
+                message: 'Asset not found for the given ID',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+        res.setHeader(
+            'Expires',
+            new Date(Date.now() + 604800000).toUTCString()
+        );
+
+        res.setHeader('Content-Type', 'image/jpeg');
+
+        const outputStream = new PassThrough();
+
+        pipeline(outputStream, res).catch((err) => {
+            logger('Error in output stream pipeline: %O', err);
+        });
+
+        const child = fork(
+            path.join(
+                __dirname,
+                NODE_ENV === 'dev'
+                    ? '../utils/printGenerator/event.ts'
+                    : '../utils/printGenerator/event.js'
+            )
+        );
+
+        const imageBuffer: Buffer[] = [];
+
+        child.on('message', (message) => {
+            const { type, data, error } = message as any;
+            if (type === 'data') {
+                const chunk = Buffer.from(data);
+                imageBuffer.push(chunk);
+                outputStream.write(chunk);
+            } else if (type === 'end') {
+                outputStream.end();
+                const finalBuffer = Buffer.concat(imageBuffer);
+                sendToExchangePrintOutputs(
+                    JSON.stringify({
+                        buffer: finalBuffer,
+                        key,
+                    })
+                );
+            } else if (type === 'error') {
+                logger('Error in child process: %O', error);
+                outputStream.end();
+                res.status(500).end();
+            }
+        });
+
+        child.on('error', (err) => {
+            logger('Child process error: %O', err);
+            outputStream.end();
+            res.status(500).end();
+        });
+
+        res.on('close', () => {
+            child.send({
+                action: 'end',
+            });
+            child.removeAllListeners();
+        });
+
+        try {
+            child.send({
+                assetPath: asset.formats.exhibition?.path,
+                source,
+                action: 'render',
+            });
+        } catch (fetchError) {
+            logger('Error loading images: %O', fetchError);
+            outputStream.end();
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
+                message: `Failed to load images: ${fetchError}`,
+                args: fetchError,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    } catch (error) {
+        logger('Error generating print output for asset: %O', error);
+
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
+            message: `Failed to generate print output for asset: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/generator/pack', async (req, res) => {
+    try {
+        const { ids } = req.body as { ids: string[] };
+
+        if (!ids || ids.length === 0) {
+            res.status(400).json({
+                code: 'vitruveo.studio.api.pack.get.invalidParams',
+                message: 'Invalid params',
+                transaction: nanoid(),
+            } as APIResponse);
+            return;
+        }
+        if (ids.length > GENERATE_PACK_LIMIT) {
+            ids.slice(0, GENERATE_PACK_LIMIT);
+        }
+
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename=pack.zip');
+
+        const assetsForStorePack = await model.findAssetsForStorePack({
+            query: { _id: { $in: ids.map((item) => new ObjectId(item)) } },
+        });
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.pipe(res);
+
+        const data: StorePackItem[] = await Promise.all(
+            assetsForStorePack.map(async (item) => {
+                let avatar = `${GENERAL_STORAGE_URL}/xibit-icon.png`;
+
+                if (item.creator.avatar) {
+                    const avatarPath = `${GENERAL_STORAGE_URL}/${item.creator.avatar}`;
+                    const isvalidAvatar = await validatePath(avatarPath);
+                    avatar = isvalidAvatar ? avatarPath : avatar;
+                }
+
+                return {
+                    id: item._id,
+                    path: `${ASSET_STORAGE_URL}/${item.formats.exhibition?.path}`,
+                    title: item.assetMetadata.context.formData.title,
+                    username: item.creator.username,
+                    avatar,
+                    qrCode: `${SEARCH_URL}/${item._id}/go`,
+                    logo: `${GENERAL_STORAGE_URL}/xibit-logo.png`,
+                };
+            })
+        );
+
+        const childCount = os.cpus().length;
+        const chunks = splitIntoChunks(data, childCount);
+
+        let completedTasks = 0;
+        let allResults: { buffer: Buffer; id: string }[] = [];
+
+        chunks.forEach((chunk) => {
+            if (chunk.length === 0) return;
+
+            const child = fork(
+                join(
+                    __dirname,
+                    NODE_ENV === 'dev'
+                        ? '../../../services/pack/index.ts'
+                        : '../../../services/pack/index.js'
+                )
+            );
+
+            child.send({ data: chunk });
+
+            child.on('message', (message) => {
+                const { type, data: bufferResponse, error } = message as any;
+
+                if (type === 'complete') {
+                    allResults = [...allResults, ...bufferResponse];
+                    completedTasks += 1;
+
+                    if (
+                        completedTasks ===
+                        chunks.filter((c) => c.length > 0).length
+                    ) {
+                        allResults.forEach((buffer) => {
+                            const bufferData =
+                                buffer.buffer instanceof Buffer
+                                    ? buffer.buffer
+                                    : Buffer.from(buffer.buffer);
+                            archive.append(bufferData, {
+                                name: `${buffer.id}.png`,
+                            });
+                        });
+                        archive.finalize();
+                    }
+                    child.kill();
+                }
+
+                if (type === 'error') {
+                    logger('Pack error: %O', error);
+                    res.status(500).end();
+                    child.kill();
+                }
+            });
+
+            child.on('error', (error) => {
+                logger('Child process error: %O', error);
+                res.status(500).end();
+                child.kill();
+            });
+        });
+    } catch (error) {
+        logger('Reader get pack failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.pack.get.failed',
+            message: `Reader get pack failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

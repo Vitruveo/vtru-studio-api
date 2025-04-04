@@ -232,14 +232,18 @@ export const schemaLicenses = z.object({
             version: z.string(),
             added: z.boolean(),
             unitPrice: z.number(),
+            displayPrice: z.number().optional(),
+            merchandisePrice: z.number().optional(),
             availableLicenses: z.number().min(0).default(1),
         }),
-        remix: z.object({
-            version: z.string(),
-            added: z.boolean(),
-            unitPrice: z.number(),
-            availableLicenses: z.number().min(0).default(1),
-        }),
+        remix: z
+            .object({
+                version: z.string(),
+                added: z.boolean(),
+                unitPrice: z.number(),
+                availableLicenses: z.number().min(0).default(1),
+            })
+            .optional(),
         artCards: z
             .object({
                 added: z.boolean(),
@@ -500,4 +504,9 @@ export const schemaValidationForPutStoresVisibility = z.object({
         ])
         .default('visibleInAllStores'),
     list: z.array(z.string()).default([]),
+});
+
+export const schemaValidationForCreateCheckouSession = z.object({
+    assetId: z.string(),
+    productId: z.string(),
 });

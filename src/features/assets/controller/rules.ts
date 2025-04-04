@@ -25,6 +25,7 @@ import {
     schemaValidationForCreate,
     schemaAssetUpdateManyNudity,
     schemaValidationForPutStoresVisibility,
+    schemaValidationForCreateCheckouSession,
 } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 import { model } from '../../creators';
@@ -390,6 +391,34 @@ export const validateBodyForPatchAssetPrice = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForPatchAssetPrice.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForCreateCheckoutSession = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForCreateCheckoutSession.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForCreateCheckouSession.parse(req.body);
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForCreateCheckoutSession.failed',
             message: '',
             transaction: nanoid(),
             args: error,

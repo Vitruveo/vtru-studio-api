@@ -188,6 +188,8 @@ const PrintLicenseSchema = z
         version: z.string(),
         added: z.boolean(),
         unitPrice: NumberInt,
+        displayPrice: z.number().optional(),
+        merchandisePrice: z.number().optional(),
         availableLicenses: z.number().min(1).default(1),
     })
     .refine(
@@ -355,4 +357,13 @@ export const schemaAssetValidation = z.object({
 
 export const schemaValidationForPatchAssetPrice = z.object({
     price: z.number().min(0),
+});
+
+export const schemaValidationForPatchPrintLicensePrice = z.object({
+    merchandisePrice: z.number().min(0),
+    displayPrice: z.number().min(0),
+});
+
+export const schemaValidationForPatchPrintLicenseAdded = z.object({
+    added: z.boolean().default(false),
 });
