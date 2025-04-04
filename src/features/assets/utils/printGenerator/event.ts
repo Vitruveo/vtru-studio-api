@@ -3,7 +3,14 @@ import { PassThrough } from 'stream';
 import { generateMockup } from './mockupGenerator';
 import { ASSET_STORAGE_URL } from '../../../../constants';
 
+// TODO:
 process.on('message', async (message) => {
+    const { action } = message as any;
+
+    if (action === 'end') {
+        process.exit(0);
+    }
+
     const outputStream = new PassThrough();
 
     outputStream.on('data', (chunk) => {
@@ -69,7 +76,7 @@ process.on('message', async (message) => {
             throw new Error(`Error retrieving artwork: ${error.message}`);
         }
 
-        generateMockup(sourceBuffer, artworkBuffer, outputStream);
+        await generateMockup(sourceBuffer, artworkBuffer, outputStream);
     } catch (error: any) {
         if (process.send) {
             process.send({

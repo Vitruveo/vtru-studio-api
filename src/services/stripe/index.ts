@@ -9,6 +9,7 @@ interface Order {
     product: string;
     description: string;
     imageUrl: string;
+    assetUrl: string;
     price: number;
     productId: string;
     vendorProductId: string;
@@ -30,7 +31,7 @@ export const createSession = (order: Order) =>
                     product_data: {
                         name: order.product,
                         description: order.description,
-                        images: [order.imageUrl],
+                        images: [order.imageUrl, order.assetUrl],
                     },
                     unit_amount: order.price,
                 },
