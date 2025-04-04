@@ -98,7 +98,7 @@ const orderService = async ({ assetId, productId }: OrderService) => {
         description: product.description,
         imageUrl,
         assetUrl: `${ASSET_STORAGE_URL}/${asset.formats.exhibition?.path}`,
-        price: Number(total.toFixed(2)) * 100,
+        price: Math.round(Number(total.toFixed(2)) * 100),
         quantity: 1,
     };
 };
