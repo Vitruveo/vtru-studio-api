@@ -24,6 +24,11 @@ export interface QueryCollectionParams {
     showAdditionalAssets: string;
 }
 
+export interface QueryTagsParams {
+    name: string;
+    showAdditionalAssets: string;
+}
+
 export interface QueryParams {
     query: Record<string, unknown>;
     sort?: {
