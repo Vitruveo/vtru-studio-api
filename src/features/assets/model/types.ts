@@ -50,6 +50,13 @@ export interface AssetsPaginatedResponse {
 export interface FindAssetsTagsParams {
     query: Record<string, unknown>;
 }
+
+export interface FindAssetsTagsSearchableParams {
+    name?: string;
+    showAdditionalAssets?: string;
+    limit?: number;
+}
+
 export interface FindAssetsByCreatorName {
     name: string;
     showAdditionalAssets: string;
@@ -78,7 +85,7 @@ export interface CountAssetsByCreatorIdParams
     grouped?: string;
 }
 export interface CountAssetsParams
-    extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> { }
+    extends Pick<FindAssetsPaginatedParams, 'colors' | 'precision' | 'query'> {}
 
 export interface FindAssetsByIdParams {
     id: string | ObjectId;

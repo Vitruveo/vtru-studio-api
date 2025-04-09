@@ -39,6 +39,7 @@ import type {
     FindLastSoldAssets,
     StoresVisibilityParams,
     FindAssetsForStorePackParams,
+    FindAssetsTagsSearchableParams,
 } from './types';
 import { FindOptions, getDb, ObjectId } from '../../../services/mongo';
 import { buildFilterColorsQuery } from '../utils/color';
@@ -756,6 +757,63 @@ export const findAssetsTags = async ({ query }: FindAssetsTagsParams) =>
             },
         ])
         .toArray();
+
+export const findAssetsTagsSearchable = async ({
+    name,
+    limit,
+    showAdditionalAssets,
+}: FindAssetsTagsSearchableParams) => {
+    const stages: Record<string, any>[] = [];
+
+    if (name) {
+        stages.push({
+            'assetMetadata.taxonomy.formData.tags': {
+                $regex: new RegExp(`(^| )${name}`, 'i'),
+            },
+        });
+    }
+    if (showAdditionalAssets !== 'true') {
+        stages.push({
+            'consignArtwork.status': 'active',
+        });
+    }
+
+    return assets()
+        .aggregate([
+            { $unwind: '$assetMetadata.taxonomy.formData.tags' },
+            {
+                $match: stages.reduce(
+                    (acc, cur) => ({
+                        ...acc,
+                        ...cur,
+                    }),
+                    {}
+                ),
+            },
+            {
+                $group: {
+                    _id: {
+                        $toLower: {
+                            $trim: {
+                                input: '$assetMetadata.taxonomy.formData.tags',
+                            },
+                        },
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    tag: '$_id',
+                    count: 1,
+                },
+            },
+            { $sort: { count: -1, tag: 1 } },
+            { $limit: limit || 10 },
+        ])
+        .toArray();
+};
 
 export const findAssetsByCreatorName = ({
     name,
