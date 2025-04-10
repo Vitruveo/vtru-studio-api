@@ -37,9 +37,16 @@ import { sendToExchangePrintOutputs } from '../../../services/printOutput';
 import { checkAssetExists, checkCountCharacters } from '../middleware';
 import { checkPrintOutputExists } from '../middleware/printOutputExists';
 import { checkSourceExists } from '../middleware/sourceExists';
-import { schemaValidationForUngroupedAssets } from './schemas';
-import { validateBodyForUngroupedAssets } from './rules';
+import {
+    schemaValidationForGroupedAssets,
+    schemaValidationForUngroupedAssets,
+} from './schemas';
+import {
+    validateBodyForUngroupedAssets,
+    validateBodyGroupedAssets,
+} from './rules';
 import { buildParsedQuery } from '../useCase/ungrouped';
+import { buildParsedQueryGrouped } from '../useCase/grouped';
 
 const logger = debug('features:assets:controller:public');
 const route = Router();
@@ -126,6 +133,77 @@ route.post('/search', validateBodyForUngroupedAssets, async (req, res) => {
         res.status(500).json({
             code: 'vitruveo.studio.api.assets.search.failed',
             message: `Reader search failed: ${error}`,
+            args: error,
+            transaction: nanoid(),
+        } as APIResponse);
+    }
+});
+
+route.post('/groupByCreator', validateBodyGroupedAssets, async (req, res) => {
+    try {
+        const {
+            query,
+            page,
+            limit,
+            minPrice,
+            maxPrice,
+            name,
+            sort,
+            hasBts,
+            hasNftAutoStake,
+            storesId,
+        } = req.body as z.infer<typeof schemaValidationForGroupedAssets>;
+
+        const { parsedQuery, grouped } = buildParsedQueryGrouped({
+            query,
+            maxPrice,
+            minPrice,
+            name,
+            hasBts,
+            hasNftAutoStake,
+            storesId,
+        });
+
+        delete parsedQuery.avoid;
+
+        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
+            sort.order = 'mintNewToOld';
+        }
+
+        const sortQuery = querySortSearch(sort, hasBts);
+
+        const assets = await model.findAssetGroupPaginated({
+            query: parsedQuery,
+            limit,
+            skip: (page - 1) * limit,
+            sort: sortQuery,
+            grouped,
+        });
+
+        const total = await model.countAssetsGroup({
+            query: parsedQuery,
+            grouped,
+        });
+
+        const totalPage = Math.ceil(total.length / limit);
+
+        res.json({
+            code: 'vitruveo.studio.api.assets.search.success',
+            message: 'Reader search success',
+            transaction: nanoid(),
+            data: {
+                data: assets,
+                page,
+                totalPage,
+                total: total.length,
+                limit,
+            },
+        } as APIResponse);
+    } catch (error) {
+        logger('Reader groupByCreator asset failed: %O', error);
+        res.status(500).json({
+            code: 'vitruveo.studio.api.assets.groupByCreator.failed',
+            message: `Reader groupByCreator failed: ${error}`,
             args: error,
             transaction: nanoid(),
         } as APIResponse);

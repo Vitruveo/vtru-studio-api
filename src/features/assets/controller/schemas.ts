@@ -528,3 +528,19 @@ export const schemaValidationForUngroupedAssets = z.object({
     hasNftAutoStake: z.boolean().default(false),
     storesId: z.string().default(''),
 });
+
+export const schemaValidationForGroupedAssets = z.object({
+    query: z.record(z.string(), z.any()).default({}),
+    page: z.number().default(1),
+    limit: z.number().default(10),
+    minPrice: z.number().default(0),
+    maxPrice: z.number().default(0),
+    name: z.string().default(''),
+    sort: z.object({
+        order: z.string().default('latest'),
+        isIncludeSold: z.boolean().default(false),
+    }),
+    hasBts: z.boolean().default(false),
+    hasNftAutoStake: z.boolean().default(false),
+    storesId: z.string().default(''),
+});

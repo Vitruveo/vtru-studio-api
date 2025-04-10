@@ -3,6 +3,8 @@ import { createTagRegex } from '../utils/createTag';
 import { queryByPrice, queryByTitleOrDescOrCreator } from '../utils/queries';
 import { ObjectId } from '../../../services/mongo';
 
+const groupedOptions = ['all', 'noSales'];
+
 // this is used to filter assets that are not ready to be shown
 export const conditionsToShowAssets = {
     'consignArtwork.status': 'active',
@@ -15,11 +17,6 @@ export const conditionsToShowAssets = {
         $ne: null,
     },
 };
-
-const statusCondition = [
-    { 'consignArtwork.status': 'active' },
-    { 'consignArtwork.status': 'blocked' },
-];
 
 interface BuildQueryParams {
     key: string;
@@ -142,9 +139,8 @@ const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
     }
 };
 
-interface BuildParsedQueryParams {
+interface BuildParsedQueryGroupedParams {
     query: Record<string, any>;
-    showAdditionalAssets: boolean;
     maxPrice: number;
     minPrice: number;
     name: string;
@@ -153,16 +149,15 @@ interface BuildParsedQueryParams {
     storesId: string;
 }
 
-export const buildParsedQuery = ({
+export const buildParsedQueryGrouped = ({
     query,
-    showAdditionalAssets,
     maxPrice,
     minPrice,
     name,
     hasBts,
     hasNftAutoStake,
     storesId,
-}: BuildParsedQueryParams) => {
+}: BuildParsedQueryGroupedParams) => {
     const parsedQuery: Record<string, any> = {
         ...query,
         ...conditionsToShowAssets,
@@ -173,10 +168,12 @@ export const buildParsedQuery = ({
         },
     };
 
-    if (showAdditionalAssets) {
-        delete parsedQuery['consignArtwork.status'];
+    if (name) {
+        const searchByTitleDescCreator = {
+            $or: queryByTitleOrDescOrCreator({ name }),
+        };
 
-        parsedQuery.$or.push(...statusCondition);
+        parsedQuery.$and.push(searchByTitleDescCreator);
     }
 
     if (minPrice >= 0 && maxPrice > 0) {
@@ -188,14 +185,6 @@ export const buildParsedQuery = ({
         };
 
         parsedQuery.$and.push(priceCondition);
-    }
-
-    if (name) {
-        const searchByTitleDescCreator = {
-            $or: queryByTitleOrDescOrCreator({ name }),
-        };
-
-        parsedQuery.$and.push(searchByTitleDescCreator);
     }
 
     if (hasBts) {
@@ -270,5 +259,10 @@ export const buildParsedQuery = ({
         delete parsedQuery.$and;
     }
 
-    return parsedQuery;
+    const grouped = groupedOptions.includes(query.grouped as string)
+        ? (query.grouped as string)
+        : 'all';
+    delete parsedQuery.grouped;
+
+    return { parsedQuery, grouped };
 };
