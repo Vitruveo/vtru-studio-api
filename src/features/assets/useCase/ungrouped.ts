@@ -14,12 +14,6 @@ export const conditionsToShowAssets = {
         $exists: true,
         $ne: null,
     },
-    $or: [],
-    $and: [],
-
-    avoid: {
-        colors: [],
-    },
 };
 
 const statusCondition = [
@@ -30,7 +24,6 @@ const statusCondition = [
 interface BuildQueryParams {
     key: string;
     value: any;
-
     parsedQuery: Record<string, any>;
 }
 
@@ -40,6 +33,7 @@ export const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
             const tags = value?.$in as string[];
             if (Array.isArray(tags)) {
                 parsedQuery[key] = { $in: createTagRegex(tags) };
+                delete parsedQuery[key];
             }
 
             return parsedQuery;
@@ -51,16 +45,14 @@ export const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
                 parsedQuery.avoid.colors = colors.map((color) =>
                     color.map((rgb) => parseInt(rgb, 10))
                 );
+                delete parsedQuery[key];
             }
-
-            delete parsedQuery[key];
 
             return parsedQuery;
         }
 
         case 'assetMetadata.creators.formData.name': {
             const creators = value?.$in as string[];
-
             if (Array.isArray(creators)) {
                 parsedQuery['assetMetadata.creators.formData'] = {
                     $elemMatch: {
@@ -78,7 +70,6 @@ export const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
 
         case 'assetMetadata.taxonomy.formData.subject': {
             const subjects = value?.$in as string[];
-
             if (Array.isArray(subjects)) {
                 subjects.forEach((subject: string) => {
                     parsedQuery.$and.push({
@@ -99,7 +90,6 @@ export const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
 
         case 'assetMetadata.taxonomy.formData.collections': {
             const collections = value?.$in as string[];
-
             if (Array.isArray(collections)) {
                 collections.forEach((collection: string) => {
                     // @ts-ignore
@@ -139,7 +129,6 @@ export const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
 
         case 'framework.createdBy': {
             const ids = value?.$in as string[];
-
             if (Array.isArray(ids)) {
                 parsedQuery[key].$in = ids;
             }
@@ -155,7 +144,6 @@ export const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
 
 interface BuildParsedQueryParams {
     query: Record<string, any>;
-
     showAdditionalAssets: boolean;
     maxPrice: number;
     minPrice: number;
@@ -178,6 +166,11 @@ export const buildParsedQuery = ({
     const parsedQuery: Record<string, any> = {
         ...query,
         ...conditionsToShowAssets,
+        $or: [],
+        $and: [],
+        avoid: {
+            colors: [],
+        },
     };
 
     if (showAdditionalAssets) {
@@ -189,8 +182,8 @@ export const buildParsedQuery = ({
     if (minPrice >= 0 && maxPrice > 0) {
         const priceCondition = {
             $or: queryByPrice({
-                min: Number(minPrice),
-                max: Number(maxPrice),
+                min: minPrice,
+                max: maxPrice,
             }),
         };
 
@@ -206,12 +199,14 @@ export const buildParsedQuery = ({
     }
 
     if (hasBts) {
-        const btsConditions = [
-            { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
-            { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
-        ];
+        const btsConditions = {
+            $or: [
+                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
+                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
+            ],
+        };
 
-        parsedQuery.$or.push(...btsConditions);
+        parsedQuery.$and.push(btsConditions);
     }
 
     if (hasNftAutoStake) {
@@ -266,6 +261,13 @@ export const buildParsedQuery = ({
         if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
             delete parsedQuery['framework.createdBy'];
         }
+    }
+
+    if (Object.keys(parsedQuery.$or).length === 0) {
+        delete parsedQuery.$or;
+    }
+    if (Object.keys(parsedQuery.$and).length === 0) {
+        delete parsedQuery.$and;
     }
 
     return parsedQuery;

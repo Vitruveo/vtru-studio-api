@@ -605,7 +605,7 @@ route.get('/artistSpotlight/:name?', async (req, res) => {
     }
 });
 
-route.get('/:id', checkAssetExists, async (req, res) => {
+route.get('/:id', checkAssetExists, async (_req, res) => {
     try {
         const { asset } = res.locals;
 

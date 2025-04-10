@@ -443,7 +443,7 @@ export const validateBodyForUngroupedAssets = async (
     }
 
     try {
-        req.body = schemaValidationForUngroupedAssets.parse(req.query);
+        req.body = schemaValidationForUngroupedAssets.parse(req.body);
 
         if (req.body.limit > 200) {
             req.body.limit = 200;
