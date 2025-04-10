@@ -772,7 +772,7 @@ export const findAssetsTagsSearchable = async ({
             },
         });
     }
-    if (showAdditionalAssets !== 'true') {
+    if (!showAdditionalAssets) {
         stages.push({
             'consignArtwork.status': 'active',
         });

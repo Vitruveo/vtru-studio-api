@@ -4,6 +4,7 @@ import archiver from 'archiver';
 import { readFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { Router } from 'express';
+import { z } from 'zod';
 import path, { join } from 'path';
 import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
@@ -15,23 +16,15 @@ import {
     ArtistSpotlight,
     CarouselResponse,
     QueryCollectionParams,
-    QueryPaginatedParams,
     QueryTagsParams,
     ResponseAssetsPaginated,
     Spotlight,
     StorePackItem,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
-import {
-    queryByPrice,
-    queryByTitleOrDescOrCreator,
-    querySortSearch,
-    querySortGroupByCreator,
-} from '../utils/queries';
+import { querySortSearch } from '../utils/queries';
 import { DIST } from '../../../constants/static';
-import { createTagRegex } from '../utils/createTag';
 import {
-    PRINT_OUTPUTS_STORAGE_NAME,
     ASSET_STORAGE_URL,
     GENERAL_STORAGE_URL,
     GENERATE_PACK_LIMIT,
@@ -40,777 +33,58 @@ import {
 } from '../../../constants';
 import { splitIntoChunks } from '../utils/splitInChunks';
 import { validatePath } from '../utils/validatePath';
-import { exists } from '../../../services/aws';
 import { sendToExchangePrintOutputs } from '../../../services/printOutput';
-
-// this is used to filter assets that are not ready to be shown
-export const conditionsToShowAssets = {
-    'consignArtwork.status': 'active',
-    'contractExplorer.explorerUrl': {
-        $exists: true,
-    },
-    'licenses.nft.added': true,
-    'formats.preview.path': {
-        $exists: true,
-        $ne: null,
-    },
-};
-
-const groupedOptions = ['all', 'noSales'];
+import { checkAssetExists, checkCountCharacters } from '../middleware';
+import { checkPrintOutputExists } from '../middleware/printOutputExists';
+import { checkSourceExists } from '../middleware/sourceExists';
+import { schemaValidationForUngroupedAssets } from './schemas';
+import { validateBodyForUngroupedAssets } from './rules';
+import { buildParsedQuery } from '../useCase/ungrouped';
 
 const logger = debug('features:assets:controller:public');
 const route = Router();
 
-route.get('/groupByCreator', async (req, res) => {
+route.post('/search', validateBodyForUngroupedAssets, async (req, res) => {
     try {
         const {
-            query = {} as any,
-            page = 1,
-            limit = 10,
-            name,
-            sort,
-            hasBts,
-            hasNftAutoStake,
-            storesId,
-        } = req.query as unknown as {
-            query: Record<string, unknown>;
-            page: string;
-            limit: string;
-            name: string;
-            sort: QueryPaginatedParams['sort'];
-            hasBts: string;
-            hasNftAutoStake: boolean;
-            storesId: boolean;
-        };
-
-        const pageNumber = Number(page);
-        let limitNumber = Number(limit);
-
-        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
-            res.status(400).json({
-                code: 'vitruveo.studio.api.assets.search.invalidParams',
-                message: 'Invalid params',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
-
-        // limit the number of assets to 200
-        if (limitNumber > 200) {
-            limitNumber = 200;
-        }
-
-        const parsedQuery = {
-            ...query,
-            ...conditionsToShowAssets,
-        };
-
-        const addSearchByTitleDescCreator = (param: string) => {
-            const searchByTitleDescCreator = {
-                $or: queryByTitleOrDescOrCreator({ name: param }),
-            };
-            if ('$and' in parsedQuery) {
-                if (Array.isArray(parsedQuery.$and)) {
-                    parsedQuery.$and.push(searchByTitleDescCreator);
-                }
-            } else {
-                parsedQuery.$and = [searchByTitleDescCreator];
-            }
-        };
-
-        if (name) addSearchByTitleDescCreator(name);
-
-        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
-            sort.order = 'mintNewToOld';
-        }
-
-        const sortQuery = querySortGroupByCreator(sort, hasBts);
-
-        if (query['assetMetadata.creators.formData.name']) {
-            const creators = query['assetMetadata.creators.formData.name'].$in;
-            parsedQuery['assetMetadata.creators.formData'] = {
-                $elemMatch: {
-                    $or: creators.map((creator: string) => ({
-                        name: { $regex: `^${creator}$`, $options: 'i' },
-                    })),
-                },
-            };
-            delete parsedQuery['assetMetadata.creators.formData.name'];
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
-            const subjects =
-                query['assetMetadata.taxonomy.formData.subject'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
-            if (Array.isArray(parsedQuery.$and)) {
-                subjects.forEach((subject: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.subject': {
-                            $elemMatch: {
-                                $regex: subject,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = subjects.map((subject: string) => ({
-                    'assetMetadata.taxonomy.formData.subject': {
-                        $elemMatch: {
-                            $regex: subject,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
-            const collections =
-                query['assetMetadata.taxonomy.formData.collections'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
-            if (Array.isArray(parsedQuery.$and)) {
-                collections.forEach((collection: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.collections': {
-                            $elemMatch: {
-                                $regex: collection,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = collections.map((collection: string) => ({
-                    'assetMetadata.taxonomy.formData.collections': {
-                        $elemMatch: {
-                            $regex: collection,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-
-        if (hasBts === 'yes') {
-            const btsConditions = [
-                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
-                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(btsConditions)
-                : btsConditions;
-        }
-
-        if (hasNftAutoStake) {
-            parsedQuery.$and = parsedQuery.$and
-                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
-                : [{ 'licenses.nft.autoStake': true }];
-        }
-
-        if (storesId) {
-            parsedQuery.$or = [
-                ...(parsedQuery.$or || []),
-                { stores: { $exists: false } },
-                { stores: null },
-                { 'stores.visibility': 'visibleInAllStores' },
-                {
-                    'stores.visibility': 'visibleInSelectedStores',
-                    'stores.list': storesId,
-                },
-                {
-                    'stores.visibility': 'hiddenInSelectedStores',
-                    'stores.list': { $nin: [storesId] },
-                },
-            ];
-        }
-
-        if (parsedQuery?._id?.$nin)
-            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
-                (id: string) => new ObjectId(id)
-            );
-
-        if (
-            parsedQuery?._id?.$in &&
-            parsedQuery?.['framework.createdBy']?.$in
-        ) {
-            parsedQuery.$or = [
-                {
-                    _id: {
-                        $in: parsedQuery._id.$in.map(
-                            (id: string) => new ObjectId(id)
-                        ),
-                    },
-                },
-                {
-                    'framework.createdBy': {
-                        $in: parsedQuery['framework.createdBy'].$in,
-                    },
-                },
-            ];
-            delete parsedQuery['framework.createdBy'].$in;
-            delete parsedQuery._id.$in;
-            if (Object.keys(parsedQuery._id).length === 0) {
-                delete parsedQuery._id;
-            }
-            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
-                delete parsedQuery['framework.createdBy'];
-            }
-        } else if (parsedQuery?._id?.$in) {
-            parsedQuery._id.$in = parsedQuery._id.$in.map(
-                (id: string) => new ObjectId(id)
-            );
-        }
-
-        const grouped = groupedOptions.includes(query.grouped as string)
-            ? (query.grouped as string)
-            : 'all';
-
-        delete parsedQuery.grouped;
-
-        const assets = await model.findAssetGroupPaginated({
-            query: parsedQuery,
-            limit: limitNumber,
-            skip: (pageNumber - 1) * limitNumber,
-            sort: sortQuery,
-            grouped,
-        });
-
-        const total = await model.countAssetsGroup({
-            query: parsedQuery,
-            grouped,
-        });
-
-        const totalPage = Math.ceil(total.length / limitNumber);
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.search.success',
-            message: 'Reader search success',
-            transaction: nanoid(),
-            data: {
-                data: assets,
-                page: pageNumber,
-                totalPage,
-                total: total.length,
-                limit: limitNumber,
-            },
-        } as APIResponse);
-    } catch (error) {
-        logger('Reader search asset failed: %O', error);
-
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.search.failed',
-            message: `Reader search failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
-route.post('/groupByCreator', async (req, res) => {
-    try {
-        const {
-            query = {} as any,
-            minPrice,
-            maxPrice,
-            page = 1,
-            limit = 10,
-            name,
-            sort,
-            hasBts,
-            hasNftAutoStake,
-            showAdditionalAssets,
-        } = req.body as unknown as {
-            query: Record<string, unknown>;
-            minPrice: number;
-            maxPrice: number;
-            page: string;
-            limit: string;
-            name: string;
-            sort: QueryPaginatedParams['sort'];
-            hasBts: string;
-            hasNftAutoStake: boolean;
-            showAdditionalAssets: string;
-        };
-
-        const pageNumber = Number(page);
-        let limitNumber = Number(limit);
-
-        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
-            res.status(400).json({
-                code: 'vitruveo.studio.api.assets.search.invalidParams',
-                message: 'Invalid params',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
-
-        // limit the number of assets to 200
-        if (limitNumber > 200) {
-            limitNumber = 200;
-        }
-
-        const parsedQuery = {
-            ...query,
-            ...conditionsToShowAssets,
-        };
-
-        const addSearchByTitleDescCreator = (param: string) => {
-            const searchByTitleDescCreator = {
-                $or: queryByTitleOrDescOrCreator({ name: param }),
-            };
-            if ('$and' in parsedQuery) {
-                if (Array.isArray(parsedQuery.$and)) {
-                    parsedQuery.$and.push(searchByTitleDescCreator);
-                }
-            } else {
-                parsedQuery.$and = [searchByTitleDescCreator];
-            }
-        };
-
-        if (name) addSearchByTitleDescCreator(name);
-
-        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
-            sort.order = 'mintNewToOld';
-        }
-
-        const sortQuery = querySortGroupByCreator(sort, hasBts);
-
-        if (query['assetMetadata.taxonomy.formData.tags']?.$in) {
-            const tags = query['assetMetadata.taxonomy.formData.tags'].$in;
-            parsedQuery['assetMetadata.taxonomy.formData.tags'] = {
-                $in: createTagRegex(tags),
-            };
-        }
-
-        if (query['assetMetadata.creators.formData.name']) {
-            const creators = query['assetMetadata.creators.formData.name'].$in;
-            parsedQuery['assetMetadata.creators.formData'] = {
-                $elemMatch: {
-                    $or: creators.map((creator: string) => ({
-                        name: { $regex: `^${creator}$`, $options: 'i' },
-                    })),
-                },
-            };
-            delete parsedQuery['assetMetadata.creators.formData.name'];
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
-            const subjects =
-                query['assetMetadata.taxonomy.formData.subject'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
-            if (Array.isArray(parsedQuery.$and)) {
-                subjects.forEach((subject: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.subject': {
-                            $elemMatch: {
-                                $regex: subject,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = subjects.map((subject: string) => ({
-                    'assetMetadata.taxonomy.formData.subject': {
-                        $elemMatch: {
-                            $regex: subject,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
-            const collections =
-                query['assetMetadata.taxonomy.formData.collections'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
-            if (Array.isArray(parsedQuery.$and)) {
-                collections.forEach((collection: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.collections': {
-                            $elemMatch: {
-                                $regex: collection,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = collections.map((collection: string) => ({
-                    'assetMetadata.taxonomy.formData.collections': {
-                        $elemMatch: {
-                            $regex: collection,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-
-        if (hasBts === 'yes') {
-            const btsConditions = [
-                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
-                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(btsConditions)
-                : btsConditions;
-        }
-
-        if (hasNftAutoStake) {
-            parsedQuery.$and = parsedQuery.$and
-                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
-                : [{ 'licenses.nft.autoStake': true }];
-        }
-
-        if (
-            typeof maxPrice === 'number' &&
-            typeof minPrice === 'number' &&
-            Number(minPrice) >= 0 &&
-            Number(maxPrice) > 0
-        ) {
-            parsedQuery.$and = [
-                ...(parsedQuery.$and || []),
-                {
-                    $or: queryByPrice({
-                        min: Number(minPrice),
-                        max: Number(maxPrice),
-                    }),
-                },
-            ];
-        }
-
-        if (parsedQuery?._id?.$nin)
-            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
-                (id: string) => new ObjectId(id)
-            );
-
-        if (
-            parsedQuery?._id?.$in &&
-            parsedQuery?.['framework.createdBy']?.$in
-        ) {
-            parsedQuery.$or = [
-                {
-                    _id: {
-                        $in: parsedQuery._id.$in.map(
-                            (id: string) => new ObjectId(id)
-                        ),
-                    },
-                },
-                {
-                    'framework.createdBy': {
-                        $in: parsedQuery['framework.createdBy'].$in,
-                    },
-                },
-            ];
-            delete parsedQuery['framework.createdBy'].$in;
-            delete parsedQuery._id.$in;
-            if (Object.keys(parsedQuery._id).length === 0) {
-                delete parsedQuery._id;
-            }
-            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
-                delete parsedQuery['framework.createdBy'];
-            }
-        } else if (parsedQuery?._id?.$in) {
-            parsedQuery._id.$in = parsedQuery._id.$in.map(
-                (id: string) => new ObjectId(id)
-            );
-        }
-
-        const grouped = groupedOptions.includes(query.grouped as string)
-            ? (query.grouped as string)
-            : 'all';
-
-        delete parsedQuery.grouped;
-
-        const assets = await model.findAssetGroupPaginated({
-            query: parsedQuery,
-            limit: limitNumber,
-            skip: (pageNumber - 1) * limitNumber,
-            sort: sortQuery,
-            grouped,
-        });
-
-        const total = await model.countAssetsGroup({
-            query: parsedQuery,
-            grouped,
-        });
-
-        const totalPage = Math.ceil(total.length / limitNumber);
-
-        const tags = await model.findAssetsTagsSearchable({
-            showAdditionalAssets,
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.search.success',
-            message: 'Reader search success',
-            transaction: nanoid(),
-            data: {
-                data: assets,
-                page: pageNumber,
-                tags,
-                totalPage,
-                total: total.length,
-                limit: limitNumber,
-            },
-        } as APIResponse);
-    } catch (error) {
-        logger('Reader search asset failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.search.failed',
-            message: `Reader search failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
-route.get('/search', async (req, res) => {
-    try {
-        const {
-            query = {} as any,
-            page = 1,
-            limit = 10,
+            query,
+            page,
+            limit,
             minPrice,
             maxPrice,
             name,
             sort,
-            precision = '0.7',
+            precision,
             showAdditionalAssets,
             hasBts,
             hasNftAutoStake,
             storesId,
-        } = req.query as unknown as QueryPaginatedParams;
+        } = req.body as z.infer<typeof schemaValidationForUngroupedAssets>;
 
-        const pageNumber = Number(page);
-        let limitNumber = Number(limit);
+        const parsedQuery = buildParsedQuery({
+            query,
+            showAdditionalAssets,
+            maxPrice,
+            minPrice,
+            name,
+            hasBts,
+            hasNftAutoStake,
+            storesId,
+        });
 
-        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
-            res.status(400).json({
-                code: 'vitruveo.studio.api.assets.search.invalidParams',
-                message: 'Invalid params',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
+        const { colors } = parsedQuery.avoid;
 
-        // limit the number of assets to 200
-        if (limitNumber > 200) {
-            limitNumber = 200;
-        }
-
-        const parsedQuery = {
-            ...query,
-            ...conditionsToShowAssets,
-        };
-
-        if (showAdditionalAssets === 'true') {
-            delete parsedQuery['consignArtwork.status'];
-            const statusCondition = [
-                { 'consignArtwork.status': 'active' },
-                { 'consignArtwork.status': 'blocked' },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(statusCondition)
-                : statusCondition;
-        }
-
-        const addSearchByTitleDescCreator = (param: string) => {
-            const searchByTitleDescCreator = {
-                $or: queryByTitleOrDescOrCreator({ name: param }),
-            };
-            if (parsedQuery.$and) {
-                parsedQuery.$and.push(searchByTitleDescCreator);
-            } else {
-                parsedQuery.$and = [searchByTitleDescCreator];
-            }
-        };
-
-        if (
-            maxPrice &&
-            minPrice &&
-            Number(minPrice) >= 0 &&
-            Number(maxPrice) > 0
-        ) {
-            parsedQuery.$and = [
-                {
-                    $or: queryByPrice({
-                        min: Number(minPrice),
-                        max: Number(maxPrice),
-                    }),
-                },
-            ];
-
-            if (name) addSearchByTitleDescCreator(name);
-        } else if (name) {
-            addSearchByTitleDescCreator(name);
-        }
-
-        let filterColors: number[][] = [];
-        if (query['assetMetadata.context.formData.colors']?.$in) {
-            const colors = query['assetMetadata.context.formData.colors']
-                .$in as string[][];
-            filterColors = colors.map((color) =>
-                color.map((rgb) => parseInt(rgb, 10))
-            );
-            delete parsedQuery['assetMetadata.context.formData.colors'];
-        }
-
-        if (query['assetMetadata.creators.formData.name']) {
-            const creators = query['assetMetadata.creators.formData.name'].$in;
-            parsedQuery['assetMetadata.creators.formData'] = {
-                $elemMatch: {
-                    $or: creators.map((creator: string) => ({
-                        name: { $regex: `^${creator}$`, $options: 'i' },
-                    })),
-                },
-            };
-            delete parsedQuery['assetMetadata.creators.formData.name'];
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
-            const subjects =
-                query['assetMetadata.taxonomy.formData.subject'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
-            if (Array.isArray(parsedQuery.$and)) {
-                subjects.forEach((subject: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.subject': {
-                            $elemMatch: {
-                                $regex: subject,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = subjects.map((subject: string) => ({
-                    'assetMetadata.taxonomy.formData.subject': {
-                        $elemMatch: {
-                            $regex: subject,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
-            const collections =
-                query['assetMetadata.taxonomy.formData.collections'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
-            if (Array.isArray(parsedQuery.$and)) {
-                collections.forEach((collection: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.collections': {
-                            $elemMatch: {
-                                $regex: collection,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = collections.map((collection: string) => ({
-                    'assetMetadata.taxonomy.formData.collections': {
-                        $elemMatch: {
-                            $regex: collection,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-
-        if (hasBts === 'yes') {
-            const btsConditions = [
-                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
-                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(btsConditions)
-                : btsConditions;
-        }
-
-        if (hasNftAutoStake) {
-            parsedQuery.$and = parsedQuery.$and
-                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
-                : [{ 'licenses.nft.autoStake': true }];
-        }
-
-        if (storesId) {
-            parsedQuery.$or = [
-                ...(parsedQuery.$or || []),
-                { stores: { $exists: false } },
-                { stores: null },
-                { 'stores.visibility': 'visibleInAllStores' },
-                {
-                    'stores.visibility': 'visibleInSelectedStores',
-                    'stores.list': storesId,
-                },
-                {
-                    'stores.visibility': 'hiddenInSelectedStores',
-                    'stores.list': { $nin: [storesId] },
-                },
-            ];
-        }
-
-        if (parsedQuery?._id?.$nin)
-            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
-                (id: string) => new ObjectId(id)
-            );
-
-        if (
-            parsedQuery?._id?.$in &&
-            parsedQuery?.['framework.createdBy']?.$in
-        ) {
-            parsedQuery.$or = [
-                {
-                    _id: {
-                        $in: parsedQuery._id.$in.map(
-                            (id: string) => new ObjectId(id)
-                        ),
-                    },
-                },
-                {
-                    'framework.createdBy': {
-                        $in: parsedQuery['framework.createdBy'].$in,
-                    },
-                },
-            ];
-            delete parsedQuery['framework.createdBy'].$in;
-            delete parsedQuery._id.$in;
-            if (Object.keys(parsedQuery._id).length === 0) {
-                delete parsedQuery._id;
-            }
-            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
-                delete parsedQuery['framework.createdBy'];
-            }
-        } else if (parsedQuery?._id?.$in) {
-            parsedQuery._id.$in = parsedQuery._id.$in.map(
-                (id: string) => new ObjectId(id)
-            );
-        }
-
-        const maxAssetPrice = await model.findMaxPrice();
-
-        if (parsedQuery?._id?.$in)
-            parsedQuery._id.$in = parsedQuery._id.$in.map(
-                (id: string) => new ObjectId(id)
-            );
+        delete parsedQuery.avoid;
 
         const result = await model.countAssets({
             query: parsedQuery,
-            colors: filterColors,
+            colors,
             precision: Number(precision),
         });
 
         const total = result[0]?.count ?? 0;
 
-        const totalPage = Math.ceil(total / limitNumber);
+        const totalPage = Math.ceil(total / limit);
 
         if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
             sort.order = 'mintNewToOld';
@@ -820,298 +94,10 @@ route.get('/search', async (req, res) => {
 
         const assets = await model.findAssetsPaginated({
             query: parsedQuery,
-            skip: (pageNumber - 1) * limitNumber,
-            limit: limitNumber,
+            skip: (page - 1) * limit,
+            limit,
             sort: sortQuery,
-            colors: filterColors,
-            precision: Number(precision),
-        });
-
-        const tags = await model.findAssetsTags({ query: parsedQuery });
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.search.success',
-            message: 'Reader search success',
-            transaction: nanoid(),
-            data: {
-                data: assets,
-                tags,
-                page: pageNumber,
-                totalPage,
-                total,
-                limit: limitNumber,
-                maxPrice: maxAssetPrice || 0,
-            },
-        } as APIResponse<ResponseAssetsPaginated>);
-    } catch (error) {
-        logger('Reader search asset failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.search.failed',
-            message: `Reader search failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
-route.post('/search', async (req, res) => {
-    try {
-        const {
-            query = {} as any,
-            page = 1,
-            limit = 10,
-            minPrice,
-            maxPrice,
-            name,
-            sort,
-            precision = '0.7',
-            showAdditionalAssets,
-            hasBts,
-            hasNftAutoStake,
-            storesId,
-        } = req.body as unknown as QueryPaginatedParams;
-
-        const pageNumber = Number(page);
-        let limitNumber = Number(limit);
-
-        if (Number.isNaN(pageNumber) || Number.isNaN(limitNumber)) {
-            res.status(400).json({
-                code: 'vitruveo.studio.api.assets.search.invalidParams',
-                message: 'Invalid params',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
-
-        // limit the number of assets to 200
-        if (limitNumber > 200) {
-            limitNumber = 200;
-        }
-
-        const parsedQuery = {
-            ...query,
-            ...conditionsToShowAssets,
-        };
-
-        if (showAdditionalAssets === 'true') {
-            delete parsedQuery['consignArtwork.status'];
-            const statusCondition = [
-                { 'consignArtwork.status': 'active' },
-                { 'consignArtwork.status': 'blocked' },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(statusCondition)
-                : statusCondition;
-        }
-
-        const addSearchByTitleDescCreator = (param: string) => {
-            const searchByTitleDescCreator = {
-                $or: queryByTitleOrDescOrCreator({ name: param }),
-            };
-            if (parsedQuery.$and) {
-                parsedQuery.$and.push(searchByTitleDescCreator);
-            } else {
-                parsedQuery.$and = [searchByTitleDescCreator];
-            }
-        };
-
-        if (
-            typeof maxPrice === 'number' &&
-            typeof minPrice === 'number' &&
-            Number(minPrice) >= 0 &&
-            Number(maxPrice) > 0
-        ) {
-            parsedQuery.$and = [
-                {
-                    $or: queryByPrice({
-                        min: Number(minPrice),
-                        max: Number(maxPrice),
-                    }),
-                },
-            ];
-
-            if (name) addSearchByTitleDescCreator(name);
-        } else if (name) {
-            addSearchByTitleDescCreator(name);
-        }
-
-        if (query['assetMetadata.taxonomy.formData.tags']?.$in) {
-            const tags = query['assetMetadata.taxonomy.formData.tags'].$in;
-            parsedQuery['assetMetadata.taxonomy.formData.tags'] = {
-                $in: createTagRegex(tags),
-            };
-        }
-
-        let filterColors: number[][] = [];
-        if (query['assetMetadata.context.formData.colors']?.$in) {
-            const colors = query['assetMetadata.context.formData.colors']
-                .$in as string[][];
-            filterColors = colors.map((color) =>
-                color.map((rgb) => parseInt(rgb, 10))
-            );
-            delete parsedQuery['assetMetadata.context.formData.colors'];
-        }
-
-        if (query['assetMetadata.creators.formData.name']) {
-            const creators = query['assetMetadata.creators.formData.name'].$in;
-            parsedQuery['assetMetadata.creators.formData'] = {
-                $elemMatch: {
-                    $or: creators.map((creator: string) => ({
-                        name: { $regex: `^${creator}$`, $options: 'i' },
-                    })),
-                },
-            };
-            delete parsedQuery['assetMetadata.creators.formData.name'];
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.subject']) {
-            const subjects =
-                query['assetMetadata.taxonomy.formData.subject'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.subject'];
-            if (Array.isArray(parsedQuery.$and)) {
-                subjects.forEach((subject: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.subject': {
-                            $elemMatch: {
-                                $regex: subject,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = subjects.map((subject: string) => ({
-                    'assetMetadata.taxonomy.formData.subject': {
-                        $elemMatch: {
-                            $regex: subject,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-        if (parsedQuery['assetMetadata.taxonomy.formData.collections']) {
-            const collections =
-                query['assetMetadata.taxonomy.formData.collections'].$in;
-            delete parsedQuery['assetMetadata.taxonomy.formData.collections'];
-            if (Array.isArray(parsedQuery.$and)) {
-                collections.forEach((collection: string) => {
-                    // @ts-ignore
-                    parsedQuery.$and.push({
-                        'assetMetadata.taxonomy.formData.collections': {
-                            $elemMatch: {
-                                $regex: collection,
-                                $options: 'i',
-                            },
-                        },
-                    });
-                });
-            } else {
-                parsedQuery.$and = collections.map((collection: string) => ({
-                    'assetMetadata.taxonomy.formData.collections': {
-                        $elemMatch: {
-                            $regex: collection,
-                            $options: 'i',
-                        },
-                    },
-                }));
-            }
-        }
-
-        if (hasBts === 'yes') {
-            const btsConditions = [
-                { 'mediaAuxiliary.formats.btsImage': { $ne: null } },
-                { 'mediaAuxiliary.formats.btsVideo': { $ne: null } },
-            ];
-            parsedQuery.$or = parsedQuery.$or
-                ? parsedQuery.$or.concat(btsConditions)
-                : btsConditions;
-        }
-
-        if (hasNftAutoStake) {
-            parsedQuery.$and = parsedQuery.$and
-                ? [...parsedQuery.$and, { 'licenses.nft.autoStake': true }]
-                : [{ 'licenses.nft.autoStake': true }];
-        }
-
-        const maxAssetPrice = await model.findMaxPrice();
-
-        if (parsedQuery?._id?.$nin)
-            parsedQuery._id.$nin = parsedQuery._id.$nin.map(
-                (id: string) => new ObjectId(id)
-            );
-
-        if (storesId) {
-            parsedQuery.$or = [
-                ...(parsedQuery.$or || []),
-                { stores: { $exists: false } },
-                { stores: null },
-                { 'stores.visibility': 'visibleInAllStores' },
-                {
-                    'stores.visibility': 'visibleInSelectedStores',
-                    'stores.list': storesId,
-                },
-                {
-                    'stores.visibility': 'hiddenInSelectedStores',
-                    'stores.list': { $nin: [storesId] },
-                },
-            ];
-        }
-
-        if (
-            parsedQuery?._id?.$in &&
-            parsedQuery?.['framework.createdBy']?.$in
-        ) {
-            parsedQuery.$or = [
-                {
-                    _id: {
-                        $in: parsedQuery._id.$in.map(
-                            (id: string) => new ObjectId(id)
-                        ),
-                    },
-                },
-                {
-                    'framework.createdBy': {
-                        $in: parsedQuery['framework.createdBy'].$in,
-                    },
-                },
-            ];
-            delete parsedQuery['framework.createdBy'].$in;
-            delete parsedQuery._id.$in;
-            if (Object.keys(parsedQuery._id).length === 0) {
-                delete parsedQuery._id;
-            }
-            if (Object.keys(parsedQuery['framework.createdBy']).length === 0) {
-                delete parsedQuery['framework.createdBy'];
-            }
-        } else if (parsedQuery?._id?.$in) {
-            parsedQuery._id.$in = parsedQuery._id.$in.map(
-                (id: string) => new ObjectId(id)
-            );
-        }
-
-        const result = await model.countAssets({
-            query: parsedQuery,
-            colors: filterColors,
-            precision: Number(precision),
-        });
-
-        const total = result[0]?.count ?? 0;
-
-        const totalPage = Math.ceil(total / limitNumber);
-
-        if ('mintExplorer.address' in parsedQuery && sort.order === 'latest') {
-            sort.order = 'mintNewToOld';
-        }
-
-        const sortQuery = querySortSearch(sort, hasBts);
-
-        const assets = await model.findAssetsPaginated({
-            query: parsedQuery,
-            skip: (pageNumber - 1) * limitNumber,
-            limit: limitNumber,
-            sort: sortQuery,
-            colors: filterColors,
+            colors,
             precision: Number(precision),
         });
 
@@ -1119,6 +105,8 @@ route.post('/search', async (req, res) => {
             showAdditionalAssets,
         });
 
+        const maxAssetPrice = await model.findMaxPrice();
+
         res.json({
             code: 'vitruveo.studio.api.assets.search.success',
             message: 'Reader search success',
@@ -1126,10 +114,10 @@ route.post('/search', async (req, res) => {
             data: {
                 data: assets,
                 tags,
-                page: pageNumber,
+                page,
                 totalPage,
                 total,
-                limit: limitNumber,
+                limit,
                 maxPrice: maxAssetPrice || 0,
             },
         } as APIResponse<ResponseAssetsPaginated>);
@@ -1167,141 +155,130 @@ route.get('/carousel', async (req, res) => {
     }
 });
 
-route.get('/collections', async (req, res) => {
-    try {
-        const { name, showAdditionalAssets } =
-            req.query as unknown as QueryCollectionParams;
+route.get(
+    '/collections',
+    checkCountCharacters({ field: 'name', minLength: 3 }),
+    async (req, res) => {
+        try {
+            const { name, showAdditionalAssets } =
+                req.query as unknown as QueryCollectionParams;
 
-        if (name.trim().length < 3) {
-            res.status(400).json({
-                code: 'vitruveo.studio.api.assets.collections.invalidParams',
-                message: 'Invalid params',
+            const collections = await model.findAssetsCollections({
+                name,
+                showAdditionalAssets,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.assets.collections.success',
+                message: 'Reader collections success',
+                transaction: nanoid(),
+                data: collections,
+            } as APIResponse<model.AssetsDocument[]>);
+        } catch (error) {
+            logger('Reader collections failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.collections.failed',
+                message: `Reader collections failed: ${error}`,
+                args: error,
                 transaction: nanoid(),
             } as APIResponse);
-            return;
         }
-
-        const collections = await model.findAssetsCollections({
-            name,
-            showAdditionalAssets,
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.collections.success',
-            message: 'Reader collections success',
-            transaction: nanoid(),
-            data: collections,
-        } as APIResponse<model.AssetsDocument[]>);
-    } catch (error) {
-        logger('Reader collections failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.collections.failed',
-            message: `Reader collections failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
     }
-});
+);
 
-route.get('/subjects', async (req, res) => {
-    try {
-        const { name, showAdditionalAssets } =
-            req.query as unknown as QueryCollectionParams;
+route.get(
+    '/subjects',
+    checkCountCharacters({ field: 'name', minLength: 3 }),
+    async (req, res) => {
+        try {
+            const { name, showAdditionalAssets } =
+                req.query as unknown as QueryCollectionParams;
 
-        if (name.trim().length < 3) {
-            res.status(400).json({
-                code: 'vitruveo.studio.api.assets.subjects.invalidParams',
-                message: 'Invalid params',
+            const subjects = await model.findAssetsSubjects({
+                name,
+                showAdditionalAssets,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.assets.subjects.success',
+                message: 'Reader subjects success',
+                transaction: nanoid(),
+                data: subjects,
+            } as APIResponse<model.AssetsDocument[]>);
+        } catch (error) {
+            logger('Reader subjects failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.subjects.failed',
+                message: `Reader subjects failed: ${error}`,
+                args: error,
                 transaction: nanoid(),
             } as APIResponse);
-            return;
         }
-
-        const subjects = await model.findAssetsSubjects({
-            name,
-            showAdditionalAssets,
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.subjects.success',
-            message: 'Reader subjects success',
-            transaction: nanoid(),
-            data: subjects,
-        } as APIResponse<model.AssetsDocument[]>);
-    } catch (error) {
-        logger('Reader subjects failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.subjects.failed',
-            message: `Reader subjects failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
     }
-});
+);
 
-route.get('/tags', async (req, res) => {
-    try {
-        const { name, showAdditionalAssets } =
-            req.query as unknown as QueryTagsParams;
+route.get(
+    '/tags',
+    checkCountCharacters({ field: 'name', minLength: 3 }),
+    async (req, res) => {
+        try {
+            const { name, showAdditionalAssets } =
+                req.query as unknown as QueryTagsParams;
 
-        const tags = await model.findAssetsTagsSearchable({
-            name: name.trim(),
-            showAdditionalAssets,
-            limit: 20,
-        });
+            const tags = await model.findAssetsTagsSearchable({
+                name: name.trim(),
+                showAdditionalAssets,
+                limit: 20,
+            });
 
-        res.json({
-            code: 'vitruveo.studio.api.assets.tags.success',
-            message: 'Reader tags success',
-            transaction: nanoid(),
-            data: tags,
-        } as APIResponse<model.AssetsDocument[]>);
-    } catch (error) {
-        logger('Reader tags failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.tags.failed',
-            message: `Reader tags failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
-    }
-});
-
-route.get('/creators', async (req, res) => {
-    try {
-        const { name, showAdditionalAssets } =
-            req.query as unknown as QueryCollectionParams;
-
-        if (name.trim().length < 3) {
-            res.status(400).json({
-                code: 'vitruveo.studio.api.assets.creators.invalidParams',
-                message: 'Invalid params',
+            res.json({
+                code: 'vitruveo.studio.api.assets.tags.success',
+                message: 'Reader tags success',
+                transaction: nanoid(),
+                data: tags,
+            } as APIResponse<model.AssetsDocument[]>);
+        } catch (error) {
+            logger('Reader tags failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.tags.failed',
+                message: `Reader tags failed: ${error}`,
+                args: error,
                 transaction: nanoid(),
             } as APIResponse);
-            return;
         }
-
-        const creators = await model.findAssetsByCreatorName({
-            name,
-            showAdditionalAssets,
-        });
-
-        res.json({
-            code: 'vitruveo.studio.api.assets.creators.success',
-            message: 'Reader creators success',
-            transaction: nanoid(),
-            data: creators,
-        } as APIResponse<model.AssetsDocument[]>);
-    } catch (error) {
-        logger('Reader creators failed: %O', error);
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.creators.failed',
-            message: `Reader creators failed: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
     }
-});
+);
+
+route.get(
+    '/creators',
+    checkCountCharacters({ field: 'name', minLength: 3 }),
+    async (req, res) => {
+        try {
+            const { name, showAdditionalAssets } =
+                req.query as unknown as QueryCollectionParams;
+
+            const creators = await model.findAssetsByCreatorName({
+                name,
+                showAdditionalAssets,
+            });
+
+            res.json({
+                code: 'vitruveo.studio.api.assets.creators.success',
+                message: 'Reader creators success',
+                transaction: nanoid(),
+                data: creators,
+            } as APIResponse<model.AssetsDocument[]>);
+        } catch (error) {
+            logger('Reader creators failed: %O', error);
+            res.status(500).json({
+                code: 'vitruveo.studio.api.assets.creators.failed',
+                message: `Reader creators failed: ${error}`,
+                args: error,
+                transaction: nanoid(),
+            } as APIResponse);
+        }
+    }
+);
 
 route.post('/lastSold', async (req, res) => {
     try {
@@ -1628,19 +605,9 @@ route.get('/artistSpotlight/:name?', async (req, res) => {
     }
 });
 
-route.get('/:id', async (req, res) => {
+route.get('/:id', checkAssetExists, async (req, res) => {
     try {
-        const { id } = req.params;
-        const asset = await model.findAssetsById({ id });
-
-        if (!asset) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.assets.get.notFound',
-                message: 'Reader get asset not found',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
+        const { asset } = res.locals;
 
         const creatorId = asset.framework.createdBy;
 
@@ -1752,131 +719,103 @@ route.get('/slideshow/:id', async (req, res) => {
     }
 });
 
-route.get('/printOutputGenerator/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { source } = req.query as { source: string };
+route.get(
+    '/printOutputGenerator/:id',
+    checkAssetExists,
+    checkSourceExists,
+    checkPrintOutputExists,
+    async (req, res) => {
+        try {
+            const { source } = req.query as { source: string };
+            const { asset, sourceKey } = res.locals;
 
-        if (!source) {
-            res.status(400).json({ message: 'Source is required' });
-            return;
-        }
-
-        const key = `${id}/${source.split('assets/')[1]}`.replace(
-            'png',
-            'jpeg'
-        );
-
-        const existingUrl = await exists({
-            bucketUrl: `https://${PRINT_OUTPUTS_STORAGE_NAME}.s3.amazonaws.com`,
-            key,
-        });
-
-        if (existingUrl) {
-            res.redirect(
-                `https://${PRINT_OUTPUTS_STORAGE_NAME}.s3.amazonaws.com/${key}`
+            res.setHeader('Cache-Control', 'public, max-age=604800');
+            res.setHeader(
+                'Expires',
+                new Date(Date.now() + 604800000).toUTCString()
             );
-            return;
-        }
+            res.setHeader('Content-Type', 'image/jpeg');
 
-        const asset = await model.findAssetsById({ id });
+            const outputStream = new PassThrough();
 
-        if (!asset) {
-            res.status(404).json({
-                code: 'vitruveo.studio.api.assets.get.notFound',
-                message: 'Asset not found for the given ID',
-                transaction: nanoid(),
-            } as APIResponse);
-            return;
-        }
+            pipeline(outputStream, res).catch((err) => {
+                logger('Error in output stream pipeline: %O', err);
+            });
 
-        res.setHeader('Cache-Control', 'public, max-age=604800');
-        res.setHeader(
-            'Expires',
-            new Date(Date.now() + 604800000).toUTCString()
-        );
-
-        res.setHeader('Content-Type', 'image/jpeg');
-
-        const outputStream = new PassThrough();
-
-        pipeline(outputStream, res).catch((err) => {
-            logger('Error in output stream pipeline: %O', err);
-        });
-
-        const child = fork(
-            path.join(
+            const printGeneratorPath = path.join(
                 __dirname,
                 NODE_ENV === 'dev'
                     ? '../utils/printGenerator/event.ts'
                     : '../utils/printGenerator/event.js'
-            )
-        );
+            );
 
-        const imageBuffer: Buffer[] = [];
+            const child = fork(printGeneratorPath);
 
-        child.on('message', (message) => {
-            const { type, data, error } = message as any;
-            if (type === 'data') {
-                const chunk = Buffer.from(data);
-                imageBuffer.push(chunk);
-                outputStream.write(chunk);
-            } else if (type === 'end') {
-                outputStream.end();
-                const finalBuffer = Buffer.concat(imageBuffer);
-                sendToExchangePrintOutputs(
-                    JSON.stringify({
-                        buffer: finalBuffer,
-                        key,
-                    })
-                );
-            } else if (type === 'error') {
-                logger('Error in child process: %O', error);
+            const imageBuffer: Buffer[] = [];
+
+            child.on('message', (message) => {
+                const { type, data, error } = message as any;
+                if (type === 'data') {
+                    const chunk = Buffer.from(data);
+                    imageBuffer.push(chunk);
+                    outputStream.write(chunk);
+                } else if (type === 'end') {
+                    outputStream.end();
+                    const finalBuffer = Buffer.concat(imageBuffer);
+                    sendToExchangePrintOutputs(
+                        JSON.stringify({
+                            buffer: finalBuffer,
+                            key: sourceKey,
+                        })
+                    );
+                } else if (type === 'error') {
+                    logger('Error in child process: %O', error);
+                    outputStream.end();
+                    res.status(500).end();
+                }
+            });
+
+            child.on('error', (err) => {
+                logger('Child process error: %O', err);
                 outputStream.end();
                 res.status(500).end();
+            });
+
+            res.on('close', () => {
+                child.send({
+                    action: 'end',
+                });
+                child.removeAllListeners();
+            });
+
+            try {
+                child.send({
+                    assetPath: asset.formats.exhibition?.path,
+                    source,
+                    action: 'render',
+                });
+            } catch (fetchError) {
+                logger('Error loading images: %O', fetchError);
+                outputStream.end();
+                res.status(500).json({
+                    code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
+                    message: `Failed to load images: ${fetchError}`,
+                    args: fetchError,
+                    transaction: nanoid(),
+                } as APIResponse);
             }
-        });
+        } catch (error) {
+            logger('Error generating print output for asset: %O', error);
 
-        child.on('error', (err) => {
-            logger('Child process error: %O', err);
-            outputStream.end();
-            res.status(500).end();
-        });
-
-        res.on('close', () => {
-            child.send({
-                action: 'end',
-            });
-            child.removeAllListeners();
-        });
-
-        try {
-            child.send({
-                assetPath: asset.formats.exhibition?.path,
-                source,
-                action: 'render',
-            });
-        } catch (fetchError) {
-            logger('Error loading images: %O', fetchError);
-            outputStream.end();
             res.status(500).json({
                 code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
-                message: `Failed to load images: ${fetchError}`,
-                args: fetchError,
+                message: `Failed to generate print output for asset: ${error}`,
+                args: error,
                 transaction: nanoid(),
             } as APIResponse);
         }
-    } catch (error) {
-        logger('Error generating print output for asset: %O', error);
-
-        res.status(500).json({
-            code: 'vitruveo.studio.api.assets.printOutputGenerator.failed',
-            message: `Failed to generate print output for asset: ${error}`,
-            args: error,
-            transaction: nanoid(),
-        } as APIResponse);
     }
-});
+);
 
 route.post('/generator/pack', async (req, res) => {
     try {
