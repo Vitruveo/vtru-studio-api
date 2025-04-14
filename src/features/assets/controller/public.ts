@@ -22,7 +22,7 @@ import {
     StorePackItem,
 } from './types';
 import { FindAssetsCarouselParams } from '../model/types';
-import { querySortSearch } from '../utils/queries';
+import { querySortGroupByCreator, querySortSearch } from '../utils/queries';
 import { DIST } from '../../../constants/static';
 import {
     ASSET_STORAGE_URL,
@@ -170,7 +170,7 @@ route.post('/groupByCreator', validateBodyGroupedAssets, async (req, res) => {
             sort.order = 'mintNewToOld';
         }
 
-        const sortQuery = querySortSearch(sort, hasBts);
+        const sortQuery = querySortGroupByCreator(sort, hasBts);
 
         const assets = await model.findAssetGroupPaginated({
             query: parsedQuery,
