@@ -53,7 +53,7 @@ export interface FindAssetsTagsParams {
 
 export interface FindAssetsTagsSearchableParams {
     name?: string;
-    showAdditionalAssets?: string;
+    showAdditionalAssets?: boolean;
     limit?: number;
 }
 

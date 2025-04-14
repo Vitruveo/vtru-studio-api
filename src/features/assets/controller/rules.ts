@@ -26,6 +26,8 @@ import {
     schemaAssetUpdateManyNudity,
     schemaValidationForPutStoresVisibility,
     schemaValidationForCreateCheckouSession,
+    schemaValidationForUngroupedAssets,
+    schemaValidationForGroupedAssets,
 } from './schemas';
 import { schemaValidationForPatchAssetPrice } from './schemaValidate';
 import { model } from '../../creators';
@@ -419,6 +421,72 @@ export const validateBodyForCreateCheckoutSession = async (
     } catch (error) {
         res.status(400).json({
             code: 'vitruveo.studio.api.assets.validateBodyForCreateCheckoutSession.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyForUngroupedAssets = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUngroupedAssets.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForUngroupedAssets.parse(req.body);
+
+        if (req.body.limit > 200) {
+            req.body.limit = 200;
+        }
+
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUngroupedAssets.failed',
+            message: '',
+            transaction: nanoid(),
+            args: error,
+        } as APIResponse);
+    }
+};
+
+export const validateBodyGroupedAssets = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUngroupedAssets.failed',
+            message: '',
+            transaction: nanoid(),
+        } as APIResponse);
+
+        return;
+    }
+
+    try {
+        req.body = schemaValidationForGroupedAssets.parse(req.body);
+
+        if (req.body.limit > 200) {
+            req.body.limit = 200;
+        }
+
+        next();
+    } catch (error) {
+        res.status(400).json({
+            code: 'vitruveo.studio.api.assets.validateBodyForUngroupedAssets.failed',
             message: '',
             transaction: nanoid(),
             args: error,
