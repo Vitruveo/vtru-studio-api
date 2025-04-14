@@ -231,6 +231,9 @@ export const findAssetGroupPaginated = ({
         {
             $addFields: {
                 vault: '$creator.vault',
+                insensitiveCreator: {
+                    $toLower: '$creator.username',
+                },
             },
         },
         {

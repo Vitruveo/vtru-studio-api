@@ -132,7 +132,7 @@ export const querySortSearch = (
 
 export const querySortGroupByCreator = (
     sort: querySortSearchParams,
-    hasBts: string
+    hasBts: boolean
 ) => {
     let sortQuery: Sort = {};
 
@@ -150,10 +150,10 @@ export const querySortGroupByCreator = (
             };
             break;
         case 'creatorAZ':
-            sortQuery = { 'asset.assetMetadata.creators.formData.name': 1 };
+            sortQuery = { insensitiveCreator: 1 };
             break;
         case 'creatorZA':
-            sortQuery = { 'asset.assetMetadata.creators.formData.name': -1 };
+            sortQuery = { insensitiveCreator: -1 };
             break;
         case 'consignNewToOld':
             sortQuery = { 'asset.consignArtwork.listing': -1 };
@@ -176,14 +176,13 @@ export const querySortGroupByCreator = (
         ? sortQuery
         : { 'asset.licenses.nft.availableLicenses': -1, ...sortQuery };
 
-    sortQuery =
-        hasBts === 'yes'
-            ? {
-                  'asset.mediaAuxiliary.formats.btsVideo': -1,
-                  'asset.mediaAuxiliary.formats.btsImage': -1,
-                  ...sortQuery,
-              }
-            : sortQuery;
+    sortQuery = hasBts
+        ? {
+              'asset.mediaAuxiliary.formats.btsVideo': -1,
+              'asset.mediaAuxiliary.formats.btsImage': -1,
+              ...sortQuery,
+          }
+        : sortQuery;
 
     return sortQuery;
 };
