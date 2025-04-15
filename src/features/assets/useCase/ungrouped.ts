@@ -92,7 +92,6 @@ const buildQuery = ({ key, value, parsedQuery }: BuildQueryParams) => {
             const collections = value?.$in as string[];
             if (Array.isArray(collections)) {
                 collections.forEach((collection: string) => {
-                    // @ts-ignore
                     parsedQuery.$and.push({
                         'assetMetadata.taxonomy.formData.collections': {
                             $elemMatch: {
