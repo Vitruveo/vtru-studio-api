@@ -66,11 +66,11 @@ export const queryByTitleOrDescOrCreator = ({
 
 export interface querySortSearchParams {
     order: string;
-    isIncludeSold: string;
+    isIncludeSold: boolean;
 }
 export const querySortSearch = (
     sort: querySortSearchParams,
-    hasBts: string
+    hasBts: boolean
 ) => {
     let sortQuery: Sort = {};
 
@@ -116,25 +116,23 @@ export const querySortSearch = (
             break;
     }
 
-    sortQuery =
-        sort?.isIncludeSold === 'true'
-            ? sortQuery
-            : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
-    sortQuery =
-        hasBts === 'yes'
-            ? {
-                  'mediaAuxiliary.formats.btsVideo': -1,
-                  'mediaAuxiliary.formats.btsImage': -1,
-                  ...sortQuery,
-              }
-            : sortQuery;
+    sortQuery = sort?.isIncludeSold
+        ? sortQuery
+        : { 'licenses.nft.availableLicenses': -1, ...sortQuery };
+    sortQuery = hasBts
+        ? {
+              'mediaAuxiliary.formats.btsVideo': -1,
+              'mediaAuxiliary.formats.btsImage': -1,
+              ...sortQuery,
+          }
+        : sortQuery;
 
     return sortQuery;
 };
 
 export const querySortGroupByCreator = (
     sort: querySortSearchParams,
-    hasBts: string
+    hasBts: boolean
 ) => {
     let sortQuery: Sort = {};
 
@@ -152,10 +150,10 @@ export const querySortGroupByCreator = (
             };
             break;
         case 'creatorAZ':
-            sortQuery = { 'asset.assetMetadata.creators.formData.name': 1 };
+            sortQuery = { insensitiveCreator: 1 };
             break;
         case 'creatorZA':
-            sortQuery = { 'asset.assetMetadata.creators.formData.name': -1 };
+            sortQuery = { insensitiveCreator: -1 };
             break;
         case 'consignNewToOld':
             sortQuery = { 'asset.consignArtwork.listing': -1 };
@@ -174,19 +172,17 @@ export const querySortGroupByCreator = (
             break;
     }
 
-    sortQuery =
-        sort?.isIncludeSold === 'true'
-            ? sortQuery
-            : { 'asset.licenses.nft.availableLicenses': -1, ...sortQuery };
+    sortQuery = sort?.isIncludeSold
+        ? sortQuery
+        : { 'asset.licenses.nft.availableLicenses': -1, ...sortQuery };
 
-    sortQuery =
-        hasBts === 'yes'
-            ? {
-                  'asset.mediaAuxiliary.formats.btsVideo': -1,
-                  'asset.mediaAuxiliary.formats.btsImage': -1,
-                  ...sortQuery,
-              }
-            : sortQuery;
+    sortQuery = hasBts
+        ? {
+              'asset.mediaAuxiliary.formats.btsVideo': -1,
+              'asset.mediaAuxiliary.formats.btsImage': -1,
+              ...sortQuery,
+          }
+        : sortQuery;
 
     return sortQuery;
 };

@@ -231,6 +231,9 @@ export const findAssetGroupPaginated = ({
         {
             $addFields: {
                 vault: '$creator.vault',
+                insensitiveCreator: {
+                    $toLower: '$creator.username',
+                },
             },
         },
         {
@@ -772,7 +775,7 @@ export const findAssetsTagsSearchable = async ({
             },
         });
     }
-    if (showAdditionalAssets !== 'true') {
+    if (!showAdditionalAssets) {
         stages.push({
             'consignArtwork.status': 'active',
         });

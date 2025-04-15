@@ -26,7 +26,7 @@ export interface QueryCollectionParams {
 
 export interface QueryTagsParams {
     name: string;
-    showAdditionalAssets: string;
+    showAdditionalAssets: boolean;
 }
 
 export interface QueryParams {
